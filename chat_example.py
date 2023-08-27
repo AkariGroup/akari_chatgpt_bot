@@ -40,8 +40,8 @@ def main() -> None:
             "content": "チャットボットとしてロールプレイします。あかりという名前のカメラロボットとして振る舞ってください。正確はポジティブで元気です。",
         },
     ]
-    exit_flag = False
-    while not exit_flag:
+    print("文章をキーボード入力後、Enterを押してください。")
+    while True:
         text = input("Input: ")
         messages.append(
             # {'role': 'user', 'content': text + attention}

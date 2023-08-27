@@ -45,12 +45,15 @@ akari_motion_server内のREADME.mdに沿ってセットアップする。
 ## 個別サンプルの実行
 
 音声認識のサンプル  
+マイクへの発話を文章に変換  
 `python3 speech_to_text_example.py`  
 
 chatGPTのサンプル  
+キーボード入力した文章に対してchatGPTで返答を作成  
 `python3 chat_example.py`  
 
 音声合成のサンプル  
+キーボード入力した文章を音声合成で発話  
 `python3 voicevox_example.py`  
 
 ## 音声対話の実行
@@ -62,11 +65,11 @@ chatGPTのサンプル
 `python3 main_akari.py`  
 
 引数は下記が使用可能  
-- "-t","--timeout": マイク入力がこの時間しきい値以下になったら音声入力を打ち切る。デフォルトは0.5[s]。短いと応答が早くなるが不安定になりやすい。  
-- "-p","--power_threshold": マイク入力の音量しきい値。デフォルトは0で、0の場合アプリ起動時に周辺環境の音量を取得し、そこから音量しきい値を自動決定する。  
-- "--voicevox_local": このオプションをつけた場合、voicevoxのweb版ではなくローカル版を実行する。  
-- "--voicevox_host": "--voicevox_local"を有効にした場合、ここで指定したhostのvoicevoxにリクエストを送信する。デフォルトは"127.0.0.1"なのでlocalhostのvoicevoxを利用する。  
-- "--voicevox_port": "--voicevox_local"を有効にした場合、ここで指定したportのvoicevoxにリクエストを送信する。デフォルトは50021。  
+- `-t`,`--timeout`: マイク入力がこの時間しきい値以下になったら音声入力を打ち切る。デフォルトは0.5[s]。短いと応答が早くなるが不安定になりやすい。  
+- `-p`,`--power_threshold`: マイク入力の音量しきい値。デフォルトは0で、0の場合アプリ起動時に周辺環境の音量を取得し、そこから音量しきい値を自動決定する。  
+- `--voicevox_local`: このオプションをつけた場合、voicevoxのweb版ではなくローカル版を実行する。  
+- `--voicevox_host`: `--voicevox_local`を有効にした場合、ここで指定したhostのvoicevoxにリクエストを送信する。デフォルトは"127.0.0.1"なのでlocalhostのvoicevoxを利用する。  
+- `--voicevox_port`: `--voicevox_local`を有効にした場合、ここで指定したportのvoicevoxにリクエストを送信する。デフォルトは50021。  
 
 ## VOICEVOXをOSS版で使いたい場合  
 AKARIでVOICEVOXのローカル版を使う場合、AKARI本体内のCPUでVOICEVOXを実行すると処理時間がかかるので、リモートPC上(特にGPU版)でVOICVOXを実行することを推奨する。

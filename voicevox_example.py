@@ -30,6 +30,8 @@ def main() -> None:
         from lib.voicevox import TextToVoiceVoxWeb
 
         text_to_voice = TextToVoiceVoxWeb(apikey=VOICEVOX_APIKEY)
+
+    print("発話させたい文章をキーボード入力後、Enterを押してください。")
     while True:
         text = input("Input: ")
         text_to_voice.put_text(text)
