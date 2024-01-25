@@ -207,8 +207,9 @@ def listen_publisher(responses: Any) -> str:
                     )
                 except BaseException:
                     pass
-                is_progress_report=True
+                is_progress_report = True
         else:
+            print(transcript + overwrite_chars)
             if not is_progress_report and num_chars_printed > PROGRESS_REPORT_LENGTH:
                 try:
                     stub.SetGpt(
@@ -218,7 +219,7 @@ def listen_publisher(responses: Any) -> str:
                     )
                 except BaseException:
                     pass
-                is_progress_report=True
+                is_progress_report = True
             break
     try:
         stub.SetGpt(

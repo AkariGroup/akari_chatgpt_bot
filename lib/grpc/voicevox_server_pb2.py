@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15voicevox_server.proto\x12\x0fvoicevox_server\"\"\n\x12SetVoicevoxRequest\x12\x0c\n\x04text\x18\x01 \x01(\t\"\x12\n\x10SetVoicevoxReply\"\x1a\n\x18InterruptVoicevoxRequest\"\x18\n\x16InterruptVoicevoxReply2\xd7\x01\n\x15VoicevoxServerService\x12U\n\x0bSetVoicevox\x12#.voicevox_server.SetVoicevoxRequest\x1a!.voicevox_server.SetVoicevoxReply\x12g\n\x11InterruptVoicevox\x12).voicevox_server.InterruptVoicevoxRequest\x1a\'.voicevox_server.InterruptVoicevoxReplyb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15voicevox_server.proto\x12\x0fvoicevox_server\"\"\n\x12SetVoicevoxRequest\x12\x0c\n\x04text\x18\x01 \x01(\t\"#\n\x10SetVoicevoxReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\"\x1a\n\x18InterruptVoicevoxRequest\")\n\x16InterruptVoicevoxReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\x32\xd7\x01\n\x15VoicevoxServerService\x12U\n\x0bSetVoicevox\x12#.voicevox_server.SetVoicevoxRequest\x1a!.voicevox_server.SetVoicevoxReply\x12g\n\x11InterruptVoicevox\x12).voicevox_server.InterruptVoicevoxRequest\x1a\'.voicevox_server.InterruptVoicevoxReplyb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -24,11 +24,11 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_SETVOICEVOXREQUEST']._serialized_start=42
   _globals['_SETVOICEVOXREQUEST']._serialized_end=76
   _globals['_SETVOICEVOXREPLY']._serialized_start=78
-  _globals['_SETVOICEVOXREPLY']._serialized_end=96
-  _globals['_INTERRUPTVOICEVOXREQUEST']._serialized_start=98
-  _globals['_INTERRUPTVOICEVOXREQUEST']._serialized_end=124
-  _globals['_INTERRUPTVOICEVOXREPLY']._serialized_start=126
-  _globals['_INTERRUPTVOICEVOXREPLY']._serialized_end=150
-  _globals['_VOICEVOXSERVERSERVICE']._serialized_start=153
-  _globals['_VOICEVOXSERVERSERVICE']._serialized_end=368
+  _globals['_SETVOICEVOXREPLY']._serialized_end=113
+  _globals['_INTERRUPTVOICEVOXREQUEST']._serialized_start=115
+  _globals['_INTERRUPTVOICEVOXREQUEST']._serialized_end=141
+  _globals['_INTERRUPTVOICEVOXREPLY']._serialized_start=143
+  _globals['_INTERRUPTVOICEVOXREPLY']._serialized_end=184
+  _globals['_VOICEVOXSERVERSERVICE']._serialized_start=187
+  _globals['_VOICEVOXSERVERSERVICE']._serialized_end=402
 # @@protoc_insertion_point(module_scope)

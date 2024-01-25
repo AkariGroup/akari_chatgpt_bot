@@ -6,11 +6,15 @@ message SetGptRequest {
   bool is_finish =2;
 }
 
-message SetGptReply {}
+message SetGptReply {
+  bool success =1;
+}
 
 message InterruptGptRequest {}
 
-message InterruptGptReply {}
+message InterruptGptReply {
+  bool success =1;
+}
 
 service GptServerService {
     rpc SetGpt(SetGptRequest)

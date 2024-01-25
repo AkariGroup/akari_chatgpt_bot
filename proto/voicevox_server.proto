@@ -5,11 +5,15 @@ message SetVoicevoxRequest {
   string text = 1;
 }
 
-message SetVoicevoxReply {}
+message SetVoicevoxReply {
+  bool success =1;
+}
 
 message InterruptVoicevoxRequest {}
 
-message InterruptVoicevoxReply {}
+message InterruptVoicevoxReply {
+  bool success =1;
+}
 
 service VoicevoxServerService {
     rpc SetVoicevox(SetVoicevoxRequest)

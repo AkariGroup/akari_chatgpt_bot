@@ -9,6 +9,7 @@ from lib.chat import chat_stream
 from lib.conf import OPENAI_APIKEY
 from lib.voicevox import TextToVoiceVox
 import time
+import copy
 
 openai.api_key = OPENAI_APIKEY
 host: str = ""
@@ -32,16 +33,30 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
 
     def SetGpt(self, request: gpt_server_pb2.SetGptRequest(), context):
         response = ""
-        self.messages.append(
+        print(request.text)
+        if len(request.text) < 2:
+            return gpt_server_pb2.SetGptReply(success=True)
+        if request.is_finish:
+            content = f"{request.text}。普通に短文で簡潔に答えてください。"
+        else:
+            content = f"[{request.text}」という文に対して、以下の「」内からどれか一つを選択して回答してください。\n「えーと。」「はい、そうですね。」「そうですね…。」「いいえ、違います。」「こんにちは。」「ありがとうございます。」「よろしくおねがいします。」"
+        tmp_messages = copy.deepcopy(self.messages)
+        tmp_messages.append(
             # {'role': 'user', 'content': text + attention}
-            {"role": "user", "content": request.text}
+            {"role": "user", "content": content}
         )
-        for sentence in chat_stream(self.messages):
+        if request.is_finish:
+            self.messages = copy.deepcopy(tmp_messages)
+        print(self.messages)
+        for sentence in chat_stream(tmp_messages):
             # if voicevox:
             #    text_to_voice.put_text(sentence)
             response += sentence
         print(sentence, end="")
-        self.messages.append({"role": "assistant", "content": response})
+        print("")
+        if request.is_finish:
+            self.messages.append({"role": "assistant", "content": response})
+        return gpt_server_pb2.SetGptReply(success=True)
 
 
 def main() -> None:
@@ -64,19 +79,15 @@ def main() -> None:
     host = args.voicevox_host
     port = args.voicevox_port
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    gpt_server_pb2_grpc.add_GptServerServiceServicer_to_server(
-        GptServer(), server
-    )
+    gpt_server_pb2_grpc.add_GptServerServiceServicer_to_server(GptServer(), server)
     port = "10001"
     server.add_insecure_port("[::]:" + port)
     server.start()
     try:
         while True:
-            time.sleep(0.1)
+            pass
     except KeyboardInterrupt:
         exit()
-
-
 
 
 if __name__ == "__main__":
