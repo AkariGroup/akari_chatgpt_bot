@@ -1,0 +1,19 @@
+syntax = "proto3";
+package voicevox_server;
+
+message SetVoicevoxRequest {
+  string text = 1;
+}
+
+message SetVoicevoxReply {}
+
+message InterruptVoicevoxRequest {}
+
+message InterruptVoicevoxReply {}
+
+service VoicevoxServerService {
+    rpc SetVoicevox(SetVoicevoxRequest)
+        returns (SetVoicevoxReply);
+    rpc InterruptVoicevox(InterruptVoicevoxRequest)
+        returns (InterruptVoicevoxReply);
+}

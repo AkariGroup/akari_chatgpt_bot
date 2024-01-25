@@ -1,8 +1,10 @@
 from __future__ import division
 
 import math
-import struct
+import grpc
+import os
 import sys
+import struct
 import time
 from queue import Queue
 from typing import Any, Generator, Iterable, Union
@@ -13,6 +15,10 @@ from google.cloud import speech
 from six.moves import queue  # type: ignore
 
 from .err_handler import ignoreStderr
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
+import gpt_server_pb2
+import gpt_server_pb2_grpc
 
 # Audio recording parameters
 RATE = 16000
@@ -169,4 +175,57 @@ def listen_print_loop(responses: Any) -> str:
         else:
             print(transcript + overwrite_chars)
             break
+    return transcript + overwrite_chars
+
+
+def listen_publisher(responses: Any) -> str:
+    channel = grpc.insecure_channel("localhost:10001")
+    stub = gpt_server_pb2_grpc.GptServerServiceStub(channel)
+    PROGRESS_REPORT_LENGTH = 7
+    is_progress_report = False
+    num_chars_printed = 0
+    transcript = ""
+    overwrite_chars = ""
+    for response in responses:
+        if not response.results:
+            continue
+        result = response.results[0]
+        if not result.alternatives:
+            continue
+        transcript = result.alternatives[0].transcript
+        overwrite_chars = " " * (num_chars_printed - len(transcript))
+        if not result.is_final:
+            sys.stdout.write(transcript + overwrite_chars + "\r")
+            sys.stdout.flush()
+            num_chars_printed = len(transcript)
+            if not is_progress_report and num_chars_printed > PROGRESS_REPORT_LENGTH:
+                try:
+                    stub.SetGpt(
+                        gpt_server_pb2.SetGptRequest(
+                            text=transcript + overwrite_chars, is_finish=False
+                        )
+                    )
+                except BaseException:
+                    pass
+                is_progress_report=True
+        else:
+            if not is_progress_report and num_chars_printed > PROGRESS_REPORT_LENGTH:
+                try:
+                    stub.SetGpt(
+                        gpt_server_pb2.SetGptRequest(
+                            text=transcript + overwrite_chars, is_finish=False
+                        )
+                    )
+                except BaseException:
+                    pass
+                is_progress_report=True
+            break
+    try:
+        stub.SetGpt(
+            gpt_server_pb2.SetGptRequest(
+                text=transcript + overwrite_chars, is_finish=True
+            )
+        )
+    except BaseException:
+        pass
     return transcript + overwrite_chars
