@@ -106,6 +106,7 @@ class TextToVoiceVox(object):
         self.queue: Queue[str] = Queue()
         self.host = host
         self.port = port
+        self.play_flg = False
         self.voice_thread = Thread(target=self.text_to_voice_thread)
         self.voice_thread.start()
 
@@ -114,7 +115,7 @@ class TextToVoiceVox(object):
 
     def text_to_voice_thread(self) -> None:
         while True:
-            if self.queue.qsize() > 0:
+            if self.queue.qsize() > 0 and self.play_flg:
                 text = self.queue.get()
                 text_to_voice(text, self.host, self.port)
 
@@ -126,6 +127,7 @@ class TextToVoiceVoxWeb(object):
     def __init__(self, apikey: str) -> None:
         self.queue: Queue[str] = Queue()
         self.apikey = apikey
+        self.play_flg = False
         self.voice_thread = Thread(target=self.text_to_voice_thread)
         self.voice_thread.start()
 
@@ -134,7 +136,7 @@ class TextToVoiceVoxWeb(object):
 
     def text_to_voice_thread(self) -> None:
         while True:
-            if self.queue.qsize() > 0:
+            if self.queue.qsize() > 0 and self.play_flg:
                 text = self.queue.get()
                 text_to_voice_web(apikey=self.apikey, text=text)
 

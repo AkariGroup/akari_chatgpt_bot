@@ -11,9 +11,17 @@ message InterruptVoicevoxRequest {}
 
 message InterruptVoicevoxReply {}
 
+message SetVoicePlayFlgRequest {
+  bool flg = 1;
+}
+
+message SetVoicePlayFlgReply {}
+
 service VoicevoxServerService {
     rpc SetVoicevox(SetVoicevoxRequest)
         returns (SetVoicevoxReply);
     rpc InterruptVoicevox(InterruptVoicevoxRequest)
         returns (InterruptVoicevoxReply);
+    rpc SetVoicePlayFlg(SetVoicePlayFlgRequest)
+        returns (SetVoicePlayFlgReply);
 }

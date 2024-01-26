@@ -24,6 +24,11 @@ class VoicevoxServerServiceStub(object):
                 request_serializer=voicevox__server__pb2.InterruptVoicevoxRequest.SerializeToString,
                 response_deserializer=voicevox__server__pb2.InterruptVoicevoxReply.FromString,
                 )
+        self.SetVoicePlayFlg = channel.unary_unary(
+                '/voicevox_server.VoicevoxServerService/SetVoicePlayFlg',
+                request_serializer=voicevox__server__pb2.SetVoicePlayFlgRequest.SerializeToString,
+                response_deserializer=voicevox__server__pb2.SetVoicePlayFlgReply.FromString,
+                )
 
 
 class VoicevoxServerServiceServicer(object):
@@ -41,6 +46,12 @@ class VoicevoxServerServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def SetVoicePlayFlg(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_VoicevoxServerServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -53,6 +64,11 @@ def add_VoicevoxServerServiceServicer_to_server(servicer, server):
                     servicer.InterruptVoicevox,
                     request_deserializer=voicevox__server__pb2.InterruptVoicevoxRequest.FromString,
                     response_serializer=voicevox__server__pb2.InterruptVoicevoxReply.SerializeToString,
+            ),
+            'SetVoicePlayFlg': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetVoicePlayFlg,
+                    request_deserializer=voicevox__server__pb2.SetVoicePlayFlgRequest.FromString,
+                    response_serializer=voicevox__server__pb2.SetVoicePlayFlgReply.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -95,5 +111,22 @@ class VoicevoxServerService(object):
         return grpc.experimental.unary_unary(request, target, '/voicevox_server.VoicevoxServerService/InterruptVoicevox',
             voicevox__server__pb2.InterruptVoicevoxRequest.SerializeToString,
             voicevox__server__pb2.InterruptVoicevoxReply.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def SetVoicePlayFlg(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/voicevox_server.VoicevoxServerService/SetVoicePlayFlg',
+            voicevox__server__pb2.SetVoicePlayFlgRequest.SerializeToString,
+            voicevox__server__pb2.SetVoicePlayFlgReply.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
