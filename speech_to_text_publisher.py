@@ -8,7 +8,7 @@ from lib.transcribe_google_speech import (
 )
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
-POWER_THRESH_DIFF = 25  # 周辺音量にこの値を足したものをpower_threshouldとする
+POWER_THRESH_DIFF = 30  # 周辺音量にこの値を足したものをpower_threshouldとする
 
 
 def main() -> None:
@@ -40,6 +40,8 @@ def main() -> None:
     while True:
         responses = None
         with MicrophoneStream(RATE, CHUNK, timeout, power_threshold) as stream:
+            print("Enterを入力してください")
+            input()
             responses = stream.transcribe()
             if responses is not None:
                 listen_publisher(responses)

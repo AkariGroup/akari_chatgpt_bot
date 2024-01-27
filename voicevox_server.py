@@ -17,17 +17,21 @@ class VoicevoxServer(voicevox_server_pb2_grpc.VoicevoxServerServiceServicer):
 
     def SetVoicevox(self, request: voicevox_server_pb2.SetVoicevoxRequest(), context):
         self.text_to_voice.put_text(request.text)
+        return voicevox_server_pb2.SetVoicevoxReply(success=True)
 
     def InterruptVoicevox(
         self, request: voicevox_server_pb2.SetVoicevoxRequest(), context
     ):
         while not self.text_to_voice.queue.empty():
             self.text_to_voice.queue.get()
+        return voicevox_server_pb2.InterruptVoicevoxReply(success=True)
 
     def SetVoicePlayFlg(
         self, request: voicevox_server_pb2.SetVoicevoxRequest(), context
     ):
         self.text_to_voice.play_flg = request.flg
+        return voicevox_server_pb2.SetVoicePlayFlgReply(success=True)
+
 
 
 def main() -> None:
@@ -61,7 +65,7 @@ def main() -> None:
         text_to_voice = TextToVoiceVoxWeb(apikey=VOICEVOX_APIKEY)
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    voicevox_server_pb2_grpc.add_GptServerServiceServicer_to_server(
+    voicevox_server_pb2_grpc.add_VoicevoxServerServiceServicer_to_server(
         VoicevoxServer(text_to_voice), server
     )
     port = "10002"

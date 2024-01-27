@@ -13,6 +13,7 @@ google-cloud-speech==2.20.0
 googleapis-common-protos==1.59.1
 -e gpt-stream-json-parser/
 grpcio==1.56.0
+grpcio-tools
 grpcio-status==1.56.0
 idna==3.4
 multidict==6.0.4
