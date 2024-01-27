@@ -6,6 +6,7 @@ import openai
 import grpc
 from concurrent import futures
 from lib.chat import chat_stream
+from lib.chat_akari import ChatStreamAkari
 from lib.conf import OPENAI_APIKEY
 import time
 import copy
@@ -31,6 +32,7 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
         self.stub = voicevox_server_pb2_grpc.VoicevoxServerServiceStub(channel)
 
     def SetGpt(self, request: gpt_server_pb2.SetGptRequest(), context):
+        chat_stream_akari = ChatStreamAkari()
         response = ""
         if len(request.text) < 2:
             return gpt_server_pb2.SetGptReply(success=True)
@@ -45,12 +47,17 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
         )
         if request.is_finish:
             self.messages = copy.deepcopy(tmp_messages)
-        for sentence in chat_stream(tmp_messages):
-            self.stub.SetVoicevox(voicevox_server_pb2.SetVoicevoxRequest(text=sentence))
-            response += sentence
-            print(response)
         if request.is_finish:
-            self.messages.append({"role": "assistant", "content": response})
+            for sentence in chat_stream(tmp_messages):
+                self.stub.SetVoicevox(voicevox_server_pb2.SetVoicevoxRequest(text=sentence))
+                self.messages.append({"role": "assistant", "content": response})
+                response += sentence
+                print(response)
+        else:
+            for sentence in chat_stream_akari.chat(tmp_messages):
+                self.stub.SetVoicevox(voicevox_server_pb2.SetVoicevoxRequest(text=sentence))
+                response += sentence
+                print(response)
         print("")
         return gpt_server_pb2.SetGptReply(success=True)
 

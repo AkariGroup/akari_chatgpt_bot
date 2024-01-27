@@ -8,7 +8,7 @@ import grpc
 import openai
 from gpt_stream_parser import force_parse_json
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "fsc"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
 import motion_server_pb2
 import motion_server_pb2_grpc
 
@@ -16,7 +16,7 @@ last_char = ["、", "。", ".", "！", "？", "\n"]
 
 
 class ChatStreamAkari:
-    def __init__(self, host: str, port: str) -> None:
+    def __init__(self, host: str="localhost", port: str="50055") -> None:
         channel = grpc.insecure_channel(host + ":" + port)
         self.stub = motion_server_pb2_grpc.MotionServerServiceStub(channel)
 
@@ -28,6 +28,7 @@ class ChatStreamAkari:
                 )
             )
         except BaseException:
+            print("send error!")
             pass
 
     def chat(self, messages: list) -> Generator[str, None, None]:
