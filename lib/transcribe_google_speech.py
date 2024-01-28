@@ -26,6 +26,11 @@ import voicevox_server_pb2_grpc
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
 
+gpt_channel = grpc.insecure_channel("localhost:10001")
+gpt_stub = gpt_server_pb2_grpc.GptServerServiceStub(gpt_channel)
+voicevox_channel = grpc.insecure_channel("localhost:10002")
+voicevox_stub = voicevox_server_pb2_grpc.VoicevoxServerServiceStub(voicevox_channel)
+
 
 class MicrophoneStream(object):
     def __init__(
@@ -89,8 +94,8 @@ class MicrophoneStream(object):
     def _fill_buffer(
         self, in_data: bytes, frame_count: int, time_info: Any, status_flags: Any
     ) -> Union[None, Any]:
-        voicevox_channel = grpc.insecure_channel("localhost:10002")
-        voicevox_stub = voicevox_server_pb2_grpc.VoicevoxServerServiceStub(voicevox_channel)
+        gpt_channel = grpc.insecure_channel("localhost:10001")
+        gpt_stub = gpt_server_pb2_grpc.GptServerServiceStub(gpt_channel)
         if self.is_start_callback:
             self._buff.put(in_data)
             in_data2 = struct.unpack(f"{len(in_data) / 2:.0f}h", in_data)
@@ -106,6 +111,10 @@ class MicrophoneStream(object):
                     voicevox_stub.SetVoicePlayFlg(
                         voicevox_server_pb2.SetVoicePlayFlgRequest(flg=True)
                     )
+                except BaseException:
+                    pass
+                try:
+                    gpt_stub.SendMotion(gpt_server_pb2.SendMotionRequest())
                 except BaseException:
                     pass
                 return None, pyaudio.paComplete
@@ -160,7 +169,7 @@ def get_db_thresh() -> float:
         audio_data = np.frombuffer(b"".join(frames), dtype=np.int16)
         print(audio_data)
         rms = math.sqrt(np.square(audio_data).mean())
-        power = 20 * math.log10(rms) if rms > 0.0 else -math.inf   # RMS to db
+        power = 20 * math.log10(rms) if rms > 0.0 else -math.inf  # RMS to db
         print(f"Sound Levels: {power:.3f}db")
         stream.stop_stream()
         stream.close()
@@ -191,11 +200,7 @@ def listen_print_loop(responses: Any) -> str:
 
 
 def listen_publisher(responses: Any) -> str:
-    gpt_channel = grpc.insecure_channel("localhost:10001")
-    gpt_stub = gpt_server_pb2_grpc.GptServerServiceStub(gpt_channel)
-    voicevox_channel = grpc.insecure_channel("localhost:10002")
-    voicevox_stub = voicevox_server_pb2_grpc.VoicevoxServerServiceStub(voicevox_channel)
-    PROGRESS_REPORT_LENGTH = 10
+    PROGRESS_REPORT_LENGTH = 7
     is_progress_report = False
     num_chars_printed = 0
     transcript = ""
@@ -207,9 +212,7 @@ def listen_publisher(responses: Any) -> str:
     except BaseException:
         pass
     try:
-        voicevox_stub.InterruptVoicevox(
-            voicevox_server_pb2.InterruptVoicevoxRequest()
-        )
+        voicevox_stub.InterruptVoicevox(voicevox_server_pb2.InterruptVoicevoxRequest())
     except BaseException:
         pass
     for response in responses:
@@ -255,4 +258,3 @@ def listen_publisher(responses: Any) -> str:
     except BaseException:
         pass
     return transcript + overwrite_chars
-

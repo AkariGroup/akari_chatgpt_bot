@@ -16,9 +16,17 @@ message InterruptGptReply {
   bool success =1;
 }
 
+message SendMotionRequest {}
+
+message SendMotionReply {
+  bool success =1;
+}
+
 service GptServerService {
     rpc SetGpt(SetGptRequest)
         returns (SetGptReply);
     rpc InterruptGpt(InterruptGptRequest)
         returns (InterruptGptReply);
+    rpc SendMotion(SendMotionRequest)
+        returns (SendMotionReply);
 }

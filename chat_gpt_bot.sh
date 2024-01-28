@@ -12,7 +12,7 @@ echo ${ip}
 (
 cd ~/akari_motion_server
  . venv/bin/activate
- gnome-terminal --title="motion_server"-- bash -ic "python3 server.py"
+ gnome-terminal --title="motion_server" -- bash -ic "python3 server.py"
 )
 
 (
@@ -20,5 +20,5 @@ cd ~/akari_motion_server
 
  gnome-terminal --title="voicevox_server" -- bash -ic "python3 voicevox_server.py --voicevox_local --voicevox_host ${ip}"
  gnome-terminal --title="gpt_to_voice_publlisher" -- bash -ic "python3 gpt_to_voice_publlisher.py"
- gnome-terminal --title="speech_to_text_publisher" -- bash -ic "python3 speech_to_text_publisher.py"
+ gnome-terminal --title="speech_to_text_publisher" -- bash -ic "python3 speech_to_text_publisher.py --timeout 0.8"
 )

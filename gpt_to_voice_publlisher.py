@@ -6,7 +6,7 @@ import openai
 import grpc
 from concurrent import futures
 from lib.chat import chat_stream
-from lib.chat_akari import ChatStreamAkari
+from lib.chat_akari_server import ChatStreamAkariServer
 from lib.conf import OPENAI_APIKEY
 import time
 import copy
@@ -30,9 +30,9 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
         ]
         channel = grpc.insecure_channel("localhost:10002")
         self.stub = voicevox_server_pb2_grpc.VoicevoxServerServiceStub(channel)
+        self.chat_stream_akari_server = ChatStreamAkariServer()
 
     def SetGpt(self, request: gpt_server_pb2.SetGptRequest(), context):
-        chat_stream_akari = ChatStreamAkari()
         response = ""
         if len(request.text) < 2:
             return gpt_server_pb2.SetGptReply(success=True)
@@ -49,17 +49,25 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
             self.messages = copy.deepcopy(tmp_messages)
         if request.is_finish:
             for sentence in chat_stream(tmp_messages):
-                self.stub.SetVoicevox(voicevox_server_pb2.SetVoicevoxRequest(text=sentence))
+                self.stub.SetVoicevox(
+                    voicevox_server_pb2.SetVoicevoxRequest(text=sentence)
+                )
                 self.messages.append({"role": "assistant", "content": response})
                 response += sentence
                 print(response)
         else:
-            for sentence in chat_stream_akari.chat(tmp_messages):
-                self.stub.SetVoicevox(voicevox_server_pb2.SetVoicevoxRequest(text=sentence))
+            for sentence in self.chat_stream_akari_server.chat(tmp_messages):
+                self.stub.SetVoicevox(
+                    voicevox_server_pb2.SetVoicevoxRequest(text=sentence)
+                )
                 response += sentence
                 print(response)
         print("")
         return gpt_server_pb2.SetGptReply(success=True)
+
+    def SendMotion(self, request: gpt_server_pb2.SendMotionRequest(), context):
+        success = self.chat_stream_akari_server.send_motion()
+        return gpt_server_pb2.SendMotionReply(success=success)
 
 
 def main() -> None:
