@@ -39,7 +39,7 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
         if request.is_finish:
             content = f"{request.text}。一文で簡潔に答えてください。"
         else:
-            content = f"[{request.text}」という文に対して、以下の「」内からどれか一つを選択して、それだけ回答してください。\n「えーと。」「はい。」「う〜ん。」「いいえ。」「はい、そうですね。」「そうですね…。」「いいえ、違います。」「こんにちは。」「ありがとうございます。」「なるほど。」「まあ。」"
+            content = f"{request.text}"
         tmp_messages = copy.deepcopy(self.messages)
         tmp_messages.append(
             # {'role': 'user', 'content': text + attention}

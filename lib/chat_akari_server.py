@@ -17,7 +17,7 @@ last_char = ["、", "。", ".", "！", "？", "\n"]
 
 
 class ChatStreamAkariServer(ChatStreamAkari):
-    def __init__(self, host: str="localhost", port: str="50055") -> None:
+    def __init__(self, host: str = "localhost", port: str = "50055") -> None:
         channel = grpc.insecure_channel(host + ":" + port)
         self.stub = motion_server_pb2_grpc.MotionServerServiceStub(channel)
         self.cur_motion_name = ""
@@ -25,9 +25,7 @@ class ChatStreamAkariServer(ChatStreamAkari):
     def send_motion(self) -> bool:
         print(f"send motion {self.cur_motion_name}")
         if self.cur_motion_name == "":
-            self.stub.ClearMotion(
-                motion_server_pb2.ClearMotionRequest()
-            )
+            self.stub.ClearMotion(motion_server_pb2.ClearMotionRequest())
             return False
         try:
             self.stub.SetMotion(
@@ -43,14 +41,14 @@ class ChatStreamAkariServer(ChatStreamAkari):
 
     def chat(self, messages: list) -> Generator[str, None, None]:
         result = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo-0613",
+            model="gpt-4-turbo-preview",
             messages=messages,
             n=1,
             temperature=0.7,
             functions=[
                 {
                     "name": "reply_with_motion_",
-                    "description": "ユーザのメッセージに対する回答と、回答の感情に近い動作を一つ選択します",
+                    "description": "ユーザのメッセージに対する回答と、回答の感情に近い動作を一つ選択します。回答は以下の「」内から必ずどれか一つだけを選択して、それだけ回答してください。\n「えーと。」「はい。」「う〜ん。」「いいえ。」「はい、そうですね。」「そうですね…。」「いいえ、違います。」「こんにちは。」「ありがとうございます。」「なるほど。」「まあ。」",
                     "parameters": {
                         "type": "object",
                         "properties": {

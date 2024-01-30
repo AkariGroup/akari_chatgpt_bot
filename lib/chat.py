@@ -16,7 +16,7 @@ def chat(messages: list) -> Any:
 
 def chat_stream(messages: list, temperature: float = 0.7) -> Generator[str, None, None]:
     result = openai.ChatCompletion.create(
-        model="gpt-4",
+        model="gpt-4-turbo-preview",
         messages=messages,
         max_tokens=1024,
         n=1,

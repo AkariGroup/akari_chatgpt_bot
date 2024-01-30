@@ -33,7 +33,7 @@ class ChatStreamAkari:
 
     def chat(self, messages: list) -> Generator[str, None, None]:
         result = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo-0613",
+            model="gpt-4-turbo-preview",
             messages=messages,
             n=1,
             temperature=0.7,
