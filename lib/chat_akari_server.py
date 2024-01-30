@@ -41,14 +41,14 @@ class ChatStreamAkariServer(ChatStreamAkari):
 
     def chat(self, messages: list) -> Generator[str, None, None]:
         result = openai.ChatCompletion.create(
-            model="gpt-4-turbo-preview",
+            model="gpt-4",
             messages=messages,
             n=1,
             temperature=0.7,
             functions=[
                 {
                     "name": "reply_with_motion_",
-                    "description": "ユーザのメッセージに対する回答と、回答の感情に近い動作を一つ選択します。回答は以下の「」内から必ずどれか一つだけを選択して、それだけ回答してください。\n「えーと。」「はい。」「う〜ん。」「いいえ。」「はい、そうですね。」「そうですね…。」「いいえ、違います。」「こんにちは。」「ありがとうございます。」「なるほど。」「まあ。」",
+                    "description": "ユーザのメッセージに対する回答と、回答の感情に近い動作を一つ選択します。",
                     "parameters": {
                         "type": "object",
                         "properties": {

@@ -39,7 +39,7 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
         if request.is_finish:
             content = f"{request.text}。一文で簡潔に答えてください。"
         else:
-            content = f"{request.text}"
+            content = f"「{request.text}」という文に対して、以下の「」内からどれか一つを選択して、それだけ回答してください。\n「えーと。」「はい。」「う〜ん。」「いいえ。」「はい、そうですね。」「そうですね…。」「いいえ、違います。」「こんにちは。」「ありがとうございます。」「なるほど。」「まあ。」"
         tmp_messages = copy.deepcopy(self.messages)
         tmp_messages.append(
             # {'role': 'user', 'content': text + attention}
@@ -49,6 +49,7 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
             self.messages = copy.deepcopy(tmp_messages)
         if request.is_finish:
             for sentence in chat_stream(tmp_messages):
+                print(sentence)
                 self.stub.SetVoicevox(
                     voicevox_server_pb2.SetVoicevoxRequest(text=sentence)
                 )
@@ -57,6 +58,7 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
                 print(response)
         else:
             for sentence in self.chat_stream_akari_server.chat(tmp_messages):
+                print(sentence)
                 self.stub.SetVoicevox(
                     voicevox_server_pb2.SetVoicevoxRequest(text=sentence)
                 )
