@@ -7,6 +7,7 @@ from typing import Generator
 import grpc
 import openai
 from gpt_stream_parser import force_parse_json
+from .chat_akari import ChatStreamAkari
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
 import motion_server_pb2
@@ -15,21 +16,30 @@ import motion_server_pb2_grpc
 last_char = ["、", "。", ".", "！", "？", "\n"]
 
 
-class ChatStreamAkari:
+class ChatStreamAkariServer(ChatStreamAkari):
     def __init__(self, host: str="localhost", port: str="50055") -> None:
         channel = grpc.insecure_channel(host + ":" + port)
         self.stub = motion_server_pb2_grpc.MotionServerServiceStub(channel)
+        self.cur_motion_name = ""
 
-    def send_motion(self, name: str) -> None:
+    def send_motion(self) -> bool:
+        print(f"send motion {self.cur_motion_name}")
+        if self.cur_motion_name == "":
+            self.stub.ClearMotion(
+                motion_server_pb2.ClearMotionRequest()
+            )
+            return False
         try:
             self.stub.SetMotion(
                 motion_server_pb2.SetMotionRequest(
-                    name=name, priority=3, repeat=False, clear=True
+                    name=self.cur_motion_name, priority=3, repeat=False, clear=True
                 )
             )
+            self.cur_motion_name = ""
         except BaseException:
             print("send error!")
-            pass
+            return False
+        return True
 
     def chat(self, messages: list) -> Generator[str, None, None]:
         result = openai.ChatCompletion.create(
@@ -80,6 +90,7 @@ class ChatStreamAkari:
             if "function_call" in delta:
                 if "arguments" in delta.function_call:
                     fullResponse += chunk.choices[0].delta.function_call.arguments
+                    print(fullResponse)
                     try:
                         data_json = json.loads(fullResponse)
                         found_last_char = False
@@ -114,10 +125,7 @@ class ChatStreamAkari:
                                 elif motion == "ぼんやりする":
                                     key = "lookup"
                                 print("motion: " + motion)
-                                motion_thread = threading.Thread(
-                                    target=self.send_motion, args=(key,)
-                                )
-                                motion_thread.start()
+                                self.cur_motion_name = key
                             RealTimeResponse = str(data_json["talk"])
                             for char in last_char:
                                 pos = RealTimeResponse[sentence_index:].find(char)

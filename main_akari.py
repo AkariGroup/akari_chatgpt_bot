@@ -12,7 +12,7 @@ from lib.transcribe_google_speech import (
     listen_print_loop,
 )
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "lib/fsc"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
 import motion_server_pb2
 import motion_server_pb2_grpc
 

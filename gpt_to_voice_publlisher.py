@@ -6,14 +6,12 @@ import openai
 import grpc
 from concurrent import futures
 from lib.chat import chat_stream
+from lib.chat_akari_server import ChatStreamAkariServer
 from lib.conf import OPENAI_APIKEY
-from lib.voicevox import TextToVoiceVox
 import time
 import copy
 
 openai.api_key = OPENAI_APIKEY
-host: str = ""
-port: str = ""
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
 import gpt_server_pb2
@@ -30,16 +28,18 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
                 "content": "チャットボットとしてロールプレイします。あかりという名前のカメラロボットとして振る舞ってください。正確はポジティブで元気です。",
             },
         ]
+        channel = grpc.insecure_channel("localhost:10002")
+        self.stub = voicevox_server_pb2_grpc.VoicevoxServerServiceStub(channel)
+        self.chat_stream_akari_server = ChatStreamAkariServer()
 
     def SetGpt(self, request: gpt_server_pb2.SetGptRequest(), context):
         response = ""
-        print(request.text)
         if len(request.text) < 2:
             return gpt_server_pb2.SetGptReply(success=True)
         if request.is_finish:
-            content = f"{request.text}。普通に短文で簡潔に答えてください。"
+            content = f"{request.text}。一文で簡潔に答えてください。"
         else:
-            content = f"[{request.text}」という文に対して、以下の「」内からどれか一つを選択して回答してください。\n「えーと。」「はい、そうですね。」「そうですね…。」「いいえ、違います。」「こんにちは。」「ありがとうございます。」「よろしくおねがいします。」"
+            content = f"[{request.text}」という文に対して、以下の「」内からどれか一つを選択して、それだけ回答してください。\n「えーと。」「はい。」「う〜ん。」「いいえ。」「はい、そうですね。」「そうですね…。」「いいえ、違います。」「こんにちは。」「ありがとうございます。」「なるほど。」「まあ。」"
         tmp_messages = copy.deepcopy(self.messages)
         tmp_messages.append(
             # {'role': 'user', 'content': text + attention}
@@ -47,37 +47,32 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
         )
         if request.is_finish:
             self.messages = copy.deepcopy(tmp_messages)
-        print(self.messages)
-        for sentence in chat_stream(tmp_messages):
-            # if voicevox:
-            #    text_to_voice.put_text(sentence)
-            response += sentence
-        print(sentence, end="")
-        print("")
         if request.is_finish:
-            self.messages.append({"role": "assistant", "content": response})
+            for sentence in chat_stream(tmp_messages):
+                self.stub.SetVoicevox(
+                    voicevox_server_pb2.SetVoicevoxRequest(text=sentence)
+                )
+                self.messages.append({"role": "assistant", "content": response})
+                response += sentence
+                print(response)
+        else:
+            for sentence in self.chat_stream_akari_server.chat(tmp_messages):
+                self.stub.SetVoicevox(
+                    voicevox_server_pb2.SetVoicevoxRequest(text=sentence)
+                )
+                response += sentence
+                print(response)
+        print("")
         return gpt_server_pb2.SetGptReply(success=True)
+
+    def SendMotion(self, request: gpt_server_pb2.SendMotionRequest(), context):
+        success = self.chat_stream_akari_server.send_motion()
+        return gpt_server_pb2.SendMotionReply(success=success)
 
 
 def main() -> None:
-    global host
-    global port
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--voicevox_host",
-        type=str,
-        default="127.0.0.1",
-        help="VoiceVox server host",
-    )
-    parser.add_argument(
-        "--voicevox_port",
-        type=str,
-        default="50021",
-        help="VoiceVox server port",
-    )
     args = parser.parse_args()
-    host = args.voicevox_host
-    port = args.voicevox_port
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     gpt_server_pb2_grpc.add_GptServerServiceServicer_to_server(GptServer(), server)
     port = "10001"
