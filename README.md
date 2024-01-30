@@ -75,16 +75,9 @@ chatGPTのサンプル
 AKARIでVOICEVOXのローカル版を使う場合、AKARI本体内のCPUでVOICEVOXを実行すると処理時間がかかるので、リモートPC上(特にGPU版)でVOICVOXを実行することを推奨する。
 その場合下記を参考にOSS版を用いる。  
 
-(GPUを使う場合)cuda,cudnnをインストール  
-`git clone https://github.com/VOICEVOX/voicevox_engine.git`  
-`git clone https://github.com/VOICEVOX/voicevox_core`  
-`sudo apt install python3.11 python3.11-dev python3.11-venv`  
-`cd voicevox_engine`  
-`python3.11 -m venv venv`  
-`. venv/bin/activate`  
-`pip install -r requirements.txt`  
-`export LD_LIBRARY_PATH="voicevox_coreへのパス":$LD_LIBRARY_PATH`  
-`python3 run.py --use_gpu --voicelib_dir "voicevox_coreへのパス" --runtime_dir "voicevox_coreへのパス" --host "VOICEVOXを起動するPC自身のIPアドレス"`
+(GPUを使う場合)
+`docker pull voicevox/voicevox_engine:nvidia-ubuntu20.04-latest`
+`docker run --rm --gpus all -p '{VOICEVOXを起動するPC自身のIPアドレス}:50021:50021' voicevox/voicevox_engine:nvidia-ubuntu20.04-latest`
 
 上記でVOICEVOXを起動した後、AKARI上で"--voicevox_host"にこのPCのIPアドレスを指定する。
 
