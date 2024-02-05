@@ -5,7 +5,6 @@ from lib.chat import chat_stream
 from lib.conf import OPENAI_APIKEY
 from lib.voicevox import TextToVoiceVox
 
-openai.api_key = OPENAI_APIKEY
 
 voicevox = False  # 音声合成を使う場合Trueに変更
 

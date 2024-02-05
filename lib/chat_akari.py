@@ -15,8 +15,8 @@ import motion_server_pb2_grpc
 last_char = ["、", "。", ".", "！", "？", "\n"]
 
 
-class ChatStreamAkari:
-    def __init__(self, host: str="localhost", port: str="50055") -> None:
+class ChatStreamAkari(object):
+    def __init__(self, host: str = "localhost", port: str = "50055") -> None:
         channel = grpc.insecure_channel(host + ":" + port)
         self.stub = motion_server_pb2_grpc.MotionServerServiceStub(channel)
 
@@ -32,7 +32,7 @@ class ChatStreamAkari:
             pass
 
     def chat(self, messages: list) -> Generator[str, None, None]:
-        result = openai.ChatCompletion.create(
+        result = openai.chat.completions.create(
             model="gpt-4-turbo-preview",
             messages=messages,
             n=1,
@@ -77,8 +77,8 @@ class ChatStreamAkari:
         get_motion = False
         for chunk in result:
             delta = chunk.choices[0].delta
-            if "function_call" in delta:
-                if "arguments" in delta.function_call:
+            if delta.function_call is not None:
+                if delta.function_call.arguments is not None:
                     fullResponse += chunk.choices[0].delta.function_call.arguments
                     try:
                         data_json = json.loads(fullResponse)

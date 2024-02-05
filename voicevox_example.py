@@ -25,16 +25,19 @@ def main() -> None:
         host = args.voicevox_host
         port = args.voicevox_port
         text_to_voice = TextToVoiceVox(host, port)
+        print(f"voicevox local pc ver.")
     else:
         from lib.conf import VOICEVOX_APIKEY
         from lib.voicevox import TextToVoiceVoxWeb
 
         text_to_voice = TextToVoiceVoxWeb(apikey=VOICEVOX_APIKEY)
+        print(f"voicevox web ver.")
 
     print("発話させたい文章をキーボード入力後、Enterを押してください。")
     while True:
         text = input("Input: ")
         text_to_voice.put_text(text)
+        print("")
 
 
 if __name__ == "__main__":

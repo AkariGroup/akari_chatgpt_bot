@@ -16,20 +16,9 @@ from six.moves import queue  # type: ignore
 
 from .err_handler import ignoreStderr
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
-import gpt_server_pb2
-import gpt_server_pb2_grpc
-import voicevox_server_pb2
-import voicevox_server_pb2_grpc
-
 # Audio recording parameters
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
-
-gpt_channel = grpc.insecure_channel("localhost:10001")
-gpt_stub = gpt_server_pb2_grpc.GptServerServiceStub(gpt_channel)
-voicevox_channel = grpc.insecure_channel("localhost:10002")
-voicevox_stub = voicevox_server_pb2_grpc.VoicevoxServerServiceStub(voicevox_channel)
 
 
 class MicrophoneStream(object):
@@ -94,8 +83,6 @@ class MicrophoneStream(object):
     def _fill_buffer(
         self, in_data: bytes, frame_count: int, time_info: Any, status_flags: Any
     ) -> Union[None, Any]:
-        gpt_channel = grpc.insecure_channel("localhost:10001")
-        gpt_stub = gpt_server_pb2_grpc.GptServerServiceStub(gpt_channel)
         if self.is_start_callback:
             self._buff.put(in_data)
             in_data2 = struct.unpack(f"{len(in_data) / 2:.0f}h", in_data)
@@ -107,17 +94,6 @@ class MicrophoneStream(object):
                 self.start_time = time.time()
             if self.is_start and (time.time() - self.start_time >= self.timeout_thresh):
                 self.closed = True
-                try:
-                    voicevox_stub.SetVoicePlayFlg(
-                        voicevox_server_pb2.SetVoicePlayFlgRequest(flg=True)
-                    )
-                except BaseException:
-                    pass
-                try:
-                    gpt_stub.SendMotion(gpt_server_pb2.SendMotionRequest())
-                except BaseException:
-                    pass
-                return None, pyaudio.paComplete
         return None, pyaudio.paContinue
 
     def generator(self) -> Union[None, Generator[Any, None, None]]:
@@ -196,65 +172,4 @@ def listen_print_loop(responses: Any) -> str:
         else:
             print(transcript + overwrite_chars)
             break
-    return transcript + overwrite_chars
-
-
-def listen_publisher(responses: Any) -> str:
-    PROGRESS_REPORT_LENGTH = 7
-    is_progress_report = False
-    num_chars_printed = 0
-    transcript = ""
-    overwrite_chars = ""
-    try:
-        voicevox_stub.SetVoicePlayFlg(
-            voicevox_server_pb2.SetVoicePlayFlgRequest(flg=False)
-        )
-    except BaseException:
-        pass
-    try:
-        voicevox_stub.InterruptVoicevox(voicevox_server_pb2.InterruptVoicevoxRequest())
-    except BaseException:
-        pass
-    for response in responses:
-        if not response.results:
-            continue
-        result = response.results[0]
-        if not result.alternatives:
-            continue
-        transcript = result.alternatives[0].transcript
-        overwrite_chars = " " * (num_chars_printed - len(transcript))
-        if not result.is_final:
-            sys.stdout.write(transcript + overwrite_chars + "\r")
-            sys.stdout.flush()
-            num_chars_printed = len(transcript)
-            if not is_progress_report and num_chars_printed > PROGRESS_REPORT_LENGTH:
-                try:
-                    gpt_stub.SetGpt(
-                        gpt_server_pb2.SetGptRequest(
-                            text=transcript + overwrite_chars, is_finish=False
-                        )
-                    )
-                except BaseException:
-                    pass
-                is_progress_report = True
-        else:
-            print(transcript + overwrite_chars)
-            if not is_progress_report and num_chars_printed > PROGRESS_REPORT_LENGTH:
-                try:
-                    gpt_stub.SetGpt(
-                        gpt_server_pb2.SetGptRequest(
-                            text=transcript + overwrite_chars, is_finish=False
-                        )
-                    )
-                except BaseException:
-                    pass
-            break
-    try:
-        gpt_stub.SetGpt(
-            gpt_server_pb2.SetGptRequest(
-                text=transcript + overwrite_chars, is_finish=True
-            )
-        )
-    except BaseException:
-        pass
     return transcript + overwrite_chars

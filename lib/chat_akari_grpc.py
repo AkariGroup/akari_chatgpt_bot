@@ -1,12 +1,12 @@
 import json
 import os
 import sys
-import threading
 from typing import Generator
 
 import grpc
 import openai
 from gpt_stream_parser import force_parse_json
+
 from .chat_akari import ChatStreamAkari
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
@@ -16,35 +16,70 @@ import motion_server_pb2_grpc
 last_char = ["、", "。", ".", "！", "？", "\n"]
 
 
-class ChatStreamAkariServer(ChatStreamAkari):
-    def __init__(self, host: str = "localhost", port: str = "50055") -> None:
-        channel = grpc.insecure_channel(host + ":" + port)
-        self.stub = motion_server_pb2_grpc.MotionServerServiceStub(channel)
+class ChatStreamAkariGrpc(ChatStreamAkari):
+    def __init__(self, motion_host: str = "127.0.0.1", motion_port: str = "50055") -> None:
+        motion_channel = grpc.insecure_channel(motion_host + ":" + motion_port)
+        self.motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(motion_channel)
         self.cur_motion_name = ""
 
     def send_motion(self) -> bool:
         print(f"send motion {self.cur_motion_name}")
         if self.cur_motion_name == "":
-            self.stub.ClearMotion(motion_server_pb2.ClearMotionRequest())
+            self.motion_stub.ClearMotion(motion_server_pb2.ClearMotionRequest())
             return False
         try:
-            self.stub.SetMotion(
+            self.motion_stub.SetMotion(
                 motion_server_pb2.SetMotionRequest(
                     name=self.cur_motion_name, priority=3, repeat=False, clear=True
                 )
             )
             self.cur_motion_name = ""
         except BaseException:
-            print("send error!")
+            print("setMotion error!")
             return False
         return True
 
-    def chat(self, messages: list) -> Generator[str, None, None]:
-        result = openai.ChatCompletion.create(
+    def chat(
+        self, messages: list, temperature: float = 0.7
+    ) -> Generator[str, None, None]:
+        result = openai.chat.completions.create(
+            model="gpt-3.5-turbo-0613",
+            messages=messages,
+            max_tokens=1024,
+            n=1,
+            stream=True,
+            temperature=temperature,
+            stop=None,
+        )
+        fullResponse = ""
+        RealTimeResponce = ""
+        for chunk in result:
+            text = chunk.choices[0].delta.content
+            if text is None:
+                pass
+            else:
+                fullResponse += text
+                RealTimeResponce += text
+
+                for index, char in enumerate(RealTimeResponce):
+                    if char in last_char:
+                        pos = index + 2  # 区切り位置
+                        sentence = RealTimeResponce[:pos]  # 1文の区切り
+                        RealTimeResponce = RealTimeResponce[pos:]  # 残りの部分
+                        # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
+                        yield sentence
+                        break
+                    else:
+                        pass
+
+    def chat_and_motion(
+        self, messages: list, temperature: float = 0.7
+    ) -> Generator[str, None, None]:
+        result = openai.chat.completions.create(
             model="gpt-4",
             messages=messages,
             n=1,
-            temperature=0.7,
+            temperature=temperature,
             functions=[
                 {
                     "name": "reply_with_motion_",
@@ -85,10 +120,9 @@ class ChatStreamAkariServer(ChatStreamAkari):
         get_motion = False
         for chunk in result:
             delta = chunk.choices[0].delta
-            if "function_call" in delta:
-                if "arguments" in delta.function_call:
+            if delta.function_call is not None:
+                if delta.function_call.arguments is not None:
                     fullResponse += chunk.choices[0].delta.function_call.arguments
-                    print(fullResponse)
                     try:
                         data_json = json.loads(fullResponse)
                         found_last_char = False

@@ -28,17 +28,16 @@ class TextToVoiceVox(object):
         while True:
             if self.queue.qsize() > 0 and self.play_flg:
                 text = self.queue.get()
-                print(text)
-                self.text_to_voice(text, self.host, self.port)
+                self.text_to_voice(text)
 
-    def put_text(self, text: str) -> None:
+    def put_text(self, text: str, play_now: bool = True) -> None:
+        if play_now:
+            self.play_flg = True
         self.queue.put(text)
 
     def post_audio_query(
         self,
         text: str,
-        host: str = "127.0.0.1",
-        port: str = "50021",
         speaker: int = 8,
         speed_scale: float = 1.0,
     ) -> Any:
@@ -49,17 +48,18 @@ class TextToVoiceVox(object):
             "pre_phoneme_length": 0,
             "post_phoneme_length": 0,
         }
-        address = "http://" + host + ":" + port + "/audio_query"
+        address = "http://" + self.host + ":" + self.port + "/audio_query"
         res = requests.post(address, params=params)
         return res.json()
 
     def post_synthesis(
-        self, audio_query_response: dict, host: str = "127.0.0.1", port: str = "50021"
+        self,
+        audio_query_response: dict,
     ) -> bytes:
         params = {"speaker": 8}
         headers = {"content-type": "application/json"}
         audio_query_response_json = json.dumps(audio_query_response)
-        address = "http://" + host + ":" + port + "/synthesis"
+        address = "http://" + self.host + ":" + self.port + "/synthesis"
         res = requests.post(
             address, data=audio_query_response_json, params=params, headers=headers
         )
@@ -84,9 +84,9 @@ class TextToVoiceVox(object):
             stream.close()
         p.terminate()
 
-    def text_to_voice(self, text: str, host: str = "127.0.0.1", port: str = "52001") -> None:
-        res = self.post_audio_query(text, host, port)
-        wav = self.post_synthesis(res, host, port)
+    def text_to_voice(self, text: str) -> None:
+        res = self.post_audio_query(text)
+        wav = self.post_synthesis(res)
         self.play_wav(wav)
 
 
@@ -102,10 +102,10 @@ class TextToVoiceVoxWeb(TextToVoiceVox):
         while True:
             if self.queue.qsize() > 0 and self.play_flg:
                 text = self.queue.get()
-                self.text_to_voice(apikey=self.apikey, text=text)
+                self.text_to_voice(text)
 
     def post_web(
-        apikey: str,
+        self,
         text: str,
         speaker: int = 8,
         pitch: int = 0,
@@ -114,7 +114,7 @@ class TextToVoiceVoxWeb(TextToVoiceVox):
     ) -> bytes:
         address = (
             "https://deprecatedapis.tts.quest/v2/voicevox/audio/?key="
-            + apikey
+            + self.apikey
             + "&speaker="
             + str(speaker)
             + "&pitch="
@@ -129,6 +129,6 @@ class TextToVoiceVoxWeb(TextToVoiceVox):
         res = requests.post(address)
         return res.content
 
-    def text_to_voice(self, apikey: str, text: str) -> None:
-        wav = self.post_web(apikey=apikey, text=text)
+    def text_to_voice(self, text: str) -> None:
+        wav = self.post_web(text=text)
         self.play_wav(wav)
