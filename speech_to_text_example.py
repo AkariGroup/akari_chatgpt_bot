@@ -1,10 +1,6 @@
 import argparse
 
-from lib.transcribe_google_speech import (
-    MicrophoneStream,
-    get_db_thresh,
-    listen_print_loop,
-)
+from lib.google_speech import MicrophoneStream, get_db_thresh, listen_print_loop
 
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms

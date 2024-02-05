@@ -1,0 +1,33 @@
+syntax = "proto3";
+package voicevox_server;
+
+message SetVoicevoxRequest {
+  string text = 1;
+}
+
+message SetVoicevoxReply {
+  bool success =1;
+}
+
+message InterruptVoicevoxRequest {}
+
+message InterruptVoicevoxReply {
+  bool success =1;
+}
+
+message SetVoicePlayFlgRequest {
+  bool flg = 1;
+}
+
+message SetVoicePlayFlgReply {
+  bool success =1;
+}
+
+service VoicevoxServerService {
+    rpc SetVoicevox(SetVoicevoxRequest)
+        returns (SetVoicevoxReply);
+    rpc InterruptVoicevox(InterruptVoicevoxRequest)
+        returns (InterruptVoicevoxReply);
+    rpc SetVoicePlayFlg(SetVoicePlayFlgRequest)
+        returns (SetVoicePlayFlgReply);
+}

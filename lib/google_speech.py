@@ -1,8 +1,10 @@
 from __future__ import division
 
 import math
-import struct
+import grpc
+import os
 import sys
+import struct
 import time
 from queue import Queue
 from typing import Any, Generator, Iterable, Union
@@ -87,11 +89,11 @@ class MicrophoneStream(object):
             rms = math.sqrt(np.square(in_data2).mean())
             power = 20 * math.log10(rms) if rms > 0.0 else -math.inf  # RMS to db
             if power > self.db_thresh:
-                self.start_time = time.time()
                 self.is_start = True
+            if power > self.db_thresh:
+                self.start_time = time.time()
             if self.is_start and (time.time() - self.start_time >= self.timeout_thresh):
                 self.closed = True
-                return None, pyaudio.paComplete
         return None, pyaudio.paContinue
 
     def generator(self) -> Union[None, Generator[Any, None, None]]:
@@ -141,6 +143,7 @@ def get_db_thresh() -> float:
             data = stream.read(CHUNK)
             frames.append(data)
         audio_data = np.frombuffer(b"".join(frames), dtype=np.int16)
+        print(audio_data)
         rms = math.sqrt(np.square(audio_data).mean())
         power = 20 * math.log10(rms) if rms > 0.0 else -math.inf  # RMS to db
         print(f"Sound Levels: {power:.3f}db")

@@ -1,0 +1,32 @@
+syntax = "proto3";
+package gpt_server;
+
+message SetGptRequest {
+  string text = 1;
+  bool is_finish =2;
+}
+
+message SetGptReply {
+  bool success =1;
+}
+
+message InterruptGptRequest {}
+
+message InterruptGptReply {
+  bool success =1;
+}
+
+message SendMotionRequest {}
+
+message SendMotionReply {
+  bool success =1;
+}
+
+service GptServerService {
+    rpc SetGpt(SetGptRequest)
+        returns (SetGptReply);
+    rpc InterruptGpt(InterruptGptRequest)
+        returns (InterruptGptReply);
+    rpc SendMotion(SendMotionRequest)
+        returns (SendMotionReply);
+}

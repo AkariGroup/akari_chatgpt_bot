@@ -6,14 +6,14 @@
 
 ## 動作確認済み環境
 AKARI上で動作確認済み。  
-`main_akari.py`以外はUbuntu22.04環境であれば使用可能です。  
+`chatbot_akari.py`以外はUbuntu22.04環境であれば使用可能です。  
 
 ## セットアップ
 1. submoduleの更新  
 `git submodule update --init`  
 
 1. ライブラリのインストール  
-`sudo apt install python3.10 python3.10-venv portaudio19-dev`  
+`sudo apt install python3.10 python3.10-venv portaudio19-dev gnome-terminal`  
 
 1. 仮想環境の作成  
 `python3 -m venv venv`  
@@ -41,6 +41,15 @@ AKARIなどで動かす場合は、下記の「VOICEVOXをOSS版で使いたい�
 `git clone https://github.com/AkariGroup/akari_motion_server`  
 akari_motion_server内のREADME.mdに沿ってセットアップする。  
 
+## VOICEVOXをOSS版で使いたい場合  
+AKARIでVOICEVOXのローカル版を使う場合、AKARI本体内のCPUでVOICEVOXを実行すると処理時間がかかるので、リモートPC上(特にGPU版)でVOICVOXを実行することを推奨する。
+その場合下記を参考にOSS版を用いる。  
+
+(GPUを使う場合)
+`docker pull voicevox/voicevox_engine:nvidia-ubuntu20.04-latest`
+`docker run --rm --gpus all -p '{VOICEVOXを起動するPC自身のIPアドレス}:50021:50021' voicevox/voicevox_engine:nvidia-ubuntu20.04-latest`
+
+上記でVOICEVOXを起動した後、AKARI上で"--voicevox_host"にこのPCのIPアドレスを指定する。
 
 ## 個別サンプルの実行
 
@@ -50,19 +59,20 @@ akari_motion_server内のREADME.mdに沿ってセットアップする。
 
 chatGPTのサンプル  
 キーボード入力した文章に対してchatGPTで返答を作成  
-`python3 chat_example.py`  
+`python3 chatgpt_example.py`  
 
 音声合成のサンプル  
 キーボード入力した文章を音声合成で発話  
 `python3 voicevox_example.py`  
 
 ## 音声対話の実行
+実行後、ターミナルでEnterキーを押し、マイクに話しかけると返答が返ってくる。
 
 音声対話  
-`python3 main.py`  
+`python3 chatbot.py`  
 
 音声対話+AKARIのモーション再生  
-`python3 main_akari.py`  
+`python3 chatbot_akari.py`  
 
 引数は下記が使用可能  
 - `-t`,`--timeout`: マイク入力がこの時間しきい値以下になったら音声入力を打ち切る。デフォルトは0.5[s]。短いと応答が早くなるが不安定になりやすい。  
@@ -71,22 +81,60 @@ chatGPTのサンプル
 - `--voicevox_host`: `--voicevox_local`を有効にした場合、ここで指定したhostのvoicevoxにリクエストを送信する。デフォルトは"127.0.0.1"なのでlocalhostのvoicevoxを利用する。  
 - `--voicevox_port`: `--voicevox_local`を有効にした場合、ここで指定したportのvoicevoxにリクエストを送信する。デフォルトは50021。  
 
-## VOICEVOXをOSS版で使いたい場合  
-AKARIでVOICEVOXのローカル版を使う場合、AKARI本体内のCPUでVOICEVOXを実行すると処理時間がかかるので、リモートPC上(特にGPU版)でVOICVOXを実行することを推奨する。
-その場合下記を参考にOSS版を用いる。  
+## 遅延なし音声対話botの実行
 
-(GPUを使う場合)cuda,cudnnをインストール  
-`git clone https://github.com/VOICEVOX/voicevox_engine.git`  
-`git clone https://github.com/VOICEVOX/voicevox_core`  
-`sudo apt install python3.11 python3.11-dev python3.11-venv`  
-`cd voicevox_engine`  
-`python3.11 -m venv venv`  
-`. venv/bin/activate`  
-`pip install -r requirements.txt`  
-`export LD_LIBRARY_PATH="voicevox_coreへのパス":$LD_LIBRARY_PATH`  
-`python3 run.py --use_gpu --voicelib_dir "voicevox_coreへのパス" --runtime_dir "voicevox_coreへのパス" --host "VOICEVOXを起動するPC自身のIPアドレス"`
+![遅延なし図解](jpg/faster_chatgpt_bot.jpg "遅延なし図解")
 
-上記でVOICEVOXを起動した後、AKARI上で"--voicevox_host"にこのPCのIPアドレスを指定する。
+### 起動方法
+
+1. 上記 **VOICEVOXをOSS版で使いたい場合** の手順を元に、別PCでVoicevoxを起動しておく。  
+
+2. (AKARIのモーション再生を行う場合)akari_motion_serverを起動する。  
+   起動方法は https://github.com/AkariGroup/akari_motion_server を参照。  
+
+3. `voicevox_server` を起動する。(Voicevoxへの送信サーバ)  
+`python3 voicevox_server.py`  
+
+引数は下記が使用可能  
+- `--voicevox_local`: このオプションをつけた場合、voicevoxのweb版ではなくローカル版を実行する。  
+- `--voicevox_host`: `--voicevox_local`を有効にした場合、ここで指定したhostのvoicevoxにリクエストを送信する。デフォルトは"127.0.0.1"なのでlocalhostのvoicevoxを利用する。  
+- `--voicevox_port`: `--voicevox_local`を有効にした場合、ここで指定したportのvoicevoxにリクエストを送信する。デフォルトは50021。  
+
+4. `gpt_publisher`を起動する。(ChatGPTへリクエストを送信し、受信結果をvoicevox_serverへ渡す。)  
+`python3 gpt_publisher.py`  
+
+引数は下記が使用可能  
+- `--ip`: gpt_serverのIPアドレス。デフォルトは"127.0.0.1"
+- `--port`: gpt_serverのポート。デフォルトは"10001"
+
+5. speech_publisher.pyを起動する。(Google音声認識の結果をgpt_publisherへ渡す。)  
+`python3 speech_publisher.py`  
+
+引数は下記が使用可能  
+- `--robot_ip`: akari_motion_serverのIPアドレス。デフォルトは"127.0.0.1"
+- `--robot_port`: akari_motion_serverのポート。デフォルトは"50055"
+- `--gpt_ip`: gpt_serverのIPアドレス。デフォルトは"127.0.0.1"
+- `--gpt_port`: gpt_serverのポート。デフォルトは"10001"
+- `--voicevox_ip`: voicevox_serverのIPアドレス。デフォルトは"127.0.0.1"
+- `--voicevox_port`: voicevox_serverのポート。デフォルトは"10002"
+- `-t`,`--timeout`: マイク入力がこの時間しきい値以下になったら音声入力を打ち切る。デフォルトは0.5[s]。短いと応答が早くなるが不安定になりやすい。  
+- `-p`,`--power_threshold`: マイク入力の音量しきい値。デフォルトは0で、0の場合アプリ起動時に周辺環境の音量を取得し、そこから音量しきい値を自動決定する。  
+
+6. `speech_publisher.py`のターミナルでEnterキーを押し、マイクに話しかけると返答が返ってくる。
+
+
+### スクリプトで一括起動する方法
+
+1. 上記 **VOICEVOXをOSS版で使いたい場合** の手順を元に、別PCでVoicevoxを起動しておく。  
+
+2. スクリプトを実行する。  
+
+`cd script`  
+`./faster_chatbot.sh {1.でVoicevoxを起動したPCのIPアドレス} {akari_motion_serverのパス}`  
+
+akari_motion_serverのパスを入力しなければ、akari_motion_serverは起動せず、モーションの再生は行われません(AKARI以外でも使えます)。  
+
+3. `speech_publisher.py`のターミナルでEnterキーを押し、マイクに話しかけると返答が返ってくる。
 
 ## その他
 音声合成では、デフォルトの音声として「VOICEVOX:春日部つむぎ」を使用しています。

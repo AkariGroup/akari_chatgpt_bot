@@ -6,7 +6,7 @@ last_char = ["、", "。", ".", "！", "？", "\n"]
 
 
 def chat(messages: list) -> Any:
-    result = openai.ChatCompletion.create(
+    result = openai.chat.completions.create(
         model="gpt-3.5-turbo-0613",
         messages=messages,
     )
@@ -15,7 +15,7 @@ def chat(messages: list) -> Any:
 
 
 def chat_stream(messages: list, temperature: float = 0.7) -> Generator[str, None, None]:
-    result = openai.ChatCompletion.create(
+    result = openai.chat.completions.create(
         model="gpt-3.5-turbo-0613",
         messages=messages,
         max_tokens=1024,
@@ -27,7 +27,7 @@ def chat_stream(messages: list, temperature: float = 0.7) -> Generator[str, None
     fullResponse = ""
     RealTimeResponce = ""
     for chunk in result:
-        text = chunk["choices"][0]["delta"].get("content")
+        text = chunk.choices[0].delta.content
         if text is None:
             pass
         else:
