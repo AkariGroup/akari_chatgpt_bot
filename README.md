@@ -1,6 +1,6 @@
 
 # akari_chatgpt_bot
-音声認識、文章生成、音声合成を使って対話するチャットボットアプリです。
+音声認識、文章生成、音声合成を使って対話するチャットボットアプリです。  
 
 ![概要図](jpg/akari_chatgpt_bot.jpg "概要図")
 
@@ -42,14 +42,14 @@ AKARIなどで動かす場合は、下記の「VOICEVOXをOSS版で使いたい�
 akari_motion_server内のREADME.mdに沿ってセットアップする。  
 
 ## VOICEVOXをOSS版で使いたい場合  
-AKARIでVOICEVOXのローカル版を使う場合、AKARI本体内のCPUでVOICEVOXを実行すると処理時間がかかるので、リモートPC上(特にGPU版)でVOICVOXを実行することを推奨する。
+AKARIでVOICEVOXのローカル版を使う場合、AKARI本体内のCPUでVOICEVOXを実行すると処理時間がかかるので、リモートPC上(特にGPU版)でVOICVOXを実行することを推奨する。  
 その場合下記を参考にOSS版を用いる。  
 
 (GPUを使う場合)
-`docker pull voicevox/voicevox_engine:nvidia-ubuntu20.04-latest`
-`docker run --rm --gpus all -p '{VOICEVOXを起動するPC自身のIPアドレス}:50021:50021' voicevox/voicevox_engine:nvidia-ubuntu20.04-latest`
+`docker pull voicevox/voicevox_engine:nvidia-ubuntu20.04-latest`  
+`docker run --rm --gpus all -p '{VOICEVOXを起動するPC自身のIPアドレス}:50021:50021' voicevox/voicevox_engine:nvidia-ubuntu20.04-latest`  
 
-上記でVOICEVOXを起動した後、AKARI上で"--voicevox_host"にこのPCのIPアドレスを指定する。
+上記でVOICEVOXを起動した後、AKARI上で"--voicevox_host"にこのPCのIPアドレスを指定する。  
 
 ## 個別サンプルの実行
 
@@ -66,7 +66,7 @@ chatGPTのサンプル
 `python3 voicevox_example.py`  
 
 ## 音声対話の実行
-実行後、ターミナルでEnterキーを押し、マイクに話しかけると返答が返ってくる。
+実行後、ターミナルでEnterキーを押し、マイクに話しかけると返答が返ってくる。  
 
 音声対話  
 `python3 chatbot.py`  
@@ -83,7 +83,17 @@ chatGPTのサンプル
 
 ## 遅延なし音声対話botの実行
 
+### 概要
+
 ![遅延なし図解](jpg/faster_chatgpt_bot.jpg "遅延なし図解")
+
+発話の最初の数文字を認識した時点で選択肢から返答を作成しておくことで、第一声を遅延なく返答する方法です。  
+
+### 全体図
+
+![構成図](jpg/faster_chatgpt_bot_system.jpg "構成図")
+
+Google音声認識、chatGPT、Voicevoxとのやり取りをする各アプリは個別に動作しており、各アプリ間はgrpcで通信しています。  
 
 ### 起動方法
 
@@ -93,32 +103,32 @@ chatGPTのサンプル
    起動方法は https://github.com/AkariGroup/akari_motion_server を参照。  
 
 3. `voicevox_server` を起動する。(Voicevoxへの送信サーバ)  
-`python3 voicevox_server.py`  
+   `python3 voicevox_server.py`  
 
-引数は下記が使用可能  
-- `--voicevox_local`: このオプションをつけた場合、voicevoxのweb版ではなくローカル版を実行する。  
-- `--voicevox_host`: `--voicevox_local`を有効にした場合、ここで指定したhostのvoicevoxにリクエストを送信する。デフォルトは"127.0.0.1"なのでlocalhostのvoicevoxを利用する。  
-- `--voicevox_port`: `--voicevox_local`を有効にした場合、ここで指定したportのvoicevoxにリクエストを送信する。デフォルトは50021。  
+   引数は下記が使用可能  
+   - `--voicevox_local`: このオプションをつけた場合、voicevoxのweb版ではなくローカル版を実行する。  
+   - `--voicevox_host`: `--voicevox_local`を有効にした場合、ここで指定したhostのvoicevoxにリクエストを送信する。デフォルトは"127.0.0.1"なのでlocalhostのvoicevoxを利用する。  
+   - `--voicevox_port`: `--voicevox_local`を有効にした場合、ここで指定したportのvoicevoxにリクエストを送信する。デフォルトは50021。  
 
 4. `gpt_publisher`を起動する。(ChatGPTへリクエストを送信し、受信結果をvoicevox_serverへ渡す。)  
-`python3 gpt_publisher.py`  
+   `python3 gpt_publisher.py`  
 
-引数は下記が使用可能  
-- `--ip`: gpt_serverのIPアドレス。デフォルトは"127.0.0.1"
-- `--port`: gpt_serverのポート。デフォルトは"10001"
+   引数は下記が使用可能  
+   - `--ip`: gpt_serverのIPアドレス。デフォルトは"127.0.0.1"
+   - `--port`: gpt_serverのポート。デフォルトは"10001"
 
 5. speech_publisher.pyを起動する。(Google音声認識の結果をgpt_publisherへ渡す。)  
-`python3 speech_publisher.py`  
+   `python3 speech_publisher.py`  
 
-引数は下記が使用可能  
-- `--robot_ip`: akari_motion_serverのIPアドレス。デフォルトは"127.0.0.1"
-- `--robot_port`: akari_motion_serverのポート。デフォルトは"50055"
-- `--gpt_ip`: gpt_serverのIPアドレス。デフォルトは"127.0.0.1"
-- `--gpt_port`: gpt_serverのポート。デフォルトは"10001"
-- `--voicevox_ip`: voicevox_serverのIPアドレス。デフォルトは"127.0.0.1"
-- `--voicevox_port`: voicevox_serverのポート。デフォルトは"10002"
-- `-t`,`--timeout`: マイク入力がこの時間しきい値以下になったら音声入力を打ち切る。デフォルトは0.5[s]。短いと応答が早くなるが不安定になりやすい。  
-- `-p`,`--power_threshold`: マイク入力の音量しきい値。デフォルトは0で、0の場合アプリ起動時に周辺環境の音量を取得し、そこから音量しきい値を自動決定する。  
+   引数は下記が使用可能  
+   - `--robot_ip`: akari_motion_serverのIPアドレス。デフォルトは"127.0.0.1"
+   - `--robot_port`: akari_motion_serverのポート。デフォルトは"50055"
+   - `--gpt_ip`: gpt_serverのIPアドレス。デフォルトは"127.0.0.1"
+   - `--gpt_port`: gpt_serverのポート。デフォルトは"10001"
+   - `--voicevox_ip`: voicevox_serverのIPアドレス。デフォルトは"127.0.0.1"
+   - `--voicevox_port`: voicevox_serverのポート。デフォルトは"10002"
+   - `-t`,`--timeout`: マイク入力がこの時間しきい値以下になったら音声入力を打ち切る。デフォルトは0.5[s]。短いと応答が早くなるが不安定になりやすい。  
+   - `-p`,`--power_threshold`: マイク入力の音量しきい値。デフォルトは0で、0の場合アプリ起動時に周辺環境の音量を取得し、そこから音量しきい値を自動決定する。  
 
 6. `speech_publisher.py`のターミナルでEnterキーを押し、マイクに話しかけると返答が返ってくる。
 
@@ -129,12 +139,12 @@ chatGPTのサンプル
 
 2. スクリプトを実行する。  
 
-`cd script`  
-`./faster_chatbot.sh {1.でVoicevoxを起動したPCのIPアドレス} {akari_motion_serverのパス}`  
+   `cd script`  
+   `./faster_chatbot.sh {1.でVoicevoxを起動したPCのIPアドレス} {akari_motion_serverのパス}`  
 
-akari_motion_serverのパスを入力しなければ、akari_motion_serverは起動せず、モーションの再生は行われません(AKARI以外でも使えます)。  
+   akari_motion_serverのパスを入力しなければ、akari_motion_serverは起動せず、モーションの再生は行われません(AKARI以外でも使えます)。  
 
 3. `speech_publisher.py`のターミナルでEnterキーを押し、マイクに話しかけると返答が返ってくる。
 
 ## その他
-音声合成では、デフォルトの音声として「VOICEVOX:春日部つむぎ」を使用しています。
+音声合成では、デフォルトの音声として「VOICEVOX:春日部つむぎ」を使用しています。  
