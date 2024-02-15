@@ -45,6 +45,11 @@ def main() -> None:
         default=0,
         help="Microphone input power threshold",
     )
+    parser.add_argument(
+        "--no_motion",
+        help="Not play nod motion",
+        action="store_true",
+    )
     args = parser.parse_args()
     timeout: float = args.timeout
     power_threshold: float = args.power_threshold
@@ -79,14 +84,15 @@ def main() -> None:
                 )
             except BaseException:
                 pass
-            try:
-                motion_stub.SetMotion(
-                    motion_server_pb2.SetMotionRequest(
-                        name="nod", priority=3, repeat=True
+            if not args.no_motion:
+                try:
+                    motion_stub.SetMotion(
+                        motion_server_pb2.SetMotionRequest(
+                            name="nod", priority=3, repeat=True
+                        )
                     )
-                )
-            except BaseException:
-                print("akari_motion_server is not working.")
+                except BaseException:
+                    print("akari_motion_server is not working.")
             responses = stream.transcribe()
             if responses is not None:
                 google_speech_grpc.listen_publisher_grpc(
