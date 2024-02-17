@@ -5,18 +5,23 @@ import openai
 last_char = ["、", "。", ".", "！", "？", "\n"]
 
 
-def chat(messages: list) -> Any:
+def chat(
+    messages: list, model: str = "gpt-3.5-turbo-0613", temperature: float = 0.7
+) -> Any:
     result = openai.chat.completions.create(
-        model="gpt-3.5-turbo-0613",
+        model=model,
+        temperature=temperature,
         messages=messages,
     )
     response_text = result["choices"][0]["message"]["content"]
     return response_text
 
 
-def chat_stream(messages: list, temperature: float = 0.7) -> Generator[str, None, None]:
+def chat_stream(
+    messages: list, model: str = "gpt-3.5-turbo-0613", temperature: float = 0.7
+) -> Generator[str, None, None]:
     result = openai.chat.completions.create(
-        model="gpt-3.5-turbo-0613",
+        model=model,
         messages=messages,
         max_tokens=1024,
         n=1,

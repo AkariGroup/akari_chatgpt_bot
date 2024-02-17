@@ -17,9 +17,13 @@ last_char = ["、", "。", ".", "！", "？", "\n"]
 
 
 class ChatStreamAkariGrpc(ChatStreamAkari):
-    def __init__(self, motion_host: str = "127.0.0.1", motion_port: str = "50055") -> None:
+    def __init__(
+        self, motion_host: str = "127.0.0.1", motion_port: str = "50055"
+    ) -> None:
         motion_channel = grpc.insecure_channel(motion_host + ":" + motion_port)
-        self.motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(motion_channel)
+        self.motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(
+            motion_channel
+        )
         self.cur_motion_name = ""
 
     def send_motion(self) -> bool:
@@ -40,10 +44,13 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
         return True
 
     def chat(
-        self, messages: list, temperature: float = 0.7
+        self,
+        messages: list,
+        model: str = "gpt-3.5-turbo-0613",
+        temperature: float = 0.7,
     ) -> Generator[str, None, None]:
         result = openai.chat.completions.create(
-            model="gpt-3.5-turbo-0613",
+            model=model,
             messages=messages,
             max_tokens=1024,
             n=1,
@@ -73,10 +80,10 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                         pass
 
     def chat_and_motion(
-        self, messages: list, temperature: float = 0.7
+        self, messages: list, model: str = "gpt-4", temperature: float = 0.7
     ) -> Generator[str, None, None]:
         result = openai.chat.completions.create(
-            model="gpt-4",
+            model=model,
             messages=messages,
             n=1,
             temperature=temperature,

@@ -31,12 +31,17 @@ class ChatStreamAkari(object):
             print("send error!")
             pass
 
-    def chat(self, messages: list) -> Generator[str, None, None]:
+    def chat(
+        self,
+        messages: list,
+        model: str = "gpt-4-turbo-preview",
+        temperature: float = 0.7,
+    ) -> Generator[str, None, None]:
         result = openai.chat.completions.create(
-            model="gpt-4-turbo-preview",
+            model=model,
             messages=messages,
             n=1,
-            temperature=0.7,
+            temperature=temperature,
             functions=[
                 {
                     "name": "reply_with_motion_",
