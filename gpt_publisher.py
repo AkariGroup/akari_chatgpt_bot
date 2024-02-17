@@ -5,7 +5,7 @@ import sys
 import openai
 import grpc
 from concurrent import futures
-from lib.chat import chat_stream
+from lib.chat import chat_stream, create_message
 from lib.chat_akari_grpc import ChatStreamAkariGrpc
 from lib.conf import OPENAI_APIKEY
 import copy
@@ -17,18 +17,16 @@ import voicevox_server_pb2
 import voicevox_server_pb2_grpc
 
 
-
 class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
     """
     chatGPTにtextを送信し、返答をvoicevox_serverに送るgprcサーバ
     """
+
     def __init__(self):
-        self.messages = [
-            {
-                "role": "system",
-                "content": "チャットボットとしてロールプレイします。あかりという名前のカメラロボットとして振る舞ってください。正確はポジティブで元気です。",
-            },
-        ]
+        content = (
+            "チャットボットとしてロールプレイします。あかりという名前のカメラロボットとして振る舞ってください。性格はポジティブで元気です。",
+        )
+        self.messages = [create_message(content, role="system")]
         voicevox_channel = grpc.insecure_channel("localhost:10002")
         self.stub = voicevox_server_pb2_grpc.VoicevoxServerServiceStub(voicevox_channel)
         self.chat_stream_akari_grpc = ChatStreamAkariGrpc()
@@ -45,7 +43,7 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
         else:
             content = f"「{request.text}」という文に対して、以下の「」内からどれか一つを選択して、それだけ回答してください。\n「えーと。」「はい。」「うーん。」「いいえ。」「はい、そうですね。」「そうですね…。」「いいえ、違います。」「こんにちは。」「ありがとうございます。」「なるほど。」「まあ。」"
         tmp_messages = copy.deepcopy(self.messages)
-        tmp_messages.append({"role": "user", "content": content})
+        tmp_messages.append(create_message(content))
         if request.is_finish:
             self.messages = copy.deepcopy(tmp_messages)
         if request.is_finish:
@@ -54,7 +52,7 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
                 self.stub.SetVoicevox(
                     voicevox_server_pb2.SetVoicevoxRequest(text=sentence)
                 )
-                self.messages.append({"role": "assistant", "content": response})
+                self.messages.append(create_message(response, role="assistant"))
                 response += sentence
         else:
             for sentence in self.chat_stream_akari_grpc.chat_and_motion(tmp_messages):

@@ -1,8 +1,42 @@
 from typing import Any, Generator
 
+import numpy as np
+import cv2
 import openai
 
 last_char = ["、", "。", ".", "！", "？", "\n"]
+
+
+def create_message(text: str, role: str = "user") -> str:
+    message = {"role": role, "content": text}
+    return message
+
+
+def cv_to_base64(image: np.ndarray) -> str:
+    _, encoded = cv2.imencode(".jpg", image)
+    return base64.b64encode(encoded).decode("ascii")
+
+
+def create_vision_message(text: str, image: np.ndarray) -> str:
+    resized_image = cv2.resize(image, (320, 240))
+    base64_image = cv_to_base64(resized_image)
+    url = f"data:image/jpeg;base64,{base64_image}"
+    message = {
+        "role": "user",
+        "content": [
+            {
+                "type": "text",
+                "text": text,
+            },
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": url,
+                },
+            },
+        ],
+    }
+    return message
 
 
 def chat(

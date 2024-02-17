@@ -1,7 +1,7 @@
 import argparse
 
 import openai
-from lib.chat import chat_stream
+from lib.chat import chat_stream, create_message
 from lib.conf import OPENAI_APIKEY
 from lib.voicevox import TextToVoiceVox
 
@@ -16,19 +16,14 @@ def main() -> None:
 
     if voicevox:
         text_to_voice = TextToVoiceVox(host, port)
-    messages = [
-        {
-            "role": "system",
-            "content": "チャットボットとしてロールプレイします。あかりという名前のカメラロボットとして振る舞ってください。正確はポジティブで元気です。",
-        },
-    ]
+    # systemメッセージの作成
+    content = "チャットボットとしてロールプレイします。あかりという名前のカメラロボットとして振る舞ってください。性格はポジティブで元気です。"
+    messages = [create_message(content, role="system")]
     print("文章をキーボード入力後、Enterを押してください。")
     while True:
         text = input("Input: ")
-        messages.append(
-            # {'role': 'user', 'content': text + attention}
-            {"role": "user", "content": text}
-        )
+        # userメッセージの追加
+        messages.append(create_message(text))
         print(f"User   : {text}")
         print("ChatGPT: ")
         response = ""
@@ -37,7 +32,8 @@ def main() -> None:
                 text_to_voice.put_text(sentence)
             response += sentence
             print(sentence, end="")
-        messages.append({"role": "assistant", "content": response})
+        # chatGPTの返答をassistantメッセージとして追加
+        messages.append(create_message(response, role="assistant"))
         print("")
         print("")
 
