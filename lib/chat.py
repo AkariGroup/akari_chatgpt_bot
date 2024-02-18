@@ -1,4 +1,5 @@
 from typing import Any, Generator
+import base64
 
 import numpy as np
 import cv2
@@ -18,7 +19,7 @@ def cv_to_base64(image: np.ndarray) -> str:
 
 
 def create_vision_message(text: str, image: np.ndarray) -> str:
-    resized_image = cv2.resize(image, (320, 240))
+    resized_image = cv2.resize(image, (480, 270))
     base64_image = cv_to_base64(resized_image)
     url = f"data:image/jpeg;base64,{base64_image}"
     message = {

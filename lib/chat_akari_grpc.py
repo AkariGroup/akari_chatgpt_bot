@@ -49,15 +49,26 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
         model: str = "gpt-3.5-turbo-0613",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
-        result = openai.chat.completions.create(
-            model=model,
-            messages=messages,
-            max_tokens=1024,
-            n=1,
-            stream=True,
-            temperature=temperature,
-            stop=None,
-        )
+        result = None
+        if model == "gpt-4-vision-preview":
+            result = openai.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=1024,
+                n=1,
+                stream=True,
+                temperature=temperature,
+            )
+        else:
+            result = openai.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=1024,
+                n=1,
+                stream=True,
+                temperature=temperature,
+                stop=None,
+            )
         fullResponse = ""
         RealTimeResponce = ""
         for chunk in result:
