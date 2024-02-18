@@ -5,7 +5,7 @@ import numpy as np
 import cv2
 import openai
 
-last_char = ["、", "。", ".", "！", "？", "\n"]
+last_char = ["、", "。", "！", "？", "\n"]
 
 
 def create_message(text: str, role: str = "user") -> str:

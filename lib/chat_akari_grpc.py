@@ -13,7 +13,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
 import motion_server_pb2
 import motion_server_pb2_grpc
 
-last_char = ["、", "。", ".", "！", "？", "\n"]
+last_char = ["、", "。", "！", "？", "\n"]
 
 
 class ChatStreamAkariGrpc(ChatStreamAkari):
