@@ -3,7 +3,7 @@ import json
 import wave
 from queue import Queue
 from threading import Thread
-from time import sleep
+import time
 from typing import Any
 
 import pyaudio
@@ -18,6 +18,7 @@ class TextToVoiceVox(object):
         self.host = host
         self.port = port
         self.play_flg = False
+        self.finished = True
         self.voice_thread = Thread(target=self.text_to_voice_thread)
         self.voice_thread.start()
 
@@ -29,11 +30,21 @@ class TextToVoiceVox(object):
             if self.queue.qsize() > 0 and self.play_flg:
                 text = self.queue.get()
                 self.text_to_voice(text)
+            if self.queue.qsize() == 0:
+                self.finished = True
 
-    def put_text(self, text: str, play_now: bool = True) -> None:
+    def put_text(self, text: str, play_now: bool = True, blocking=False) -> None:
         if play_now:
             self.play_flg = True
         self.queue.put(text)
+        self.finished = False
+        if blocking:
+            while not self.finished:
+                time.sleep(0.01)
+
+    def wait_finish(self) -> None:
+        while not self.finished:
+            time.sleep(0.01)
 
     def post_audio_query(
         self,
@@ -80,7 +91,7 @@ class TextToVoiceVox(object):
             while data and self.play_flg:
                 stream.write(data)
                 data = wr.readframes(chunk)
-            sleep(0.2)
+            time.sleep(0.2)
             stream.close()
         p.terminate()
 

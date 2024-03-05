@@ -23,9 +23,7 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
     """
 
     def __init__(self):
-        content = (
-            "チャットボットとしてロールプレイします。あかりという名前のカメラロボットとして振る舞ってください。性格はポジティブで元気です。",
-        )
+        content = "チャットボットとしてロールプレイします。あかりという名前のカメラロボットとして振る舞ってください。性格はポジティブで元気です。"
         self.messages = [create_message(content, role="system")]
         voicevox_channel = grpc.insecure_channel("localhost:10002")
         self.stub = voicevox_server_pb2_grpc.VoicevoxServerServiceStub(voicevox_channel)
