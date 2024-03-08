@@ -27,24 +27,29 @@ def main() -> None:
 
     chat_stream_akri = ChatStreamAkari()
     # systemメッセージの作成
-    messages = [chat_stream_akri.create_message(args.system, role="system")]
-
+    messages_list = []
+    for i in range(0, len(args.model)):
+        messages_list.append(
+            [chat_stream_akri.create_message(args.system, role="system")]
+        )
     while True:
         print("文章をキーボード入力後、Enterを押してください。")
         text = input("Input: ")
         # userメッセージの追加
         print(f"User   : {text}")
-        for model in args.model:
+        for i, model in enumerate(args.model):
             print(f"{model}: ")
-            messages.append(chat_stream_akri.create_message(text))
+            messages_list[i].append(chat_stream_akri.create_message(text))
             response = ""
-            for sentence in chat_stream_akri.chat(messages, model=model):
+            for sentence in chat_stream_akri.chat(messages_list[i], model=model):
                 if voicevox:
                     text_to_voice.put_text(sentence)
                 response += sentence
                 print(sentence, end="", flush=True)
             # chatGPTの返答をassistantメッセージとして追加
-            messages.append(chat_stream_akri.create_message(response, role="assistant"))
+            messages_list[i].append(
+                chat_stream_akri.create_message(response, role="assistant")
+            )
             print("")
             print("")
 
