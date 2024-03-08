@@ -1,7 +1,7 @@
 import argparse
 
 import openai
-from lib.chat import chat_stream, create_message
+from lib.chat_akari import ChatStreamAkari
 from lib.conf import OPENAI_APIKEY
 from lib.voicevox import TextToVoiceVox
 
@@ -16,24 +16,26 @@ def main() -> None:
 
     if voicevox:
         text_to_voice = TextToVoiceVox(host, port)
+
+    chat_stream_akri = ChatStreamAkari()
     # systemメッセージの作成
     content = "チャットボットとしてロールプレイします。あかりという名前のカメラロボットとして振る舞ってください。性格はポジティブで元気です。"
-    messages = [create_message(content, role="system")]
+    messages = [chat_stream_akri.create_message(content, role="system")]
     print("文章をキーボード入力後、Enterを押してください。")
     while True:
         text = input("Input: ")
         # userメッセージの追加
-        messages.append(create_message(text))
+        messages.append(chat_stream_akri.create_message(text))
         print(f"User   : {text}")
         print("ChatGPT: ")
         response = ""
-        for sentence in chat_stream(messages):
+        for sentence in chat_stream_akri.chat(messages):
             if voicevox:
                 text_to_voice.put_text(sentence)
             response += sentence
             print(sentence, end="")
         # chatGPTの返答をassistantメッセージとして追加
-        messages.append(create_message(response, role="assistant"))
+        messages.append(chat_stream_akri.create_message(response, role="assistant"))
         print("")
         print("")
 

@@ -13,17 +13,12 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
 import motion_server_pb2
 import motion_server_pb2_grpc
 
-last_char = ["、", "。", "！", "？", "\n"]
-
 
 class ChatStreamAkariGrpc(ChatStreamAkari):
     def __init__(
         self, motion_host: str = "127.0.0.1", motion_port: str = "50055"
     ) -> None:
-        motion_channel = grpc.insecure_channel(motion_host + ":" + motion_port)
-        self.motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(
-            motion_channel
-        )
+        super.__init__(motion_host,motion_port)
         self.cur_motion_name = ""
 
     def send_motion(self) -> bool:
@@ -43,54 +38,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
             return False
         return True
 
-    def chat(
-        self,
-        messages: list,
-        model: str = "gpt-3.5-turbo-0613",
-        temperature: float = 0.7,
-    ) -> Generator[str, None, None]:
-        result = None
-        if model == "gpt-4-vision-preview":
-            result = openai.chat.completions.create(
-                model=model,
-                messages=messages,
-                max_tokens=1024,
-                n=1,
-                stream=True,
-                temperature=temperature,
-            )
-        else:
-            result = openai.chat.completions.create(
-                model=model,
-                messages=messages,
-                max_tokens=1024,
-                n=1,
-                stream=True,
-                temperature=temperature,
-                stop=None,
-            )
-        fullResponse = ""
-        RealTimeResponce = ""
-        for chunk in result:
-            text = chunk.choices[0].delta.content
-            if text is None:
-                pass
-            else:
-                fullResponse += text
-                RealTimeResponce += text
-
-                for index, char in enumerate(RealTimeResponce):
-                    if char in last_char:
-                        pos = index + 2  # 区切り位置
-                        sentence = RealTimeResponce[:pos]  # 1文の区切り
-                        RealTimeResponce = RealTimeResponce[pos:]  # 残りの部分
-                        # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
-                        yield sentence
-                        break
-                    else:
-                        pass
-
-    def chat_and_motion(
+    def chat_and_motion_gpt(
         self, messages: list, model: str = "gpt-4", temperature: float = 0.7
     ) -> Generator[str, None, None]:
         result = openai.chat.completions.create(

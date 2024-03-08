@@ -40,7 +40,7 @@ def create_vision_message(text: str, image: np.ndarray) -> str:
     return message
 
 
-def chat(
+def chat_gpt(
     messages: list, model: str = "gpt-3.5-turbo-0613", temperature: float = 0.7
 ) -> Any:
     result = openai.chat.completions.create(
@@ -50,6 +50,13 @@ def chat(
     )
     response_text = result["choices"][0]["message"]["content"]
     return response_text
+
+def chat(
+    messages: list, model: str = "gpt-3.5-turbo-0613", temperature: float = 0.7
+) -> Any:
+    yield from chat_gpt(
+        messages=messages, model=model, temperature=temperature
+    )
 
 
 def chat_stream_gpt(

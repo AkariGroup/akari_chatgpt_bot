@@ -112,7 +112,7 @@ def main() -> None:
         print("ChatGPT: ")
         response = ""
         # 音声合成
-        for sentence in chat_stream_akari.chat(messages):
+        for sentence in chat_stream_akari.chat_and_motion(messages):
             text_to_voice.put_text(sentence)
             response += sentence
             print(sentence, end="")

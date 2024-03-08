@@ -2,32 +2,90 @@ import json
 import os
 import sys
 import threading
+import numpy as np
 from typing import Generator
 
 import anthropic
 import grpc
 import openai
 from gpt_stream_parser import force_parse_json
-from conf import ANTHROPIC_APIKEY
+from .conf import ANTHROPIC_APIKEY
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
 import motion_server_pb2
 import motion_server_pb2_grpc
 
-last_char = ["、", "。", "！", "？", "\n"]
-
 
 class ChatStreamAkari(object):
-    def __init__(self, host: str = "localhost", port: str = "50055") -> None:
-        channel = grpc.insecure_channel(host + ":" + port)
-        self.stub = motion_server_pb2_grpc.MotionServerServiceStub(channel)
+    def __init__(
+        self, motion_host: str = "localhost", motion_port: str = "50055"
+    ) -> None:
+        motion_channel = grpc.insecure_channel(motion_host + ":" + motion_port)
+        self.motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(motion_channel)
         self.anthropic_client = anthropic.Anthropic(
             api_key=ANTHROPIC_APIKEY,
         )
+        self.last_char = ["、", "。", "！", "!", "?", "？", "\n"]
+        self.openai_model_name = [
+            "gpt-4-0125-preview",
+            "gpt-4-turbo-preview",
+            "gpt-4-1106-preview",
+            "gpt-4",
+            "gpt-4-0613",
+            "gpt-4-32k",
+            "gpt-4-32k-0613",
+            "gpt-3.5-turbo-0125",
+            "gpt-3.5-turbo",
+            "gpt-3.5-turbo-1106",
+            "gpt-3.5-turbo-instruct",
+            "gpt-3.5-turbo-16k",
+            "gpt-3.5-turbo-0613",
+            "gpt-3.5-turbo-16k-0613",
+        ]
+        self.openai_vision_model_name = [
+            "gpt-4-vision-preview",
+            "gpt-4-1106-vision-preview",
+        ]
+        self.anthropic_model_name = [
+            "claude-3-opus-20240229",
+            "claude-3-sonnet-20240229",
+            "claude-2.1",
+            "claude-2.0",
+            "claude-instant-1.2",
+        ]
+
+    def create_message(self, text: str, role: str = "user") -> str:
+        message = {"role": role, "content": text}
+        return message
+
+    def cv_to_base64(self, image: np.ndarray) -> str:
+        _, encoded = cv2.imencode(".jpg", image)
+        return base64.b64encode(encoded).decode("ascii")
+
+    def create_vision_message(self, text: str, image: np.ndarray) -> str:
+        resized_image = cv2.resize(image, (480, 270))
+        base64_image = cv_to_base64(resized_image)
+        url = f"data:image/jpeg;base64,{base64_image}"
+        message = {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": text,
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": url,
+                    },
+                },
+            ],
+        }
+        return message
 
     def send_motion(self, name: str) -> None:
         try:
-            self.stub.SetMotion(
+            self.motion_stub.SetMotion(
                 motion_server_pb2.SetMotionRequest(
                     name=name, priority=3, repeat=False, clear=True
                 )
@@ -35,16 +93,78 @@ class ChatStreamAkari(object):
         except BaseException:
             print("send error!")
             pass
-'''
+
+    """
     def chat_anthropic(
         self,
         messages: list,
         model: str = "gpt-4-turbo-preview",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
-'''
+    """
 
     def chat_gpt(
+        self,
+        messages: list,
+        model: str = "gpt-3.5-turbo-0613",
+        temperature: float = 0.7,
+    ) -> Generator[str, None, None]:
+        result = None
+        if model in self.openai_vision_model_name:
+            result = openai.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=1024,
+                n=1,
+                stream=True,
+                temperature=temperature,
+            )
+        elif model in self.openai_model_name:
+            result = openai.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=1024,
+                n=1,
+                stream=True,
+                temperature=temperature,
+                stop=None,
+            )
+        fullResponse = ""
+        RealTimeResponce = ""
+        for chunk in result:
+            text = chunk.choices[0].delta.content
+            if text is None:
+                pass
+            else:
+                fullResponse += text
+                RealTimeResponce += text
+
+                for index, char in enumerate(RealTimeResponce):
+                    if char in self.last_char:
+                        pos = index + 1  # 区切り位置
+                        sentence = RealTimeResponce[:pos]  # 1文の区切り
+                        RealTimeResponce = RealTimeResponce[pos:]  # 残りの部分
+                        # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
+                        yield sentence
+                        break
+                    else:
+                        pass
+
+    def chat(
+        self,
+        messages: list,
+        model: str = "gpt-3.5-turbo-0613",
+        temperature: float = 0.7,
+    ) -> Generator[str, None, None]:
+        if model in self.openai_model_name or model in self.openai_vision_model_name:
+            yield from self.chat_gpt(
+                messages=messages, model=model, temperature=temperature
+            )
+        else:
+            print(f"Model name {model} can't use for this function")
+            return
+
+    def chat_and_motion_gpt(
         self,
         messages: list,
         model: str = "gpt-4-turbo-preview",
@@ -101,7 +221,7 @@ class ChatStreamAkari(object):
                     try:
                         data_json = json.loads(fullResponse)
                         found_last_char = False
-                        for char in last_char:
+                        for char in self.last_char:
                             if RealTimeResponse[-1].find(char) >= 0:
                                 found_last_char = True
                         if not found_last_char:
@@ -137,7 +257,7 @@ class ChatStreamAkari(object):
                                 )
                                 motion_thread.start()
                             RealTimeResponse = str(data_json["talk"])
-                            for char in last_char:
+                            for char in self.last_char:
                                 pos = RealTimeResponse[sentence_index:].find(char)
                                 if pos >= 0:
                                     sentence = RealTimeResponse[
@@ -147,10 +267,16 @@ class ChatStreamAkari(object):
                                     yield sentence
                                     break
 
-    def chat(
+    def chat_and_motion(
         self,
         messages: list,
         model: str = "gpt-4-turbo-preview",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
-        yield from self.chat_gpt(messages=messages,model=model,temperature=temperature)
+        if model in self.openai_model_name:
+            yield from self.chat_and_motion_gpt(
+                messages=messages, model=model, temperature=temperature
+            )
+        else:
+            print(f"Model name {model} can't use for this function")
+            return
