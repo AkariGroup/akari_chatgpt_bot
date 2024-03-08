@@ -52,7 +52,7 @@ def chat(
     return response_text
 
 
-def chat_stream(
+def chat_stream_gpt(
     messages: list, model: str = "gpt-3.5-turbo-0613", temperature: float = 0.7
 ) -> Generator[str, None, None]:
     result = openai.chat.completions.create(
@@ -84,3 +84,10 @@ def chat_stream(
                     break
                 else:
                     pass
+
+def chat_stream(
+    messages: list, model: str = "gpt-3.5-turbo-0613", temperature: float = 0.7
+) -> Generator[str, None, None]:
+    yield from chat_stream_gpt(
+        messages=messages, model=model, temperature=temperature
+    )

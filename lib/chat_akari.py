@@ -4,9 +4,11 @@ import sys
 import threading
 from typing import Generator
 
+import anthropic
 import grpc
 import openai
 from gpt_stream_parser import force_parse_json
+from conf import ANTHROPIC_APIKEY
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
 import motion_server_pb2
@@ -19,6 +21,9 @@ class ChatStreamAkari(object):
     def __init__(self, host: str = "localhost", port: str = "50055") -> None:
         channel = grpc.insecure_channel(host + ":" + port)
         self.stub = motion_server_pb2_grpc.MotionServerServiceStub(channel)
+        self.anthropic_client = anthropic.Anthropic(
+            api_key=ANTHROPIC_APIKEY,
+        )
 
     def send_motion(self, name: str) -> None:
         try:
@@ -30,8 +35,16 @@ class ChatStreamAkari(object):
         except BaseException:
             print("send error!")
             pass
+'''
+    def chat_anthropic(
+        self,
+        messages: list,
+        model: str = "gpt-4-turbo-preview",
+        temperature: float = 0.7,
+    ) -> Generator[str, None, None]:
+'''
 
-    def chat(
+    def chat_gpt(
         self,
         messages: list,
         model: str = "gpt-4-turbo-preview",
@@ -133,3 +146,11 @@ class ChatStreamAkari(object):
                                     sentence_index += pos + 1
                                     yield sentence
                                     break
+
+    def chat(
+        self,
+        messages: list,
+        model: str = "gpt-4-turbo-preview",
+        temperature: float = 0.7,
+    ) -> Generator[str, None, None]:
+        yield from self.chat_gpt(messages=messages,model=model,temperature=temperature)
