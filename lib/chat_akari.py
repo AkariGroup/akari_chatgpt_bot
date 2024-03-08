@@ -21,7 +21,9 @@ class ChatStreamAkari(object):
         self, motion_host: str = "localhost", motion_port: str = "50055"
     ) -> None:
         motion_channel = grpc.insecure_channel(motion_host + ":" + motion_port)
-        self.motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(motion_channel)
+        self.motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(
+            motion_channel
+        )
         self.anthropic_client = anthropic.Anthropic(
             api_key=ANTHROPIC_APIKEY,
         )
@@ -94,14 +96,46 @@ class ChatStreamAkari(object):
             print("send error!")
             pass
 
-    """
     def chat_anthropic(
         self,
         messages: list,
-        model: str = "gpt-4-turbo-preview",
+        model: str = "claude-3-sonnet-20240229",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
-    """
+        # anthropicではsystemメッセージは引数として与えるので、メッセージから抜き出す
+        system_message = ""
+        user_messages = []
+        for message in messages:
+            if message["role"] == "system":
+                system_message = message["content"]
+            else:
+                user_messages.append(message)
+        with self.anthropic_client.messages.stream(
+            model=model,
+            max_tokens=1000,
+            temperature=temperature,
+            messages=user_messages,
+            system=system_message,
+        ) as result:
+            fullResponse = ""
+            RealTimeResponce = ""
+            for text in result.text_stream:
+                if text is None:
+                    pass
+                else:
+                    fullResponse += text
+                    RealTimeResponce += text
+
+                    for index, char in enumerate(RealTimeResponce):
+                        if char in self.last_char:
+                            pos = index + 1  # 区切り位置
+                            sentence = RealTimeResponce[:pos]  # 1文の区切り
+                            RealTimeResponce = RealTimeResponce[pos:]  # 残りの部分
+                            # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
+                            yield sentence
+                            break
+                        else:
+                            pass
 
     def chat_gpt(
         self,
@@ -158,6 +192,10 @@ class ChatStreamAkari(object):
     ) -> Generator[str, None, None]:
         if model in self.openai_model_name or model in self.openai_vision_model_name:
             yield from self.chat_gpt(
+                messages=messages, model=model, temperature=temperature
+            )
+        elif model in self.anthropic_model_name:
+            yield from self.chat_anthropic(
                 messages=messages, model=model, temperature=temperature
             )
         else:

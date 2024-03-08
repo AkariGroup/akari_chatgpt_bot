@@ -11,7 +11,15 @@ voicevox = False  # 音声合成を使う場合Trueに変更
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-
+    parser.add_argument(
+        "-m",
+        "--model",
+        nargs="+",
+        type=str,
+        default=["gpt-3.5-turbo-0613"],
+        help="Model name list",
+    )
+    parser.add_argument("-s", "--system", default="", type=str, help="System prompt")
     args = parser.parse_args()
 
     if voicevox:
@@ -19,25 +27,26 @@ def main() -> None:
 
     chat_stream_akri = ChatStreamAkari()
     # systemメッセージの作成
-    content = "チャットボットとしてロールプレイします。あかりという名前のカメラロボットとして振る舞ってください。性格はポジティブで元気です。"
-    messages = [chat_stream_akri.create_message(content, role="system")]
-    print("文章をキーボード入力後、Enterを押してください。")
+    messages = [chat_stream_akri.create_message(args.system, role="system")]
+
     while True:
+        print("文章をキーボード入力後、Enterを押してください。")
         text = input("Input: ")
         # userメッセージの追加
-        messages.append(chat_stream_akri.create_message(text))
         print(f"User   : {text}")
-        print("ChatGPT: ")
-        response = ""
-        for sentence in chat_stream_akri.chat(messages):
-            if voicevox:
-                text_to_voice.put_text(sentence)
-            response += sentence
-            print(sentence, end="")
-        # chatGPTの返答をassistantメッセージとして追加
-        messages.append(chat_stream_akri.create_message(response, role="assistant"))
-        print("")
-        print("")
+        for model in args.model:
+            print(f"{model}: ")
+            messages.append(chat_stream_akri.create_message(text))
+            response = ""
+            for sentence in chat_stream_akri.chat(messages, model=model):
+                if voicevox:
+                    text_to_voice.put_text(sentence)
+                response += sentence
+                print(sentence, end="", flush=True)
+            # chatGPTの返答をassistantメッセージとして追加
+            messages.append(chat_stream_akri.create_message(response, role="assistant"))
+            print("")
+            print("")
 
 
 if __name__ == "__main__":
