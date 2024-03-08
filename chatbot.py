@@ -1,7 +1,7 @@
 import argparse
 
 import openai
-from lib.chat import chat_stream
+from lib.chat_akari import ChatStreamAkari
 from lib.conf import OPENAI_APIKEY
 from lib.google_speech import (
     MicrophoneStream,
@@ -67,6 +67,7 @@ def main() -> None:
 
         text_to_voice = TextToVoiceVoxWeb(apikey=VOICEVOX_APIKEY)
 
+    chat_stream_akari = ChatStreamAkari()
     messages = [{"role": "system", "content": "チャットボットとしてロールプレイをします。"}]
     while True:
         # 音声認識
@@ -85,10 +86,10 @@ def main() -> None:
         print("ChatGPT: ")
         response = ""
         # 音声合成
-        for sentence in chat_stream(messages):
+        for sentence in chat_stream_akari.chat(messages):
             text_to_voice.put_text(sentence)
             response += sentence
-            print(sentence, end="")
+            print(sentence, end="", flush=True)
         messages.append({"role": "assistant", "content": response})
         print("")
         print("")

@@ -18,7 +18,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
     def __init__(
         self, motion_host: str = "127.0.0.1", motion_port: str = "50055"
     ) -> None:
-        super.__init__(motion_host,motion_port)
+        super().__init__(motion_host, motion_port)
         self.cur_motion_name = ""
 
     def send_motion(self) -> bool:
@@ -80,25 +80,25 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
             stream=True,
             stop=None,
         )
-        fullResponse = ""
-        RealTimeResponse = ""
+        full_response = ""
+        real_time_response = ""
         sentence_index = 0
         get_motion = False
         for chunk in result:
             delta = chunk.choices[0].delta
             if delta.function_call is not None:
                 if delta.function_call.arguments is not None:
-                    fullResponse += chunk.choices[0].delta.function_call.arguments
+                    full_response += chunk.choices[0].delta.function_call.arguments
                     try:
-                        data_json = json.loads(fullResponse)
+                        data_json = json.loads(full_response)
                         found_last_char = False
                         for char in last_char:
-                            if RealTimeResponse[-1].find(char) >= 0:
+                            if real_time_response[-1].find(char) >= 0:
                                 found_last_char = True
                         if not found_last_char:
                             data_json["talk"] = data_json["talk"] + "。"
                     except BaseException:
-                        data_json = force_parse_json(fullResponse)
+                        data_json = force_parse_json(full_response)
                     if data_json is not None:
                         if "talk" in data_json:
                             if not get_motion and "motion" in data_json:
@@ -124,11 +124,11 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                                     key = "lookup"
                                 print("motion: " + motion)
                                 self.cur_motion_name = key
-                            RealTimeResponse = str(data_json["talk"])
-                            for char in last_char:
-                                pos = RealTimeResponse[sentence_index:].find(char)
+                            real_time_response = str(data_json["talk"])
+                            for char in self.last_char:
+                                pos = real_time_response[sentence_index:].find(char)
                                 if pos >= 0:
-                                    sentence = RealTimeResponse[
+                                    sentence = real_time_response[
                                         sentence_index : sentence_index + pos + 1
                                     ]
                                     sentence_index += pos + 1

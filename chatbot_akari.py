@@ -115,7 +115,7 @@ def main() -> None:
         for sentence in chat_stream_akari.chat_and_motion(messages):
             text_to_voice.put_text(sentence)
             response += sentence
-            print(sentence, end="")
+            print(sentence, end="", flush=True)
         messages.append({"role": "assistant", "content": response})
         print("")
         print("")

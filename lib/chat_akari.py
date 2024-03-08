@@ -27,7 +27,7 @@ class ChatStreamAkari(object):
         self.anthropic_client = anthropic.Anthropic(
             api_key=ANTHROPIC_APIKEY,
         )
-        self.last_char = ["、", "。", "！", "!", "?", "？", "\n"]
+        self.last_char = [",", "、", "。", "！", "!", "?", "？", "\n"]
         self.openai_model_name = [
             "gpt-4-0125-preview",
             "gpt-4-turbo-preview",
@@ -117,25 +117,26 @@ class ChatStreamAkari(object):
             messages=user_messages,
             system=system_message,
         ) as result:
-            fullResponse = ""
-            RealTimeResponce = ""
+            full_response = ""
+            real_time_response = ""
             for text in result.text_stream:
                 if text is None:
                     pass
                 else:
-                    fullResponse += text
-                    RealTimeResponce += text
+                    full_response += text
+                    real_time_response += text
 
-                    for index, char in enumerate(RealTimeResponce):
+                    for index, char in enumerate(real_time_response):
                         if char in self.last_char:
                             pos = index + 1  # 区切り位置
-                            sentence = RealTimeResponce[:pos]  # 1文の区切り
-                            RealTimeResponce = RealTimeResponce[pos:]  # 残りの部分
+                            sentence = real_time_response[:pos]  # 1文の区切り
+                            real_time_response = real_time_response[pos:]  # 残りの部分
                             # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
                             yield sentence
                             break
                         else:
                             pass
+            yield real_time_response
 
     def chat_gpt(
         self,
@@ -163,26 +164,27 @@ class ChatStreamAkari(object):
                 temperature=temperature,
                 stop=None,
             )
-        fullResponse = ""
-        RealTimeResponce = ""
+        full_response = ""
+        real_time_response = ""
         for chunk in result:
             text = chunk.choices[0].delta.content
             if text is None:
                 pass
             else:
-                fullResponse += text
-                RealTimeResponce += text
+                full_response += text
+                real_time_response += text
 
-                for index, char in enumerate(RealTimeResponce):
+                for index, char in enumerate(real_time_response):
                     if char in self.last_char:
                         pos = index + 1  # 区切り位置
-                        sentence = RealTimeResponce[:pos]  # 1文の区切り
-                        RealTimeResponce = RealTimeResponce[pos:]  # 残りの部分
+                        sentence = real_time_response[:pos]  # 1文の区切り
+                        real_time_response = real_time_response[pos:]  # 残りの部分
                         # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
                         yield sentence
                         break
                     else:
                         pass
+        yield real_time_response
 
     def chat(
         self,
@@ -247,25 +249,25 @@ class ChatStreamAkari(object):
             stream=True,
             stop=None,
         )
-        fullResponse = ""
-        RealTimeResponse = ""
+        full_response = ""
+        real_time_response = ""
         sentence_index = 0
         get_motion = False
         for chunk in result:
             delta = chunk.choices[0].delta
             if delta.function_call is not None:
                 if delta.function_call.arguments is not None:
-                    fullResponse += chunk.choices[0].delta.function_call.arguments
+                    full_response += chunk.choices[0].delta.function_call.arguments
                     try:
-                        data_json = json.loads(fullResponse)
+                        data_json = json.loads(full_response)
                         found_last_char = False
                         for char in self.last_char:
-                            if RealTimeResponse[-1].find(char) >= 0:
+                            if real_time_response[-1].find(char) >= 0:
                                 found_last_char = True
                         if not found_last_char:
                             data_json["talk"] = data_json["talk"] + "。"
                     except BaseException:
-                        data_json = force_parse_json(fullResponse)
+                        data_json = force_parse_json(full_response)
                     if data_json is not None:
                         if "talk" in data_json:
                             if not get_motion and "motion" in data_json:
@@ -294,16 +296,17 @@ class ChatStreamAkari(object):
                                     target=self.send_motion, args=(key,)
                                 )
                                 motion_thread.start()
-                            RealTimeResponse = str(data_json["talk"])
+                            real_time_response = str(data_json["talk"])
                             for char in self.last_char:
-                                pos = RealTimeResponse[sentence_index:].find(char)
+                                pos = real_time_response[sentence_index:].find(char)
                                 if pos >= 0:
-                                    sentence = RealTimeResponse[
+                                    sentence = real_time_response[
                                         sentence_index : sentence_index + pos + 1
                                     ]
                                     sentence_index += pos + 1
                                     yield sentence
                                     break
+        yield real_time_response
 
     def chat_and_motion(
         self,

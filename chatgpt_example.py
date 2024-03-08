@@ -1,5 +1,6 @@
 import argparse
 
+import time
 import openai
 from lib.chat_akari import ChatStreamAkari
 from lib.conf import OPENAI_APIKEY
@@ -41,6 +42,7 @@ def main() -> None:
             print(f"{model}: ")
             messages_list[i].append(chat_stream_akri.create_message(text))
             response = ""
+            start = time.time()
             for sentence in chat_stream_akri.chat(messages_list[i], model=model):
                 if voicevox:
                     text_to_voice.put_text(sentence)
@@ -50,7 +52,10 @@ def main() -> None:
             messages_list[i].append(
                 chat_stream_akri.create_message(response, role="assistant")
             )
+            interval = time.time() - start
             print("")
+            print("-------------------------")
+            print(f"time: {interval:.2f} [s]")
             print("")
 
 
