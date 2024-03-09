@@ -29,6 +29,10 @@ Google cloud consoleに登録し、Cloud Speech-to-Text APIを有効化する。
 [OPENAI](https://openai.com/)にてユーザ登録しAPI KEYを作成し、~/.bashrcに自身のkeyを記述  
 `export OPENAI_API_KEY=sk-xxxxxxxxxxxxxxx`  
 
+1. (Claudeの文章生成を使う場合)OPENAI KEYの作成   
+[ANTHROPIC](https://www.anthropic.com/)にてユーザ登録しAPI KEYを作成し、~/.bashrcに自身のkeyを記述  
+`export ANTHROPIC_API_KEY_API_KEY=sk-xxxxxxxxxxxxxxx`  
+
 1. (音声合成をweb版で使う場合) VOICEVOX web版のAPI KEYの作成
 [WEB版VOICEVOX API（高速）](https://voicevox.su-shiki.com/su-shikiapis/) にてapikeyを作成し、~/.bashrcに自身のkeyを記述  
 `export VOICEVOX_API_KEY='xxxxxxxxxxxxxxx`  
@@ -60,6 +64,9 @@ AKARIでVOICEVOXのローカル版を使う場合、AKARI本体内のCPUでVOICE
 chatGPTのサンプル  
 キーボード入力した文章に対してchatGPTで返答を作成  
 `python3 chatgpt_example.py`  
+
+`python3 chatgpt_example.py -m gpt-3.5-turbo-0125 gpt-4-turbo-preview claude-3-sonnet-20240229 claude-3-opus-20240229`  
+
 
 音声合成のサンプル  
 キーボード入力した文章を音声合成で発話  

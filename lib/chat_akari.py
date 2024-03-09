@@ -308,6 +308,91 @@ class ChatStreamAkari(object):
                                     break
         yield real_time_response
 
+    def chat_and_motion_anthropic(
+        self,
+        messages: list,
+        model: str = "claude-3-sonnet-20240229",
+        temperature: float = 0.7,
+    ) -> Generator[str, None, None]:
+        system_message = ""
+        user_messages = []
+        for message in messages:
+            if message["role"] == "system":
+                system_message = message["content"]
+            else:
+                user_messages.append(message)
+        # 最後の1文を動作と文章のJSON形式出力指定に修正
+        user_messages[-1][
+            "content"
+        ] = f"「{user_messages[-1]['content']}」に対する返答を下記のJSON形式で出力してください。{{'motion': 次の()内から動作を一つ選択('肯定する','否定する','おじぎ','喜ぶ','笑う','落ち込む','うんざりする','眠る'), 'talk': 会話の返答}}"
+        with self.anthropic_client.messages.stream(
+            model=model,
+            max_tokens=1000,
+            temperature=temperature,
+            messages=user_messages,
+            system=system_message,
+        ) as result:
+            full_response = ""
+            real_time_response = ""
+            sentence_index = 0
+            get_motion = False
+            for text in result.text_stream:
+                if text is None:
+                    pass
+                else:
+                    full_response += text
+                    real_time_response += text
+                    try:
+                        data_json = json.loads(full_response)
+                        found_last_char = False
+                        for char in self.last_char:
+                            if real_time_response[-1].find(char) >= 0:
+                                found_last_char = True
+                        if not found_last_char:
+                            data_json["talk"] = data_json["talk"] + "。"
+                    except BaseException:
+                        print(full_response)
+                        data_json = force_parse_json(full_response)
+                    if data_json is not None:
+                        if "talk" in data_json:
+                            if not get_motion and "motion" in data_json:
+                                get_motion = True
+                                motion = data_json["motion"]
+                                if motion == "肯定する":
+                                    key = "agree"
+                                elif motion == "否定する":
+                                    key = "swing"
+                                elif motion == "おじぎ":
+                                    key = "bow"
+                                elif motion == "喜ぶ":
+                                    key = "happy"
+                                elif motion == "笑う":
+                                    key = "lough"
+                                elif motion == "落ち込む":
+                                    key = "depressed"
+                                elif motion == "うんざりする":
+                                    key = "amazed"
+                                elif motion == "眠る":
+                                    key = "sleep"
+                                elif motion == "ぼんやりする":
+                                    key = "lookup"
+                                print("motion: " + motion)
+                                motion_thread = threading.Thread(
+                                    target=self.send_motion, args=(key,)
+                                )
+                                motion_thread.start()
+                            real_time_response = str(data_json["talk"])
+                            for char in self.last_char:
+                                pos = real_time_response[sentence_index:].find(char)
+                                if pos >= 0:
+                                    sentence = real_time_response[
+                                        sentence_index : sentence_index + pos + 1
+                                    ]
+                                    sentence_index += pos + 1
+                                    yield sentence
+                                    break
+            yield real_time_response
+
     def chat_and_motion(
         self,
         messages: list,
@@ -316,6 +401,10 @@ class ChatStreamAkari(object):
     ) -> Generator[str, None, None]:
         if model in self.openai_model_name:
             yield from self.chat_and_motion_gpt(
+                messages=messages, model=model, temperature=temperature
+            )
+        elif model in self.anthropic_model_name:
+            yield from self.chat_and_motion_anthropic(
                 messages=messages, model=model, temperature=temperature
             )
         else:
