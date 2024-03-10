@@ -1,9 +1,9 @@
 import io
 import json
+import time
 import wave
 from queue import Queue
 from threading import Thread
-import time
 from typing import Any
 
 import pyaudio
@@ -33,7 +33,9 @@ class TextToVoiceVox(object):
             if self.queue.qsize() == 0:
                 self.finished = True
 
-    def put_text(self, text: str, play_now: bool = True, blocking=False) -> None:
+    def put_text(
+        self, text: str, play_now: bool = True, blocking: bool = False
+    ) -> None:
         if play_now:
             self.play_flg = True
         self.queue.put(text)

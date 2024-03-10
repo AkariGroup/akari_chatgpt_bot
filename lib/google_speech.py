@@ -1,10 +1,8 @@
 from __future__ import division
 
 import math
-import grpc
-import os
-import sys
 import struct
+import sys
 import time
 from queue import Queue
 from typing import Any, Generator, Iterable, Union

@@ -1,13 +1,7 @@
 import argparse
 
-import openai
 from lib.chat_akari import ChatStreamAkari
-from lib.conf import OPENAI_APIKEY
-from lib.google_speech import (
-    MicrophoneStream,
-    get_db_thresh,
-    listen_print_loop,
-)
+from lib.google_speech import MicrophoneStream, get_db_thresh, listen_print_loop
 
 # Audio recording parameters
 RATE = 16000
@@ -35,6 +29,9 @@ def main() -> None:
         type=float,
         default=0,
         help="Microphone input power threshold",
+    )
+    parser.add_argument(
+        "-m", "--model", help="LLM model name", default="gpt-3.5-turbo-0613", type=str
     )
     parser.add_argument("--voicevox_local", action="store_true")
     parser.add_argument(
@@ -83,10 +80,10 @@ def main() -> None:
         attention = "。120文字以内で回答してください。"
         messages.append({"role": "user", "content": text + attention})
         print(f"User   : {text}")
-        print("ChatGPT: ")
+        print(f"{args.model} :")
         response = ""
         # 音声合成
-        for sentence in chat_stream_akari.chat(messages):
+        for sentence in chat_stream_akari.chat(messages, model=args.model):
             text_to_voice.put_text(sentence)
             response += sentence
             print(sentence, end="", flush=True)

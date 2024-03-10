@@ -1,11 +1,8 @@
 import argparse
-
 import time
-import openai
-from lib.chat_akari import ChatStreamAkari
-from lib.conf import OPENAI_APIKEY
-from lib.voicevox import TextToVoiceVox
 
+from lib.chat_akari import ChatStreamAkari
+from lib.voicevox import TextToVoiceVox
 
 voicevox = False  # 音声合成を使う場合Trueに変更
 
@@ -22,10 +19,6 @@ def main() -> None:
     )
     parser.add_argument("-s", "--system", default="", type=str, help="System prompt")
     args = parser.parse_args()
-
-    if voicevox:
-        text_to_voice = TextToVoiceVox(host, port)
-
     chat_stream_akri = ChatStreamAkari()
     # systemメッセージの作成
     messages_list = []
@@ -44,8 +37,6 @@ def main() -> None:
             response = ""
             start = time.time()
             for sentence in chat_stream_akri.chat(messages_list[i], model=model):
-                if voicevox:
-                    text_to_voice.put_text(sentence)
                 response += sentence
                 print(sentence, end="", flush=True)
             # chatGPTの返答をassistantメッセージとして追加

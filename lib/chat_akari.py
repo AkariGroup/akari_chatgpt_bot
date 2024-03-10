@@ -1,14 +1,17 @@
+import base64
 import json
 import os
 import sys
 import threading
-import numpy as np
 from typing import Generator
 
 import anthropic
+import cv2
 import grpc
+import numpy as np
 import openai
 from gpt_stream_parser import force_parse_json
+
 from .conf import ANTHROPIC_APIKEY
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
@@ -27,7 +30,7 @@ class ChatStreamAkari(object):
         self.anthropic_client = anthropic.Anthropic(
             api_key=ANTHROPIC_APIKEY,
         )
-        self.last_char = [",", "、", "。", "！", "!", "?", "？", "\n"]
+        self.last_char = ["、", "。", "！", "!", "?", "？", "\n", "}"]
         self.openai_model_name = [
             "gpt-4-0125-preview",
             "gpt-4-turbo-preview",
@@ -66,7 +69,7 @@ class ChatStreamAkari(object):
 
     def create_vision_message(self, text: str, image: np.ndarray) -> str:
         resized_image = cv2.resize(image, (480, 270))
-        base64_image = cv_to_base64(resized_image)
+        base64_image = self.cv_to_base64(resized_image)
         url = f"data:image/jpeg;base64,{base64_image}"
         message = {
             "role": "user",
@@ -306,7 +309,6 @@ class ChatStreamAkari(object):
                                     sentence_index += pos + 1
                                     yield sentence
                                     break
-        yield real_time_response
 
     def chat_and_motion_anthropic(
         self,
@@ -324,7 +326,7 @@ class ChatStreamAkari(object):
         # 最後の1文を動作と文章のJSON形式出力指定に修正
         user_messages[-1][
             "content"
-        ] = f"「{user_messages[-1]['content']}」に対する返答を下記のJSON形式で出力してください。{{'motion': 次の()内から動作を一つ選択('肯定する','否定する','おじぎ','喜ぶ','笑う','落ち込む','うんざりする','眠る'), 'talk': 会話の返答}}"
+        ] = f"「{user_messages[-1]['content']}」に対する返答を下記のJSON形式で出力してください。{{\"motion\": 次の()内から動作を一つ選択(\"肯定する\",\"否定する\",\"おじぎ\",\"喜ぶ\",\"笑う\",\"落ち込む\",\"うんざりする\",\"眠る\"), \"talk\": 会話の返答}}"
         with self.anthropic_client.messages.stream(
             model=model,
             max_tokens=1000,
@@ -351,7 +353,6 @@ class ChatStreamAkari(object):
                         if not found_last_char:
                             data_json["talk"] = data_json["talk"] + "。"
                     except BaseException:
-                        print(full_response)
                         data_json = force_parse_json(full_response)
                     if data_json is not None:
                         if "talk" in data_json:
@@ -391,7 +392,6 @@ class ChatStreamAkari(object):
                                     sentence_index += pos + 1
                                     yield sentence
                                     break
-            yield real_time_response
 
     def chat_and_motion(
         self,
