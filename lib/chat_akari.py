@@ -67,7 +67,7 @@ class ChatStreamAkari(object):
         _, encoded = cv2.imencode(".jpg", image)
         return base64.b64encode(encoded).decode("ascii")
 
-    def create_vision_message(self, text: str, image: np.ndarray) -> str:
+    def create_vision_message_gpt(self, text: str, image: np.ndarray) -> str:
         resized_image = cv2.resize(image, (480, 270))
         base64_image = self.cv_to_base64(resized_image)
         url = f"data:image/jpeg;base64,{base64_image}"
@@ -87,6 +87,38 @@ class ChatStreamAkari(object):
             ],
         }
         return message
+
+    def create_vision_message_anthropic(self, text: str, image: np.ndarray) -> str:
+        resized_image = cv2.resize(image, (480, 270))
+        base64_image = self.cv_to_base64(resized_image)
+        url = f"data:image/jpeg;base64,{base64_image}"
+        message = {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": text,
+                },
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "image/jpeg",
+                        "data": url,
+                    },
+                },
+            ],
+        }
+        return message
+
+    def create_vision_message(self, text: str, image: np.ndarray, model: str) -> str:
+        if model in self.openai_vision_model_name:
+            return self.create_vision_message_gpt(text, image)
+        elif model in self.anthropic_model_name:
+            return self.create_vision_message_anthropic(text, image)
+        else:
+            print(f"Model name {model} can't use for this function")
+            return
 
     def send_motion(self, name: str) -> None:
         try:
