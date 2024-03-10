@@ -1,5 +1,6 @@
 akari-client[depthai]
 akari-proto
+anthropic
 google-cloud-speech
 -e gpt-stream-json-parser/
 grpcio

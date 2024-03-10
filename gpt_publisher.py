@@ -1,14 +1,11 @@
 import argparse
-
+import copy
 import os
 import sys
-import openai
-import grpc
 from concurrent import futures
-from lib.chat import chat_stream, create_message
+
+import grpc
 from lib.chat_akari_grpc import ChatStreamAkariGrpc
-from lib.conf import OPENAI_APIKEY
-import copy
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
 import gpt_server_pb2
@@ -22,12 +19,14 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
     chatGPTにtextを送信し、返答をvoicevox_serverに送るgprcサーバ
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
+        self.chat_stream_akari_grpc = ChatStreamAkariGrpc()
         content = "チャットボットとしてロールプレイします。あかりという名前のカメラロボットとして振る舞ってください。性格はポジティブで元気です。"
-        self.messages = [create_message(content, role="system")]
+        self.messages = [
+            self.chat_stream_akari_grpc.create_message(content, role="system")
+        ]
         voicevox_channel = grpc.insecure_channel("localhost:10002")
         self.stub = voicevox_server_pb2_grpc.VoicevoxServerServiceStub(voicevox_channel)
-        self.chat_stream_akari_grpc = ChatStreamAkariGrpc()
 
     def SetGpt(
         self, request: gpt_server_pb2.SetGptRequest(), context: grpc.ServicerContext
@@ -39,21 +38,29 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
         if request.is_finish:
             content = f"{request.text}。一文で簡潔に答えてください。"
         else:
-            content = f"「{request.text}」という文に対して、以下の「」内からどれか一つを選択して、それだけ回答してください。\n「えーと。」「はい。」「うーん。」「いいえ。」「はい、そうですね。」「そうですね…。」「いいえ、違います。」「こんにちは。」「ありがとうございます。」「なるほど。」「まあ。」"
+            content = f"{request.text}。"
         tmp_messages = copy.deepcopy(self.messages)
-        tmp_messages.append(create_message(content))
+        tmp_messages.append(self.chat_stream_akari_grpc.create_message(content))
         if request.is_finish:
             self.messages = copy.deepcopy(tmp_messages)
         if request.is_finish:
-            for sentence in self.chat_stream_akari_grpc.chat(tmp_messages):
+            # 最終応答。高速生成するために、モデルはgpt-3.5-turbo
+            for sentence in self.chat_stream_akari_grpc.chat(
+                tmp_messages, model="gpt-3.5-turbo-0613"
+            ):
                 print(f"Send voicevox: {sentence}")
                 self.stub.SetVoicevox(
                     voicevox_server_pb2.SetVoicevoxRequest(text=sentence)
                 )
-                self.messages.append(create_message(response, role="assistant"))
                 response += sentence
+            self.messages.append(
+                self.chat_stream_akari_grpc.create_message(response, role="assistant")
+            )
         else:
-            for sentence in self.chat_stream_akari_grpc.chat_and_motion(tmp_messages):
+            # 途中での第一声とモーション準備。function_callingの確実性のため、モデルはgpt-4-turbo-preview
+            for sentence in self.chat_stream_akari_grpc.chat_and_motion(
+                tmp_messages, model="claude-3-sonnet-20240229"
+            ):
                 print(f"Send voicevox: {sentence}")
                 self.stub.SetVoicevox(
                     voicevox_server_pb2.SetVoicevoxRequest(text=sentence)
@@ -65,7 +72,7 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
     def SendMotion(
         self, request: gpt_server_pb2.SendMotionRequest(), context: grpc.ServicerContext
     ) -> gpt_server_pb2.SendMotionReply:
-        success = self.chat_stream_akari_grpc.send_motion()
+        success = self.chat_stream_akari_grpc.send_reserved_motion()
         return gpt_server_pb2.SendMotionReply(success=success)
 
 

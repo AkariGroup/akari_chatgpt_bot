@@ -16,7 +16,7 @@ class VoicevoxServer(voicevox_server_pb2_grpc.VoicevoxServerServiceServicer):
     Voicevoxにtextを送信し、音声を再生するgprcサーバ
     """
 
-    def __init__(self, text_to_voice):
+    def __init__(self, text_to_voice) -> None:
         self.text_to_voice = text_to_voice
 
     def SetVoicevox(
@@ -70,14 +70,14 @@ def main() -> None:
         voicevox_host = args.voicevox_host
         voicevox_port = args.voicevox_port
         text_to_voice = TextToVoiceVox(voicevox_host, voicevox_port)
-        print(f"voicevox local pc ver.")
+        print("voicevox local pc ver.")
     else:
         # web版の場合
         from lib.conf import VOICEVOX_APIKEY
         from lib.voicevox import TextToVoiceVoxWeb
 
         text_to_voice = TextToVoiceVoxWeb(apikey=VOICEVOX_APIKEY)
-        print(f"voicevox web ver.")
+        print("voicevox web ver.")
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     voicevox_server_pb2_grpc.add_VoicevoxServerServiceServicer_to_server(

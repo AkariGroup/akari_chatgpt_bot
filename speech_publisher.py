@@ -1,9 +1,10 @@
 import argparse
 import os
 import sys
+
 import grpc
 from lib.google_speech import get_db_thresh
-from lib.google_speech_grpc import MicrophoneStreamGrpc, GoogleSpeechGrpc
+from lib.google_speech_grpc import GoogleSpeechGrpc, MicrophoneStreamGrpc
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
 import motion_server_pb2

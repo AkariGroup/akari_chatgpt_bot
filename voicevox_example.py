@@ -2,8 +2,8 @@ import argparse
 
 
 def main() -> None:
-    global host
-    global port
+    host = ""
+    port = ""
     parser = argparse.ArgumentParser()
     parser.add_argument("--voicevox_local", action="store_true")
     parser.add_argument(
@@ -25,13 +25,13 @@ def main() -> None:
         host = args.voicevox_host
         port = args.voicevox_port
         text_to_voice = TextToVoiceVox(host, port)
-        print(f"voicevox local pc ver.")
+        print("voicevox local pc ver.")
     else:
         from lib.conf import VOICEVOX_APIKEY
         from lib.voicevox import TextToVoiceVoxWeb
 
         text_to_voice = TextToVoiceVoxWeb(apikey=VOICEVOX_APIKEY)
-        print(f"voicevox web ver.")
+        print("voicevox web ver.")
 
     print("発話させたい文章をキーボード入力後、Enterを押してください。")
     while True:

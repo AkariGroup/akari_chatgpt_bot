@@ -29,6 +29,10 @@ Google cloud consoleに登録し、Cloud Speech-to-Text APIを有効化する。
 [OPENAI](https://openai.com/)にてユーザ登録しAPI KEYを作成し、~/.bashrcに自身のkeyを記述  
 `export OPENAI_API_KEY=sk-xxxxxxxxxxxxxxx`  
 
+1. (Claudeの文章生成を使う場合)OPENAI KEYの作成   
+[ANTHROPIC](https://www.anthropic.com/)にてユーザ登録しAPI KEYを作成し、~/.bashrcに自身のkeyを記述  
+`export ANTHROPIC_API_KEY_API_KEY=sk-xxxxxxxxxxxxxxx`  
+
 1. (音声合成をweb版で使う場合) VOICEVOX web版のAPI KEYの作成
 [WEB版VOICEVOX API（高速）](https://voicevox.su-shiki.com/su-shikiapis/) にてapikeyを作成し、~/.bashrcに自身のkeyを記述  
 `export VOICEVOX_API_KEY='xxxxxxxxxxxxxxx`  
@@ -61,6 +65,11 @@ chatGPTのサンプル
 キーボード入力した文章に対してchatGPTで返答を作成  
 `python3 chatgpt_example.py`  
 
+引数は下記が使用可能  
+- `-m`, `--model`: 使用するモデル名を指定可能。モデル名はOpenaiもしくはAnthropicのものが選択可能。モデル名を羅列することで、全モデルに対して一括で問いかけが可能。  
+例) `python3 chatgpt_example.py -m gpt-3.5-turbo-0125 gpt-4-turbo-preview claude-3-sonnet-20240229 claude-3-opus-20240229`  
+
+
 音声合成のサンプル  
 キーボード入力した文章を音声合成で発話  
 `python3 voicevox_example.py`  
@@ -77,6 +86,7 @@ chatGPTのサンプル
 引数は下記が使用可能  
 - `-t`,`--timeout`: マイク入力がこの時間しきい値以下になったら音声入力を打ち切る。デフォルトは0.5[s]。短いと応答が早くなるが不安定になりやすい。  
 - `-p`,`--power_threshold`: マイク入力の音量しきい値。デフォルトは0で、0の場合アプリ起動時に周辺環境の音量を取得し、そこから音量しきい値を自動決定する。  
+- `-m`, `--model`: 使用するモデル名を指定可能。モデル名はOpenaiもしくはAnthropicのものが選択可能。  
 - `--voicevox_local`: このオプションをつけた場合、voicevoxのweb版ではなくローカル版を実行する。  
 - `--voicevox_host`: `--voicevox_local`を有効にした場合、ここで指定したhostのvoicevoxにリクエストを送信する。デフォルトは"127.0.0.1"なのでlocalhostのvoicevoxを利用する。  
 - `--voicevox_port`: `--voicevox_local`を有効にした場合、ここで指定したportのvoicevoxにリクエストを送信する。デフォルトは50021。  
