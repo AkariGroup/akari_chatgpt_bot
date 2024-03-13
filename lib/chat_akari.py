@@ -3,7 +3,7 @@ import json
 import os
 import sys
 import threading
-from typing import Generator
+from typing import Generator, List, Optional
 
 import anthropic
 import cv2
@@ -68,10 +68,14 @@ class ChatStreamAkari(object):
         _, encoded = cv2.imencode(".jpg", image)
         return base64.b64encode(encoded).decode("ascii")
 
-    def create_vision_message_gpt(self, text: str, image: np.ndarray) -> str:
-        resized_image = cv2.resize(image, (480, 270))
-        base64_image = self.cv_to_base64(resized_image)
-        url = f"data:image/jpeg;base64,{base64_image}"
+    def create_vision_message_gpt(
+        self, text: str, image: Optional[np.ndarray, List[np.ndarray]]
+    ) -> str:
+        image_list = []
+        if image is isinstance(image, list):
+            image_list = image
+        else:
+            image_list.append(image)
         message = {
             "role": "user",
             "content": [
@@ -79,20 +83,29 @@ class ChatStreamAkari(object):
                     "type": "text",
                     "text": text,
                 },
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": url,
-                    },
-                },
             ],
         }
+        for image in image_list:
+            resized_image = cv2.resize(image, (480, 270))
+            base64_image = self.cv_to_base64(resized_image)
+            url = f"data:image/jpeg;base64,{base64_image}"
+            vision_message = {
+                "type": "image_url",
+                "image_url": {
+                    "url": url,
+                },
+            }
+            message["content"].append(vision_message)
         return message
 
-    def create_vision_message_anthropic(self, text: str, image: np.ndarray) -> str:
-        resized_image = cv2.resize(image, (480, 270))
-        base64_image = self.cv_to_base64(resized_image)
-        url = f"data:image/jpeg;base64,{base64_image}"
+    def create_vision_message_anthropic(
+        self, text: str, image: Optional[np.ndarray, List[np.ndarray]]
+    ) -> str:
+        image_list = []
+        if image is isinstance(image, list):
+            image_list = image
+        else:
+            image_list.append(image)
         message = {
             "role": "user",
             "content": [
@@ -100,19 +113,26 @@ class ChatStreamAkari(object):
                     "type": "text",
                     "text": text,
                 },
-                {
-                    "type": "image",
-                    "source": {
-                        "type": "base64",
-                        "media_type": "image/jpeg",
-                        "data": url,
-                    },
-                },
             ],
         }
+        for image in image_list:
+            resized_image = cv2.resize(image, (480, 270))
+            base64_image = self.cv_to_base64(resized_image)
+            url = f"{base64_image}"
+            vision_message = {
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": "image/jpeg",
+                    "data": url,
+                },
+            }
+            message["content"].append(vision_message)
         return message
 
-    def create_vision_message(self, text: str, image: np.ndarray, model: str) -> str:
+    def create_vision_message(
+        self, text: str, image: Optional[np.ndarray, List[np.ndarray]], model: str
+    ) -> str:
         if model in self.openai_vision_model_name:
             return self.create_vision_message_gpt(text, image)
         elif model in self.anthropic_model_name:
