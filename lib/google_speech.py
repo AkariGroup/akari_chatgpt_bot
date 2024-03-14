@@ -20,6 +20,10 @@ CHUNK = int(RATE / 10)  # 100ms
 
 
 class MicrophoneStream(object):
+    """
+    マイクから音声をストリーミングするためのクラス。
+
+    """
     def __init__(
         self,
         rate: float,
@@ -27,6 +31,15 @@ class MicrophoneStream(object):
         _timeout_thresh: float = 0.5,
         _db_thresh: float = 55.0,
     ) -> None:
+        """クラスの初期化メソッド。
+
+        Args:
+            rate (float): サンプリングレート。
+            chunk (float): チャンクサイズ。
+            _timeout_thresh (float): 音声が停止したと判断するタイムアウト閾値（秒）。デフォルトは0.5秒。
+            _db_thresh (float): 音声が開始されたと判断する音量閾値（デシベル）。デフォルトは55.0デシベル。
+
+        """
         self._rate = rate
         self._chunk = chunk
         self._buff: Queue[Union[None, bytes]] = queue.Queue()
@@ -48,6 +61,8 @@ class MicrophoneStream(object):
         )
 
     def __enter__(self) -> Any:
+        """PyAudioストリームを開く。
+        """
         with ignoreStderr():
             self._audio_interface = pyaudio.PyAudio()
             self._audio_stream = self._audio_interface.open(
@@ -68,6 +83,15 @@ class MicrophoneStream(object):
         _timeout_thresh: float = 0.5,
         _db_thresh: float = 55.0,
     ) -> None:
+        """PyAudioストリームを閉じます。
+
+        Args:
+            rate (float): サンプリングレート。
+            chunk (float): チャンクサイズ。
+            _timeout_thresh (float, optional): 音声が停止したと判断するタイムアウト閾値（秒）。デフォルトは0.5秒。
+            _db_thresh (float, optional): 音声が開始されたと判断する音量閾値（デシベル）。デフォルトは55.0デシベル。
+
+        """
         self._audio_stream.stop_stream()
         self._audio_stream.close()
         self.closed = True
@@ -76,11 +100,26 @@ class MicrophoneStream(object):
         self.is_start_callback = False
 
     def start_callback(self) -> None:
+        """開始コールバックを呼び出す。
+
+        """
         self.is_start_callback = True
 
     def _fill_buffer(
         self, in_data: bytes, frame_count: int, time_info: Any, status_flags: Any
     ) -> Union[None, Any]:
+        """マイクからの入力データをバッファーに書き込む。
+
+        Args:
+            in_data (bytes): 入力データ
+            frame_count (int): フレーム数
+            time_info (Any): 時間
+            status_flags (Any): ステータスフラグ
+
+        Returns:
+            Union[None, Any]: Noneまたは続行のためのフラグ
+
+        """
         if self.is_start_callback:
             self._buff.put(in_data)
             in_data2 = struct.unpack(f"{len(in_data) / 2:.0f}h", in_data)
@@ -95,6 +134,11 @@ class MicrophoneStream(object):
         return None, pyaudio.paContinue
 
     def generator(self) -> Union[None, Generator[Any, None, None]]:
+        """bufferから音声データを生成するジェネレーター
+
+        Yields:
+            Union[None, Any]: 音声データ
+        """
         while not self.closed:
             try:
                 chunk = self._buff.get(block=False, timeout=0.01)
@@ -115,6 +159,11 @@ class MicrophoneStream(object):
                 continue
 
     def transcribe(self) -> Iterable[speech.StreamingRecognizeResponse]:
+        """ストリームからの音声をGoogle Cloud Speech-to-Text APIでテキストに変換する。
+
+        Returns:
+            Iterable[speech.StreamingRecognizeResponse]: ストリーミング認識の応答
+        """
         audio_generator = self.generator()
         self.start_callback()
         requests = (
@@ -126,6 +175,12 @@ class MicrophoneStream(object):
 
 
 def get_db_thresh() -> float:
+    """
+    マイクからの周囲音量を測定。
+
+    Returns:
+        float: 測定された音量[db]
+    """
     with ignoreStderr():
         p = pyaudio.PyAudio()
         stream = p.open(
@@ -152,6 +207,16 @@ def get_db_thresh() -> float:
 
 
 def listen_print_loop(responses: Any) -> str:
+    """
+    Google Cloud Speech-to-Text APIの応答からテキストを取得し、リアルタイムで出力。
+
+    Args:
+        responses (Any): ストリーミング認識の応答
+
+    Returns:
+        str: 認識されたテキスト
+
+    """
     num_chars_printed = 0
     transcript = ""
     overwrite_chars = ""
