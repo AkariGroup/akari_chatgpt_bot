@@ -28,9 +28,20 @@ import motion_server_pb2_grpc
 
 
 class ChatStreamAkari(object):
+    """
+    ChatGPTやClaude3を使用して会話を行うためのクラス。
+    """
+
     def __init__(
-        self, motion_host: str = "localhost", motion_port: str = "50055"
+        self, motion_host: str = "127.0.0.1", motion_port: str = "50055"
     ) -> None:
+        """クラスの初期化メソッド。
+
+        Args:
+            motion_host (str, optional): モーションサーバーのホスト名。デフォルトは"127.0.0.1"。
+            motion_port (str, optional): モーションサーバーのポート番号。デフォルトは"50055"。
+
+        """
         motion_channel = grpc.insecure_channel(motion_host + ":" + motion_port)
         self.motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(
             motion_channel
@@ -68,13 +79,46 @@ class ChatStreamAkari(object):
             "claude-instant-1.2",
         ]
 
-    def create_message(self, text: str, role: str = "user") -> str:
-        message = {"role": role, "content": text}
-        return message
+    def send_motion(self, name: str) -> None:
+        """motion serverに動作を送信する
+
+        Args:
+            name (str): 動作名
+
+        """
+        try:
+            self.motion_stub.SetMotion(
+                motion_server_pb2.SetMotionRequest(
+                    name=name, priority=3, repeat=False, clear=True
+                )
+            )
+        except BaseException:
+            print("send error!")
+            pass
 
     def cv_to_base64(self, image: np.ndarray) -> str:
+        """ OpenCV画像をbase64エンコードした文字列に変換する
+        Args:
+            image (np.ndarray): OpenCV画像データ
+
+        Returns:
+            str: base64エンコードされた画像データ
+
+        """
         _, encoded = cv2.imencode(".jpg", image)
         return base64.b64encode(encoded).decode("ascii")
+
+    def create_message(self, text: str, role: str = "user") -> str:
+        """送信用メッセージを作成する
+        Args:
+            text (str): メッセージ内容
+            role (str): メッセージの役割 (user または system)
+        Returns:
+            str: 作成したメッセージ
+
+        """
+        message = {"role": role, "content": text}
+        return message
 
     def create_vision_message_gpt(
 <<<<<<< HEAD
@@ -88,6 +132,17 @@ class ChatStreamAkari(object):
         image_height: int = 270,
 <<<<<<< HEAD
     ) -> str:
+        """ChatGPT用の画像付きメッセージを作成する
+
+        Args:
+            text (str): メッセージのテキスト部分
+            image (np.ndarray または List[np.ndarray]): 画像データ
+            image_width (int): 画像の幅 (デフォルト: 480)
+            image_height (int): 画像の高さ (デフォルト: 270)
+        Returns:
+            str: 作成した画像付きメッセージ
+
+        """
         image_list = []
         if isinstance(image, list):
 =======
@@ -146,6 +201,17 @@ class ChatStreamAkari(object):
         image_height: int = 270,
 <<<<<<< HEAD
     ) -> str:
+        """Claude3用の画像付きメッセージを作成する
+
+        Args:
+            text (str): メッセージのテキスト部分
+            image (np.ndarray または List[np.ndarray]): 画像データ
+            image_width (int): 画像の幅 (デフォルト: 480)
+            image_height (int): 画像の高さ (デフォルト: 270)
+        Returns:
+            str: 作成した画像付きメッセージ
+
+        """
         image_list = []
         if isinstance(image, list):
 =======
@@ -212,6 +278,17 @@ class ChatStreamAkari(object):
 =======
 >>>>>>> 38c0ff0 (Fix error for multiple image)
     ) -> str:
+        """画像付きメッセージを作成する
+
+        Args:
+            text (str): メッセージのテキスト部分
+            image (np.ndarray または List[np.ndarray]): 画像データ
+            image_width (int): 画像の幅 (デフォルト: 480)
+            image_height (int): 画像の高さ (デフォルト: 270)
+        Returns:
+            str: 作成した画像付きメッセージ
+
+        """
         if model in self.openai_vision_model_name:
             return self.create_vision_message_gpt(
                 text, image, image_width, image_height
@@ -224,23 +301,22 @@ class ChatStreamAkari(object):
             print(f"Model name {model} can't use for this function")
             return
 
-    def send_motion(self, name: str) -> None:
-        try:
-            self.motion_stub.SetMotion(
-                motion_server_pb2.SetMotionRequest(
-                    name=name, priority=3, repeat=False, clear=True
-                )
-            )
-        except BaseException:
-            print("send error!")
-            pass
-
     def chat_anthropic(
         self,
         messages: list,
         model: str = "claude-3-sonnet-20240229",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
+        """Claude3を使用して会話を行う
+
+        Args:
+            messages (list): 会話のメッセージ
+            model (str): 使用するモデル名 (デフォルト: "claude-3-sonnet-20240229")
+            temperature (float): Claude3のtemperatureパラメータ (デフォルト: 0.7)
+        Returns:
+            Generator[str, None, None]): 会話の返答を順次生成する
+
+        """
         # anthropicではsystemメッセージは引数として与えるので、メッセージから抜き出す
         system_message = ""
         user_messages = []
@@ -283,6 +359,16 @@ class ChatStreamAkari(object):
         model: str = "gpt-3.5-turbo-0613",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
+        """ChatGPTを使用して会話を行う
+
+        Args:
+            messages (list): 会話のメッセージ
+            model (str): 使用するモデル名 (デフォルト: "claude-3-sonnet-20240229")
+            temperature (float): ChatGPTのtemperatureパラメータ (デフォルト: 0.7)
+        Returns:
+            Generator[str, None, None]): 会話の返答を順次生成する
+
+        """
         result = None
         if model in self.openai_vision_model_name:
             result = openai.chat.completions.create(
@@ -331,6 +417,16 @@ class ChatStreamAkari(object):
         model: str = "gpt-3.5-turbo-0613",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
+        """指定したモデルを使用して会話を行う
+
+        Args:
+            messages (list): 会話のメッセージリスト
+            model (str): 使用するモデル名 (デフォルト: "gpt-3.5-turbo-0613")
+            temperature (float): サンプリングの温度パラメータ (デフォルト: 0.7)
+        Returns:
+            Generator[str, None, None]): 会話の返答を順次生成する
+
+        """
         if model in self.openai_model_name or model in self.openai_vision_model_name:
             yield from self.chat_gpt(
                 messages=messages, model=model, temperature=temperature
@@ -349,6 +445,16 @@ class ChatStreamAkari(object):
         model: str = "gpt-4-turbo-preview",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
+        """ChatGPTを使用して会話を行い、会話の内容に応じた動作も生成する
+
+        Args:
+            messages (list): メッセージリスト
+            model (str): 使用するモデル名 (デフォルト: "gpt-4-turbo-preview")
+            temperature (float): ChatGPTのtemperatureパラメータ (デフォルト: 0.7)
+        Returns:
+            Generator[str, None, None]): 会話の返答を順次生成する
+
+        """
         result = openai.chat.completions.create(
             model=model,
             messages=messages,
@@ -452,6 +558,16 @@ class ChatStreamAkari(object):
         model: str = "claude-3-sonnet-20240229",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
+        """Claude3を使用して会話を行い、会話の内容に応じた動作も生成する
+
+        Args:
+            messages (list): メッセージリスト
+            model (str): 使用するモデル名 (デフォルト:"claude-3-sonnet-20240229")
+            temperature (float): Claude3のtemperatureパラメータ (デフォルト: 0.7)
+        Returns:
+            Generator[str, None, None]): 会話の返答を順次生成する
+
+        """
         system_message = ""
         user_messages = []
         for message in messages:
@@ -535,6 +651,16 @@ class ChatStreamAkari(object):
         model: str = "gpt-4-turbo-preview",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
+        """指定したモデルを使用して会話を行い、会話の内容に応じた動作も生成する
+
+        Args:
+            messages (list): 会話のメッセージ
+            model (str): 使用するモデル名 (デフォルト: "gpt-4-turbo-preview")
+            temperature (float): temperatureパラメータ (デフォルト: 0.7)
+        Returns:
+            Generator[str, None, None]): 返答を順次生成する
+
+        """
         if model in self.openai_model_name:
             yield from self.chat_and_motion_gpt(
                 messages=messages, model=model, temperature=temperature

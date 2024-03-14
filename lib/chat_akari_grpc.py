@@ -13,13 +13,30 @@ import motion_server_pb2
 
 
 class ChatStreamAkariGrpc(ChatStreamAkari):
+    """ChatGPTやClaude3を使用して会話を行うためのクラス。
+
+    """
+
     def __init__(
         self, motion_host: str = "127.0.0.1", motion_port: str = "50055"
     ) -> None:
+        """クラスの初期化メソッド。
+
+        Args:
+            motion_host (str, optional): モーションサーバーのホスト名。デフォルトは"127.0.0.1"。
+            motion_port (str, optional): モーションサーバーのポート番号。デフォルトは"50055"。
+
+        """
         super().__init__(motion_host, motion_port)
         self.cur_motion_name = ""
 
     def send_reserved_motion(self) -> bool:
+        """予約されたモーションを送信するメソッド。
+
+        Returns:
+            bool: モーションが送信されたかどうかを示すブール値。
+
+        """
         print(f"send motion {self.cur_motion_name}")
         if self.cur_motion_name == "":
             self.motion_stub.ClearMotion(motion_server_pb2.ClearMotionRequest())
@@ -39,6 +56,17 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
     def chat_and_motion_gpt(
         self, messages: list, model: str = "gpt-4", temperature: float = 0.7
     ) -> Generator[str, None, None]:
+        """ChatGPTを使用してチャットとモーションを処理するメソッド。
+
+        Args:
+            messages (list): チャットメッセージのリスト。
+            model (str, optional): 使用するOpenAI GPTモデル。デフォルトは"gpt-4"。
+            temperature (float, optional): サンプリング温度。デフォルトは0.7。
+
+        Yields:
+            str: チャット応答のジェネレータ。
+
+        """
         result = openai.chat.completions.create(
             model=model,
             messages=messages,
@@ -151,6 +179,17 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
         model: str = "claude-3-sonnet-20240229",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
+        """Anthropicモデルを使用してチャットとモーションを処理するメソッド。
+
+        Args:
+            messages (list): チャットメッセージのリスト。
+            model (str, optional): 使用するAnthropicモデル。デフォルトは"claude-3-sonnet-20240229"。
+            temperature (float, optional): サンプリング温度。デフォルトは0.7。
+
+        Yields:
+            str: チャット応答のジェネレータ。
+
+        """
         system_message = ""
         user_messages = []
         for message in messages:
