@@ -89,7 +89,11 @@ class ChatStreamAkari(object):
             pass
 
     def cv_to_base64(self, image: np.ndarray) -> str:
+<<<<<<< HEAD
         """ OpenCV画像をbase64エンコードした文字列に変換する
+=======
+        """OpenCV画像をbase64エンコードした文字列に変換する
+>>>>>>> 14f0170245ba54da1cfaad7882501a3c98b27a26
         Args:
             image (np.ndarray): OpenCV画像データ
 
