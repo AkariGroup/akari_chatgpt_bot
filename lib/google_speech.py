@@ -175,8 +175,7 @@ class MicrophoneStream(object):
 
 
 def get_db_thresh() -> float:
-    """
-    マイクからの周囲音量を測定。
+    """マイクからの周囲音量を測定。
 
     Returns:
         float: 測定された音量[db]
@@ -207,8 +206,7 @@ def get_db_thresh() -> float:
 
 
 def listen_print_loop(responses: Any) -> str:
-    """
-    Google Cloud Speech-to-Text APIの応答からテキストを取得し、リアルタイムで出力。
+    """Google Cloud Speech-to-Text APIの応答からテキストを取得し、リアルタイムで出力。
 
     Args:
         responses (Any): ストリーミング認識の応答
