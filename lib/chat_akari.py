@@ -3,7 +3,11 @@ import json
 import os
 import sys
 import threading
+<<<<<<< HEAD
 from typing import Generator, List, Union
+=======
+from typing import Generator, List, Optional
+>>>>>>> 994988a (Add multi image messaging)
 
 import anthropic
 import cv2
@@ -69,6 +73,7 @@ class ChatStreamAkari(object):
         return base64.b64encode(encoded).decode("ascii")
 
     def create_vision_message_gpt(
+<<<<<<< HEAD
         self,
         text: str,
         image: Union[np.ndarray, List[np.ndarray]],
@@ -77,6 +82,12 @@ class ChatStreamAkari(object):
     ) -> str:
         image_list = []
         if isinstance(image, list):
+=======
+        self, text: str, image: Optional[np.ndarray, List[np.ndarray]]
+    ) -> str:
+        image_list = []
+        if image is isinstance(image, list):
+>>>>>>> 994988a (Add multi image messaging)
             image_list = image
         else:
             image_list.append(image)
@@ -90,7 +101,11 @@ class ChatStreamAkari(object):
             ],
         }
         for image in image_list:
+<<<<<<< HEAD
             resized_image = cv2.resize(image, (image_width, image_height))
+=======
+            resized_image = cv2.resize(image, (480, 270))
+>>>>>>> 994988a (Add multi image messaging)
             base64_image = self.cv_to_base64(resized_image)
             url = f"data:image/jpeg;base64,{base64_image}"
             vision_message = {
@@ -103,6 +118,7 @@ class ChatStreamAkari(object):
         return message
 
     def create_vision_message_anthropic(
+<<<<<<< HEAD
         self,
         text: str,
         image: Union[np.ndarray, List[np.ndarray]],
@@ -111,6 +127,12 @@ class ChatStreamAkari(object):
     ) -> str:
         image_list = []
         if isinstance(image, list):
+=======
+        self, text: str, image: Optional[np.ndarray, List[np.ndarray]]
+    ) -> str:
+        image_list = []
+        if image is isinstance(image, list):
+>>>>>>> 994988a (Add multi image messaging)
             image_list = image
         else:
             image_list.append(image)
@@ -124,7 +146,11 @@ class ChatStreamAkari(object):
             ],
         }
         for image in image_list:
+<<<<<<< HEAD
             resized_image = cv2.resize(image, (image_width, image_height))
+=======
+            resized_image = cv2.resize(image, (480, 270))
+>>>>>>> 994988a (Add multi image messaging)
             base64_image = self.cv_to_base64(resized_image)
             url = f"{base64_image}"
             vision_message = {
@@ -139,12 +165,16 @@ class ChatStreamAkari(object):
         return message
 
     def create_vision_message(
+<<<<<<< HEAD
         self,
         text: str,
         image: Union[np.ndarray, List[np.ndarray]],
         model: str,
         image_width: int = 480,
         image_height: int = 270,
+=======
+        self, text: str, image: Optional[np.ndarray, List[np.ndarray]], model: str
+>>>>>>> 994988a (Add multi image messaging)
     ) -> str:
         if model in self.openai_vision_model_name:
             return self.create_vision_message_gpt(
