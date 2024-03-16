@@ -15,6 +15,7 @@ from google.cloud import speech
 from six.moves import queue  # type: ignore
 
 from .err_handler import ignoreStderr
+from .google_speech import MicrophoneStream
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
 import gpt_server_pb2
@@ -27,7 +28,12 @@ RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
 
 
-class MicrophoneStreamGrpc(object):
+class MicrophoneStreamGrpc(MicrophoneStream):
+    """
+    マイクから音声をストリーミングするためのクラス。
+
+    """
+
     def __init__(
         self,
         rate: float,
@@ -39,24 +45,24 @@ class MicrophoneStreamGrpc(object):
         voicevox_host: str = "127.0.0.1",
         voicevox_port: str = "10002",
     ) -> None:
-        self._rate = rate
-        self._chunk = chunk
-        self._buff: Queue[Union[None, bytes]] = queue.Queue()
-        self.closed = True
-        self.is_start = False
-        self.is_start_callback = False
-        self.is_finish = False
-        self.timeout_thresh = _timeout_thresh
-        self.db_thresh = _db_thresh
-        language_code = "ja-JP"  # a BCP-47 language tag
-        self.client = speech.SpeechClient()
-        config = speech.RecognitionConfig(
-            encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-            sample_rate_hertz=RATE,
-            language_code=language_code,
-        )
-        self.streaming_config = speech.StreamingRecognitionConfig(
-            config=config, interim_results=True
+        """クラスの初期化メソッド。
+
+        Args:
+            rate (float): サンプリングレート。
+            chunk (float): チャンクサイズ。
+            _timeout_thresh (float): 音声が停止したと判断するタイムアウト閾値（秒）。デフォルトは0.5秒。
+            _db_thresh (float): 音声が開始されたと判断する音量閾値（デシベル）。デフォルトは55.0デシベル。
+            gpt_host (str, optional): GPTサーバーのホスト名。デフォルトは"127.0.0.1"。
+            gpt_port (str, optional): GPTサーバーのポート番号。デフォルトは"10001"。
+            voicevox_host (str, optional): VoiceVoxサーバーのホスト名。デフォルトは"127.0.0.1"。
+            voicevox_port (str, optional): VoiceVoxサーバーのポート番号。デフォルトは"10002"。
+
+        """
+        super().__init__(
+            rate=rate,
+            chunk=chunk,
+            _timeout_thresh=_timeout_thresh,
+            _db_thresh=_db_thresh,
         )
         gpt_channel = grpc.insecure_channel(gpt_host + ":" + gpt_port)
         self.gpt_stub = gpt_server_pb2_grpc.GptServerServiceStub(gpt_channel)
@@ -65,40 +71,21 @@ class MicrophoneStreamGrpc(object):
             voicevox_channel
         )
 
-    def __enter__(self) -> Any:
-        with ignoreStderr():
-            self._audio_interface = pyaudio.PyAudio()
-            self._audio_stream = self._audio_interface.open(
-                format=pyaudio.paInt16,
-                channels=1,
-                rate=self._rate,
-                input=True,
-                frames_per_buffer=self._chunk,
-                stream_callback=self._fill_buffer,
-            )
-            self.closed = False
-            return self
-
-    def __exit__(
-        self,
-        rate: float,
-        chunk: float,
-        _timeout_thresh: float = 0.5,
-        _db_thresh: float = 55.0,
-    ) -> None:
-        self._audio_stream.stop_stream()
-        self._audio_stream.close()
-        self.closed = True
-        self._buff.put(None)
-        self._audio_interface.terminate()
-        self.is_start_callback = False
-
-    def start_callback(self) -> None:
-        self.is_start_callback = True
-
     def _fill_buffer(
         self, in_data: bytes, frame_count: int, time_info: Any, status_flags: Any
     ) -> Union[None, Any]:
+        """マイクからの入力データをバッファーに書き込む。
+
+        Args:
+            in_data (bytes): 入力データ
+            frame_count (int): フレーム数
+            time_info (Any): 時間
+            status_flags (Any): ステータスフラグ
+
+        Returns:
+            Union[None, Any]: Noneまたは続行のためのフラグ
+
+        """
         if self.is_start_callback:
             self._buff.put(in_data)
             in_data2 = struct.unpack(f"{len(in_data) / 2:.0f}h", in_data)
@@ -125,38 +112,13 @@ class MicrophoneStreamGrpc(object):
                 return None, pyaudio.paComplete
         return None, pyaudio.paContinue
 
-    def generator(self) -> Union[None, Generator[Any, None, None]]:
-        while not self.closed:
-            try:
-                chunk = self._buff.get(block=False, timeout=0.01)
-                if chunk is None:
-                    return
-                data = [chunk]
-                while True:
-                    try:
-                        chunk = self._buff.get(block=False)
-                        if chunk is None:
-                            return
-                        data.append(chunk)
-                    except queue.Empty:
-                        break
-                yield b"".join(data)
-            except queue.Empty:
-                time.sleep(0.01)
-                continue
-
-    def transcribe(self) -> Iterable[speech.StreamingRecognizeResponse]:
-        audio_generator = self.generator()
-        self.start_callback()
-        requests = (
-            speech.StreamingRecognizeRequest(audio_content=content)
-            for content in audio_generator
-        )
-        responses = self.client.streaming_recognize(self.streaming_config, requests)
-        return responses
-
 
 class GoogleSpeechGrpc(object):
+    """
+    Google Speech-to-Text APIのレスポンスを処理するクラス。
+
+    """
+
     def __init__(
         self,
         gpt_host: str = "127.0.0.1",
@@ -164,6 +126,14 @@ class GoogleSpeechGrpc(object):
         voicevox_host: str = "127.0.0.1",
         voicevox_port: str = "10001",
     ) -> None:
+        """GoogleSpeechGrpcオブジェクトを初期化する。
+
+        Args:
+            gpt_host (str, optional): GPTサーバーのホスト名。デフォルトは"127.0.0.1"。
+            gpt_port (str, optional): GPTサーバーのポート番号。デフォルトは"10001"。
+            voicevox_host (str, optional): VoiceVoxサーバーのホスト名。デフォルトは"127.0.0.1"。
+            voicevox_port (str, optional): VoiceVoxサーバーのポート番号。デフォルトは"10001"。
+        """
         gpt_channel = grpc.insecure_channel(gpt_host + ":" + gpt_port)
         self.gpt_stub = gpt_server_pb2_grpc.GptServerServiceStub(gpt_channel)
         voicevox_channel = grpc.insecure_channel(voicevox_host + ":" + voicevox_port)
@@ -174,6 +144,16 @@ class GoogleSpeechGrpc(object):
     def listen_publisher_grpc(
         self, responses: Any, progress_report_len: int = 0
     ) -> str:
+        """
+        Google Cloud Speech-to-Text APIの応答からテキストを取得し、リアルタイムで出力。
+
+        Args:
+            responses (Any): ストリーミング認識の応答
+            progress_report_len (int, optional): ここで指定した文字数以上になると、その時点で一度GPTに結果を送信する。0の場合は途中での送信は無効となる。デフォルトは0。
+
+        Returns:
+            str: 認識されたテキスト
+        """
         is_progress_report = False
         num_chars_printed = 0
         transcript = ""
