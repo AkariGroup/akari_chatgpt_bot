@@ -24,6 +24,7 @@ class MicrophoneStream(object):
     マイクから音声をストリーミングするためのクラス。
 
     """
+
     def __init__(
         self,
         rate: float,
@@ -61,8 +62,7 @@ class MicrophoneStream(object):
         )
 
     def __enter__(self) -> Any:
-        """PyAudioストリームを開く。
-        """
+        """PyAudioストリームを開く。"""
         with ignoreStderr():
             self._audio_interface = pyaudio.PyAudio()
             self._audio_stream = self._audio_interface.open(
@@ -100,9 +100,7 @@ class MicrophoneStream(object):
         self.is_start_callback = False
 
     def start_callback(self) -> None:
-        """開始コールバックを呼び出す。
-
-        """
+        """開始コールバックを呼び出す。"""
         self.is_start_callback = True
 
     def _fill_buffer(

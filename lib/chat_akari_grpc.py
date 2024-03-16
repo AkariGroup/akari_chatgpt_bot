@@ -13,9 +13,7 @@ import motion_server_pb2
 
 
 class ChatStreamAkariGrpc(ChatStreamAkari):
-    """ChatGPTやClaude3を使用して会話を行うためのクラス。
-
-    """
+    """ChatGPTやClaude3を使用して会話を行うためのクラス。"""
 
     def __init__(
         self, motion_host: str = "127.0.0.1", motion_port: str = "50055"

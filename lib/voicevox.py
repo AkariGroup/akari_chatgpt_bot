@@ -16,6 +16,7 @@ class TextToVoiceVox(object):
     """
     VoiceVoxを使用してテキストから音声を生成するクラス。
     """
+
     def __init__(self, host: str = "127.0.0.1", port: str = "52001") -> None:
         """クラスの初期化メソッド。
         Args:
@@ -32,9 +33,7 @@ class TextToVoiceVox(object):
         self.voice_thread.start()
 
     def __exit__(self) -> None:
-        """音声合成スレッドを終了する。
-
-        """
+        """音声合成スレッドを終了する。"""
         self.voice_thread.join()
 
     def text_to_voice_thread(self) -> None:
@@ -170,6 +169,7 @@ class TextToVoiceVoxWeb(TextToVoiceVox):
     """
     VoiceVox(web版)を使用してテキストから音声を生成するクラス。
     """
+
     def __init__(self, apikey: str) -> None:
         """クラスの初期化メソッド。
         Args:

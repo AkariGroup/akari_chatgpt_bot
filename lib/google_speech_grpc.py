@@ -33,6 +33,7 @@ class MicrophoneStreamGrpc(MicrophoneStream):
     マイクから音声をストリーミングするためのクラス。
 
     """
+
     def __init__(
         self,
         rate: float,
@@ -61,7 +62,7 @@ class MicrophoneStreamGrpc(MicrophoneStream):
             rate=rate,
             chunk=chunk,
             _timeout_thresh=_timeout_thresh,
-            _db_thresh=_db_thresh
+            _db_thresh=_db_thresh,
         )
         gpt_channel = grpc.insecure_channel(gpt_host + ":" + gpt_port)
         self.gpt_stub = gpt_server_pb2_grpc.GptServerServiceStub(gpt_channel)
@@ -113,10 +114,11 @@ class MicrophoneStreamGrpc(MicrophoneStream):
 
 
 class GoogleSpeechGrpc(object):
-   """
-   Google Speech-to-Text APIのレスポンスを処理するクラス。
+    """
+    Google Speech-to-Text APIのレスポンスを処理するクラス。
 
-   """
+    """
+
     def __init__(
         self,
         gpt_host: str = "127.0.0.1",
