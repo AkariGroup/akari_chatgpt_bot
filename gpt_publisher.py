@@ -32,18 +32,21 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
         self, request: gpt_server_pb2.SetGptRequest(), context: grpc.ServicerContext
     ) -> gpt_server_pb2.SetGptReply:
         response = ""
+        is_finish = True
+        if request.HasField("is_finish"):
+            is_finish = request.is_finish
         if len(request.text) < 2:
             return gpt_server_pb2.SetGptReply(success=True)
         print(f"Receive: {request.text}")
-        if request.is_finish:
+        if is_finish:
             content = f"{request.text}。一文で簡潔に答えてください。"
         else:
             content = f"{request.text}。"
         tmp_messages = copy.deepcopy(self.messages)
         tmp_messages.append(self.chat_stream_akari_grpc.create_message(content))
-        if request.is_finish:
+        if is_finish:
             self.messages = copy.deepcopy(tmp_messages)
-        if request.is_finish:
+        if is_finish:
             # 最終応答。高速生成するために、モデルはgpt-3.5-turbo
             for sentence in self.chat_stream_akari_grpc.chat(
                 tmp_messages, model="gpt-3.5-turbo-0613"
@@ -59,7 +62,7 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
         else:
             # 途中での第一声とモーション準備。function_callingの確実性のため、モデルはgpt-4-turbo-preview
             for sentence in self.chat_stream_akari_grpc.chat_and_motion(
-                tmp_messages, model="claude-3-sonnet-20240229"
+                tmp_messages, model="gpt-4-turbo-preview"
             ):
                 print(f"Send voicevox: {sentence}")
                 self.stub.SetVoicevox(

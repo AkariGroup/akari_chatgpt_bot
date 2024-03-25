@@ -3,7 +3,7 @@ package gpt_server;
 
 message SetGptRequest {
   string text = 1;
-  bool is_finish =2;
+  optional bool is_finish =2;
 }
 
 message SetGptReply {
