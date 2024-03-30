@@ -52,7 +52,11 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
         return True
 
     def chat_and_motion_gpt(
-        self, messages: list, model: str = "gpt-4", temperature: float = 0.7
+        self,
+        messages: list,
+        model: str = "gpt-4",
+        temperature: float = 0.7,
+        short_response: bool = False,
     ) -> Generator[str, None, None]:
         """ChatGPTを使用してチャットとモーションを処理するメソッド。
 
@@ -60,58 +64,62 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
             messages (list): チャットメッセージのリスト。
             model (str, optional): 使用するOpenAI GPTモデル。デフォルトは"gpt-4"。
             temperature (float, optional): サンプリング温度。デフォルトは0.7。
+            short_response (bool, optional): 相槌などの短応答のみを返すか、通常の応答を返すか。
 
         Yields:
             str: チャット応答のジェネレータ。
 
         """
+        functions = [
+            {
+                "name": "reply_with_motion_",
+                "description": "ユーザのメッセージに対する回答と、回答の感情に近い動作を一つ選択します。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "motion": {
+                            "type": "string",
+                            "description": "動作",
+                            "enum": [
+                                "肯定する",
+                                "否定する",
+                                "おじぎ",
+                                "喜ぶ",
+                                "笑う",
+                                "落ち込む",
+                                "うんざりする",
+                                "眠る",
+                            ],
+                        },
+                        "talk": {
+                            "type": "string",
+                            "description": "回答",
+                        },
+                    },
+                    "required": ["motion", "talk"],
+                },
+            }
+        ]
+        if short_response:
+            # 短応答の候補のenumリストを追加する。
+            functions[0]["parameters"]["properties"]["talk"]["enum"] = [
+                "えーと。",
+                "はい。",
+                "うーん。",
+                "いいえ。",
+                "そうですね。",
+                "こんにちは。",
+                "ありがとうございます。",
+                "なるほど。",
+                "まあ。",
+                "確かに。",
+            ]
         result = openai.chat.completions.create(
             model=model,
             messages=messages,
             n=1,
             temperature=temperature,
-            functions=[
-                {
-                    "name": "reply_with_motion_",
-                    "description": "ユーザのメッセージに対する回答と、回答の感情に近い動作を一つ選択します。",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "motion": {
-                                "type": "string",
-                                "description": "動作",
-                                "enum": [
-                                    "肯定する",
-                                    "否定する",
-                                    "おじぎ",
-                                    "喜ぶ",
-                                    "笑う",
-                                    "落ち込む",
-                                    "うんざりする",
-                                    "眠る",
-                                ],
-                            },
-                            "talk": {
-                                "type": "string",
-                                "description": "回答",
-                                "enum": [
-                                    "えーと。",
-                                    "はい。",
-                                    "うーん。",
-                                    "いいえ。",
-                                    "そうですね。",
-                                    "こんにちは。",
-                                    "ありがとうございます。",
-                                    "なるほど。",
-                                    "まあ。",
-                                    "確かに。",
-                                ],
-                            },
-                        },
-                        "required": ["motion", "talk"],
-                    },
-                }
-            ],
+            functions=functions,
             function_call={"name": "reply_with_motion_"},
             stream=True,
             stop=None,
@@ -176,6 +184,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
         messages: list,
         model: str = "claude-3-sonnet-20240229",
         temperature: float = 0.7,
+        short_response: bool = False,
     ) -> Generator[str, None, None]:
         """Anthropicモデルを使用してチャットとモーションを処理するメソッド。
 
@@ -183,6 +192,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
             messages (list): チャットメッセージのリスト。
             model (str, optional): 使用するAnthropicモデル。デフォルトは"claude-3-sonnet-20240229"。
             temperature (float, optional): サンプリング温度。デフォルトは0.7。
+            short_response (bool, optional): 相槌などの短応答のみを返すか、通常の応答を返すか。
 
         Yields:
             str: チャット応答のジェネレータ。
@@ -195,10 +205,16 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                 system_message = message["content"]
             else:
                 user_messages.append(message)
-        # 最後の1文を動作と文章のJSON形式出力指定に修正
-        user_messages[-1][
-            "content"
-        ] = f"「{user_messages[-1]['content']}」に対する返答を下記のJSON形式で出力してください。{{\"motion\": 次の()内から動作を一つだけ選択して返す(\"肯定する\",\"否定する\",\"おじぎ\",\"喜ぶ\",\"笑う\",\"落ち込む\",\"うんざりする\",\"眠る\"), \"talk\": 次の()内から返答を一つだけ選択して返す(\"えーと。\",\"はい。\",\"うーん。\",\"いいえ。\",\"そうですね。\",\"こんにちは。\",\"ありがとうございます。\",\"なるほど。\",\"まあ。\",\"確かに。\")}}"
+        if short_response:
+            # 最後の1文を動作と文章のJSON形式出力指定に修正。一文のみの返答
+            user_messages[-1][
+                "content"
+            ] = f"「{user_messages[-1]['content']}」に対する返答を下記のJSON形式で出力してください。{{\"motion\": 次の()内から動作を一つだけ選択して返す(\"肯定する\",\"否定する\",\"おじぎ\",\"喜ぶ\",\"笑う\",\"落ち込む\",\"うんざりする\",\"眠る\"), \"talk\": 返答にふさわしいものを次の()内から一つ選択して、それだけを返す(\"えーと。\",\"はい。\",\"うーん。\",\"いいえ。\",\"そうですね。\",\"こんにちは。\",\"ありがとうございます。\",\"なるほど。\",\"まあ。\",\"確かに。\")}}"
+        else:
+            # 最後の1文を動作と文章のJSON形式出力指定に修正
+            user_messages[-1][
+                "content"
+            ] = f"「{user_messages[-1]['content']}」に対する返答を下記のJSON形式で出力してください。{{\"motion\": 次の()内から動作を一つだけ選択して返す(\"肯定する\",\"否定する\",\"おじぎ\",\"喜ぶ\",\"笑う\",\"落ち込む\",\"うんざりする\",\"眠る\"), \"talk\": \"返答内容\")}}"
         with self.anthropic_client.messages.stream(
             model=model,
             max_tokens=1000,
@@ -261,3 +277,39 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                                     sentence_index += pos + 1
                                     yield sentence
                                     break
+
+    def chat_and_motion(
+        self,
+        messages: list,
+        model: str = "gpt-4-turbo-preview",
+        temperature: float = 0.7,
+        short_response: bool = False,
+    ) -> Generator[str, None, None]:
+        """指定したモデルを使用して会話を行い、会話の内容に応じた動作も生成する
+
+        Args:
+            messages (list): 会話のメッセージ
+            model (str): 使用するモデル名 (デフォルト: "gpt-4-turbo-preview")
+            temperature (float): temperatureパラメータ (デフォルト: 0.7)
+            short_response (bool, optional): 相槌などの短応答のみを返すか、通常の応答を返すか。
+        Returns:
+            Generator[str, None, None]): 返答を順次生成する
+
+        """
+        if model in self.openai_model_name:
+            yield from self.chat_and_motion_gpt(
+                messages=messages,
+                model=model,
+                temperature=temperature,
+                short_response=short_response,
+            )
+        elif model in self.anthropic_model_name:
+            yield from self.chat_and_motion_anthropic(
+                messages=messages,
+                model=model,
+                temperature=temperature,
+                short_response=short_response,
+            )
+        else:
+            print(f"Model name {model} can't use for this function")
+            return
