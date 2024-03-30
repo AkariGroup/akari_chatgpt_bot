@@ -102,7 +102,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
         ]
         if short_response:
             # 短応答の候補のenumリストを追加する。
-            functions["parameters"]["talk"]["enum"] = [
+            functions[0]["parameters"]["properties"]["talk"]["enum"] = [
                 "えーと。",
                 "はい。",
                 "うーん。",
@@ -209,7 +209,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
             # 最後の1文を動作と文章のJSON形式出力指定に修正。一文のみの返答
             user_messages[-1][
                 "content"
-            ] = f"「{user_messages[-1]['content']}」に対する返答を下記のJSON形式で出力してください。{{\"motion\": 次の()内から動作を一つだけ選択して返す(\"肯定する\",\"否定する\",\"おじぎ\",\"喜ぶ\",\"笑う\",\"落ち込む\",\"うんざりする\",\"眠る\"), \"talk\": 次の()内から返答を一つだけ選択して返す(\"えーと。\",\"はい。\",\"うーん。\",\"いいえ。\",\"そうですね。\",\"こんにちは。\",\"ありがとうございます。\",\"なるほど。\",\"まあ。\",\"確かに。\")}}"
+            ] = f"「{user_messages[-1]['content']}」に対する返答を下記のJSON形式で出力してください。{{\"motion\": 次の()内から動作を一つだけ選択して返す(\"肯定する\",\"否定する\",\"おじぎ\",\"喜ぶ\",\"笑う\",\"落ち込む\",\"うんざりする\",\"眠る\"), \"talk\": 返答にふさわしいものを次の()内から一つ選択して、それだけを返す(\"えーと。\",\"はい。\",\"うーん。\",\"いいえ。\",\"そうですね。\",\"こんにちは。\",\"ありがとうございます。\",\"なるほど。\",\"まあ。\",\"確かに。\")}}"
         else:
             # 最後の1文を動作と文章のJSON形式出力指定に修正
             user_messages[-1][
@@ -298,11 +298,17 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
         """
         if model in self.openai_model_name:
             yield from self.chat_and_motion_gpt(
-                messages=messages, model=model, temperature=temperature,short_response=short_response
+                messages=messages,
+                model=model,
+                temperature=temperature,
+                short_response=short_response,
             )
         elif model in self.anthropic_model_name:
             yield from self.chat_and_motion_anthropic(
-                messages=messages, model=model, temperature=temperature,short_response=short_response
+                messages=messages,
+                model=model,
+                temperature=temperature,
+                short_response=short_response,
             )
         else:
             print(f"Model name {model} can't use for this function")
