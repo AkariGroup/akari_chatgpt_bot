@@ -119,16 +119,17 @@ class MicrophoneStream(object):
 
         """
         if self.is_start_callback:
-            self._buff.put(in_data)
             in_data2 = struct.unpack(f"{len(in_data) / 2:.0f}h", in_data)
             rms = math.sqrt(np.square(in_data2).mean())
             power = 20 * math.log10(rms) if rms > 0.0 else -math.inf  # RMS to db
             if power > self.db_thresh:
-                self.is_start = True
-            if power > self.db_thresh:
+                if not self.is_start:
+                    self.is_start = True
                 self.start_time = time.time()
-            if self.is_start and (time.time() - self.start_time >= self.timeout_thresh):
-                self.closed = True
+            if self.is_start:
+                self._buff.put(in_data)
+                if time.time() - self.start_time >= self.timeout_thresh:
+                    self.closed = True
         return None, pyaudio.paContinue
 
     def generator(self) -> Union[None, Generator[Any, None, None]]:

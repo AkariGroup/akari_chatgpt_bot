@@ -87,29 +87,30 @@ class MicrophoneStreamGrpc(MicrophoneStream):
 
         """
         if self.is_start_callback:
-            self._buff.put(in_data)
             in_data2 = struct.unpack(f"{len(in_data) / 2:.0f}h", in_data)
             rms = math.sqrt(np.square(in_data2).mean())
             power = 20 * math.log10(rms) if rms > 0.0 else -math.inf  # RMS to db
             if power > self.db_thresh:
-                self.is_start = True
-            if power > self.db_thresh:
+                if not self.is_start:
+                    self.is_start = True
                 self.start_time = time.time()
-            if self.is_start and (time.time() - self.start_time >= self.timeout_thresh):
-                self.closed = True
-                try:
-                    self.voicevox_stub.SetVoicePlayFlg(
-                        voicevox_server_pb2.SetVoicePlayFlgRequest(flg=True)
-                    )
-                except BaseException:
-                    print("SetVoicePlayFlg error")
-                    pass
-                try:
-                    self.gpt_stub.SendMotion(gpt_server_pb2.SendMotionRequest())
-                except BaseException:
-                    print("Send motion error")
-                    pass
-                return None, pyaudio.paComplete
+            if self.is_start:
+                self._buff.put(in_data)
+                if time.time() - self.start_time >= self.timeout_thresh:
+                    self.closed = True
+                    try:
+                        self.voicevox_stub.SetVoicePlayFlg(
+                            voicevox_server_pb2.SetVoicePlayFlgRequest(flg=True)
+                        )
+                    except BaseException:
+                        print("SetVoicePlayFlg error")
+                        pass
+                    try:
+                        self.gpt_stub.SendMotion(gpt_server_pb2.SendMotionRequest())
+                    except BaseException:
+                        print("Send motion error")
+                        pass
+                    return None, pyaudio.paComplete
         return None, pyaudio.paContinue
 
 

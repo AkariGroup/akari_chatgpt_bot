@@ -77,17 +77,19 @@ def main() -> None:
             if responses is not None:
                 text = listen_print_loop(responses)
         # chatGPT
-        attention = "。120文字以内で回答してください。"
-        messages.append({"role": "user", "content": text + attention})
-        print(f"User   : {text}")
-        print(f"{args.model} :")
-        response = ""
-        # 音声合成
-        for sentence in chat_stream_akari.chat(messages, model=args.model):
-            text_to_voice.put_text(sentence)
-            response += sentence
-            print(sentence, end="", flush=True)
-        messages.append({"role": "assistant", "content": response})
+        # 2文字以上の入力でない場合は回答しない。
+        if len(text) >= 2:
+            attention = "。120文字以内で回答してください。"
+            messages.append({"role": "user", "content": text + attention})
+            print(f"User   : {text}")
+            print(f"{args.model} :")
+            response = ""
+            for sentence in chat_stream_akari.chat(messages, model=args.model):
+                # 音声合成
+                text_to_voice.put_text(sentence)
+                response += sentence
+                print(sentence, end="", flush=True)
+            messages.append({"role": "assistant", "content": response})
         print("")
         print("")
 
