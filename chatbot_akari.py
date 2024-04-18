@@ -4,7 +4,7 @@ import sys
 
 import grpc
 from lib.chat_akari import ChatStreamAkari
-from lib.google_speech import MicrophoneStream, get_db_thresh, listen_print_loop
+from lib.google_speech import MicrophoneStream, listen_print_loop
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
 import motion_server_pb2
@@ -13,7 +13,6 @@ import motion_server_pb2_grpc
 # Audio recording parameters
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
-POWER_THRESH_DIFF = 25  # 周辺音量にこの値を足したものをpower_threshouldとする
 
 host: str = ""
 port: str = ""
@@ -25,20 +24,6 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--robot_ip", help="Ip address", default="127.0.0.1", type=str)
     parser.add_argument("--robot_port", help="Port number", default="50055", type=str)
-    parser.add_argument(
-        "-t",
-        "--timeout",
-        type=float,
-        default=0.5,
-        help="Microphone input power timeout",
-    )
-    parser.add_argument(
-        "-p",
-        "--power_threshold",
-        type=float,
-        default=0,
-        help="Microphone input power threshold",
-    )
     parser.add_argument(
         "-m", "--model", help="LLM model name", default="gpt-3.5-turbo-0613", type=str
     )
@@ -56,11 +41,6 @@ def main() -> None:
         help="VoiceVox server port",
     )
     args = parser.parse_args()
-    timeout: float = args.timeout
-    power_threshold: float = args.power_threshold
-    if power_threshold == 0:
-        power_threshold = get_db_thresh() + POWER_THRESH_DIFF
-    print(f"power_threshold set to {power_threshold:.3f}db")
     if args.voicevox_local:
         from lib.voicevox import TextToVoiceVox
 
@@ -87,7 +67,7 @@ def main() -> None:
         # 音声認識
         text = ""
         responses = None
-        with MicrophoneStream(RATE, CHUNK, timeout, power_threshold) as stream:
+        with MicrophoneStream(RATE, CHUNK) as stream:
             print("Enterを入力してください")
             input()
             # うなずきモーション再生

@@ -4,6 +4,7 @@ import math
 import struct
 import sys
 import time
+import threading
 from queue import Queue
 from typing import Any, Generator, Iterable, Union
 
@@ -13,10 +14,7 @@ from google.cloud import speech
 from six.moves import queue  # type: ignore
 
 from .err_handler import ignoreStderr
-
-# Audio recording parameters
-RATE = 16000
-CHUNK = int(RATE / 10)  # 100ms
+from .google_webrtc import GoogleWebrtc
 
 
 class MicrophoneStream(object):
@@ -27,18 +25,14 @@ class MicrophoneStream(object):
 
     def __init__(
         self,
-        rate: float,
-        chunk: float,
-        _timeout_thresh: float = 0.5,
-        _db_thresh: float = 55.0,
+        rate: float = 16000,
+        chunk: float = 1600,
     ) -> None:
         """クラスの初期化メソッド。
 
         Args:
             rate (float): サンプリングレート。
             chunk (float): チャンクサイズ。
-            _timeout_thresh (float): 音声が停止したと判断するタイムアウト閾値（秒）。デフォルトは0.5秒。
-            _db_thresh (float): 音声が開始されたと判断する音量閾値（デシベル）。デフォルトは55.0デシベル。
 
         """
         self._rate = rate
@@ -48,18 +42,22 @@ class MicrophoneStream(object):
         self.is_start = False
         self.is_start_callback = False
         self.is_finish = False
-        self.timeout_thresh = _timeout_thresh
-        self.db_thresh = _db_thresh
+        self.vad_state = False
         language_code = "ja-JP"  # a BCP-47 language tag
         self.client = speech.SpeechClient()
         config = speech.RecognitionConfig(
             encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-            sample_rate_hertz=RATE,
+            sample_rate_hertz=self._rate,
             language_code=language_code,
         )
         self.streaming_config = speech.StreamingRecognitionConfig(
             config=config, interim_results=True
         )
+        self.google_webrtc = GoogleWebrtc()
+        self.vad_thread = threading.Thread(
+            target=self.google_webrtc.vad_loop, args=(self.vad_callback,)
+        )
+        self.vad_thread.start()
 
     def __enter__(self) -> Any:
         """PyAudioストリームを開く。"""
@@ -76,20 +74,12 @@ class MicrophoneStream(object):
             self.closed = False
             return self
 
-    def __exit__(
-        self,
-        rate: float,
-        chunk: float,
-        _timeout_thresh: float = 0.5,
-        _db_thresh: float = 55.0,
-    ) -> None:
-        """PyAudioストリームを閉じます。
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        """PyAudioストリームを閉じる。
 
         Args:
             rate (float): サンプリングレート。
             chunk (float): チャンクサイズ。
-            _timeout_thresh (float, optional): 音声が停止したと判断するタイムアウト閾値（秒）。デフォルトは0.5秒。
-            _db_thresh (float, optional): 音声が開始されたと判断する音量閾値（デシベル）。デフォルトは55.0デシベル。
 
         """
         self._audio_stream.stop_stream()
@@ -98,6 +88,11 @@ class MicrophoneStream(object):
         self._buff.put(None)
         self._audio_interface.terminate()
         self.is_start_callback = False
+        self.vad_thread.join()
+
+    def vad_callback(self, flag) -> None:
+        """Vadの状態変更コールバックを呼び出す。"""
+        self.vad_state = flag
 
     def start_callback(self) -> None:
         """開始コールバックを呼び出す。"""
@@ -120,14 +115,10 @@ class MicrophoneStream(object):
         """
         if self.is_start_callback:
             self._buff.put(in_data)
-            in_data2 = struct.unpack(f"{len(in_data) / 2:.0f}h", in_data)
-            rms = math.sqrt(np.square(in_data2).mean())
-            power = 20 * math.log10(rms) if rms > 0.0 else -math.inf  # RMS to db
-            if power > self.db_thresh:
+            if self.vad_state:
                 self.is_start = True
-            if power > self.db_thresh:
                 self.start_time = time.time()
-            if self.is_start and (time.time() - self.start_time >= self.timeout_thresh):
+            if self.is_start and not self.vad_state:
                 self.closed = True
         return None, pyaudio.paContinue
 
@@ -170,37 +161,6 @@ class MicrophoneStream(object):
         )
         responses = self.client.streaming_recognize(self.streaming_config, requests)
         return responses
-
-
-def get_db_thresh() -> float:
-    """マイクからの周囲音量を測定。
-
-    Returns:
-        float: 測定された音量[db]
-    """
-    with ignoreStderr():
-        p = pyaudio.PyAudio()
-        stream = p.open(
-            format=pyaudio.paInt16,
-            channels=1,
-            rate=RATE,
-            input=True,
-            frames_per_buffer=CHUNK,
-        )
-        frames = []
-        print("Measuring Ambient Sound Levels…")
-        for _ in range(int(RATE / CHUNK * 2)):
-            data = stream.read(CHUNK)
-            frames.append(data)
-        audio_data = np.frombuffer(b"".join(frames), dtype=np.int16)
-        print(audio_data)
-        rms = math.sqrt(np.square(audio_data).mean())
-        power = 20 * math.log10(rms) if rms > 0.0 else -math.inf  # RMS to db
-        print(f"Sound Levels: {power:.3f}db")
-        stream.stop_stream()
-        stream.close()
-        p.terminate()
-    return power
 
 
 def listen_print_loop(responses: Any) -> str:

@@ -11,3 +11,4 @@ PyAudio
 python-dotenv
 six
 SpeechRecognition
+webrtcvad
