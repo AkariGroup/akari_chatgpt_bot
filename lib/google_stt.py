@@ -86,6 +86,7 @@ class ResumableMicrophoneStream:
         self.bridging_offset = 0
         self.last_transcript_was_final = False
         self.new_stream = True
+        self.is_start_callback = False
         self._audio_interface = pyaudio.PyAudio()
         self._audio_stream = self._audio_interface.open(
             format=pyaudio.paInt16,
@@ -134,6 +135,12 @@ class ResumableMicrophoneStream:
         self._buff.put(None)
         self._audio_interface.terminate()
 
+    def start_callback(self,status: bool) -> None:
+        """開始コールバックを呼び出すかどうかを変更する。
+
+        """
+        self.is_start_callback = status
+
     def _fill_buffer(
         self: object,
         in_data: object,
@@ -150,10 +157,11 @@ class ResumableMicrophoneStream:
 
         returns: None
         """
-        self._buff.put(in_data)
-        return None, pyaudio.paContinue
+        if self.is_start_callback:
+            self._buff.put(in_data)
+            return None, pyaudio.paContinue
 
-    def generator(self: object) -> object:
+    def generator(self) -> object:
         """Stream Audio from microphone to API and to local buffer
 
         Args:

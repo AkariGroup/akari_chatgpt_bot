@@ -5,7 +5,7 @@ RATE = 16000
 BUFFER_SIZE = 160  # 10ms
 
 
-class google_webrtc:
+class GoogleWebrtc:
     def __init__(self):
         ## ストリーム準備
         self.audio = pa.PyAudio()
@@ -28,6 +28,7 @@ class google_webrtc:
             ## ストリームからデータを取得
             audio_data = self.stream.read(BUFFER_SIZE, exception_on_overflow=False)
             vad_result = self.vad.is_speech(audio_data, RATE)
+            print(vad_result)
             if vad_result != self.before_result:
                 if callback != None:
                     callback(vad_result)
