@@ -96,7 +96,7 @@ class MicrophoneStreamGrpc(MicrophoneStream):
                 self.start_time = time.time()
             if self.is_start:
                 self._buff.put(in_data)
-                if (time.time() - self.start_time >= self.timeout_thresh):
+                if time.time() - self.start_time >= self.timeout_thresh:
                     self.closed = True
                     try:
                         self.voicevox_stub.SetVoicePlayFlg(

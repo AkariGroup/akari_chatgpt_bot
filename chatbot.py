@@ -71,14 +71,14 @@ def main() -> None:
         text = ""
         responses = None
         with MicrophoneStream(RATE, CHUNK, timeout, power_threshold) as stream:
-            #print("Enterを入力してください")
-            #input()
+            print("Enterを入力してください")
+            input()
             responses = stream.transcribe()
             if responses is not None:
                 text = listen_print_loop(responses)
         # chatGPT
         # 2文字以上の入力でない場合は回答しない。
-        if len(text) >=2:
+        if len(text) >= 2:
             attention = "。120文字以内で回答してください。"
             messages.append({"role": "user", "content": text + attention})
             print(f"User   : {text}")
