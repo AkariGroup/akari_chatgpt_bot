@@ -1,0 +1,15 @@
+syntax = "proto3";
+package speech_server;
+
+message SetRecognitionFlgRequest {
+  bool enable = 1;
+}
+
+message SetRecognitionFlgReply {
+  bool success =1;
+}
+
+service SpeechServerService {
+    rpc SetRecognitionFlg(SetRecognitionFlgRequest)
+        returns (SetRecognitionFlgReply);
+}

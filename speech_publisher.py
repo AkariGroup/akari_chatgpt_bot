@@ -1,12 +1,15 @@
 import argparse
 import os
 import sys
+import time
 
 import grpc
 from lib.google_speech import get_db_thresh
 from lib.google_speech_grpc import GoogleSpeechGrpc, MicrophoneStreamGrpc
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
+import speech_server_pb2
+import speech_server_pb2_grpc
 import motion_server_pb2
 import motion_server_pb2_grpc
 import voicevox_server_pb2
@@ -17,11 +20,33 @@ CHUNK = int(RATE / 10)  # 100ms
 POWER_THRESH_DIFF = 30  # 周辺音量にこの値を足したものをpower_threshouldとする
 PROGRESS_REPORT_LEN = 8  # 音声認識の中間結果をGPTに渡す文字数。0にすると無効。
 
+speech_recognition_flg = True
+
+
+class SpeechServer(speech_server_pb2_grpc.SpeechServerServiceServicer):
+
+
+    def SetRecognitionFlg(
+        self,
+        request: speech_server_pb2.SetRecognitionFlgRequest(),
+        context: grpc.ServicerContext,
+    ) -> speech_server_pb2.SetRecognitionFlgReply:
+        global speech_recognition_flg
+        speech_recognition_flg = request.flg
+        return speech_server_pb2.SetRecognitionFlgReply(success=True)
+
+
 
 def main() -> None:
     global host
     global port
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--ip", help="Speech server ip address", default="127.0.0.1", type=str
+    )
+    parser.add_argument(
+        "--port", help="Speech server port number", default="10003", type=str
+    )
     parser.add_argument("--robot_ip", help="Ip address", default="127.0.0.1", type=str)
     parser.add_argument("--robot_port", help="Port number", default="50055", type=str)
     parser.add_argument("--gpt_ip", help="Ip address", default="127.0.0.1", type=str)
@@ -77,8 +102,8 @@ def main() -> None:
     while True:
         responses = None
         with MicrophoneStreamGrpc(RATE, CHUNK, timeout, power_threshold) as stream:
-            print("Enterを入力してから、マイクに話しかけてください")
-            input()
+            while not speech_recognition_flg:
+                time.sleep(0.01)
             try:
                 voicevox_stub.SetVoicePlayFlg(
                     voicevox_server_pb2.SetVoicePlayFlgRequest(flg=False)

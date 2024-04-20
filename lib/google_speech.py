@@ -46,7 +46,7 @@ class MicrophoneStream(object):
         self._buff: Queue[Union[None, bytes]] = queue.Queue()
         self.closed = True
         self.is_start = False
-        self.is_start_callback = False
+        self.enable_flg = False
         self.is_finish = False
         self.timeout_thresh = _timeout_thresh
         self.db_thresh = _db_thresh
@@ -97,11 +97,11 @@ class MicrophoneStream(object):
         self.closed = True
         self._buff.put(None)
         self._audio_interface.terminate()
-        self.is_start_callback = False
+        self.enable_flg = False
 
-    def start_callback(self) -> None:
-        """開始コールバックを呼び出す。"""
-        self.is_start_callback = True
+    def set_enable_flg(self, flg) -> None:
+        """音声認識を有効化するか。"""
+        self.enable_flg = flg
 
     def _fill_buffer(
         self, in_data: bytes, frame_count: int, time_info: Any, status_flags: Any
@@ -118,7 +118,7 @@ class MicrophoneStream(object):
             Union[None, Any]: Noneまたは続行のためのフラグ
 
         """
-        if self.is_start_callback:
+        if self.enable_flg:
             in_data2 = struct.unpack(f"{len(in_data) / 2:.0f}h", in_data)
             rms = math.sqrt(np.square(in_data2).mean())
             power = 20 * math.log10(rms) if rms > 0.0 else -math.inf  # RMS to db
@@ -164,7 +164,7 @@ class MicrophoneStream(object):
             Iterable[speech.StreamingRecognizeResponse]: ストリーミング認識の応答
         """
         audio_generator = self.generator()
-        self.start_callback()
+        self.enable_flg = True
         requests = (
             speech.StreamingRecognizeRequest(audio_content=content)
             for content in audio_generator
