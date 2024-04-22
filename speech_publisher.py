@@ -15,7 +15,6 @@ import voicevox_server_pb2_grpc
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
 POWER_THRESH_DIFF = 30  # 周辺音量にこの値を足したものをpower_threshouldとする
-PROGRESS_REPORT_LEN = 8  # 音声認識の中間結果をGPTに渡す文字数。0にすると無効。
 
 
 def main() -> None:
@@ -45,6 +44,12 @@ def main() -> None:
         type=float,
         default=0,
         help="Microphone input power threshold",
+    )
+    parser.add_argument(
+        "--progress_report_len",
+        type=int,
+        default=8,
+        help="Send the progress of speech recognition if recognition word count over this number ",
     )
     parser.add_argument(
         "--no_motion",
@@ -97,7 +102,7 @@ def main() -> None:
             responses = stream.transcribe()
             if responses is not None:
                 google_speech_grpc.listen_publisher_grpc(
-                    responses, progress_report_len=PROGRESS_REPORT_LEN
+                    responses, progress_report_len=args.progress_report_len
                 )
         print("")
 
