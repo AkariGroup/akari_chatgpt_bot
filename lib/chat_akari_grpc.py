@@ -54,7 +54,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
     def chat_and_motion_gpt(
         self,
         messages: list,
-        model: str = "gpt-4",
+        model: str = "gpt-4o",
         temperature: float = 0.7,
         short_response: bool = False,
     ) -> Generator[str, None, None]:
@@ -281,7 +281,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
     def chat_and_motion(
         self,
         messages: list,
-        model: str = "gpt-4-turbo-preview",
+        model: str = "gpt-4o",
         temperature: float = 0.7,
         short_response: bool = False,
     ) -> Generator[str, None, None]:

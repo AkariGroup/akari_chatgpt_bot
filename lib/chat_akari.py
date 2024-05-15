@@ -43,6 +43,8 @@ class ChatStreamAkari(object):
         )
         self.last_char = ["、", "。", "！", "!", "?", "？", "\n", "}"]
         self.openai_model_name = [
+            "gpt-4o",
+            "gpt-4o-2024-05-13",
             "gpt-4-turbo",
             "gpt-4-turbo-2024-04-09",
             "gpt-4-0125-preview",
@@ -380,14 +382,14 @@ class ChatStreamAkari(object):
     def chat_and_motion_gpt(
         self,
         messages: list,
-        model: str = "gpt-4-turbo-preview",
+        model: str = "gpt-4o",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
         """ChatGPTを使用して会話を行い、会話の内容に応じた動作も生成する
 
         Args:
             messages (list): メッセージリスト
-            model (str): 使用するモデル名 (デフォルト: "gpt-4-turbo-preview")
+            model (str): 使用するモデル名 (デフォルト: "gpt-4o")
             temperature (float): ChatGPTのtemperatureパラメータ (デフォルト: 0.7)
         Returns:
             Generator[str, None, None]): 会話の返答を順次生成する
@@ -586,14 +588,14 @@ class ChatStreamAkari(object):
     def chat_and_motion(
         self,
         messages: list,
-        model: str = "gpt-4-turbo-preview",
+        model: str = "gpt-4o",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
         """指定したモデルを使用して会話を行い、会話の内容に応じた動作も生成する
 
         Args:
             messages (list): 会話のメッセージ
-            model (str): 使用するモデル名 (デフォルト: "gpt-4-turbo-preview")
+            model (str): 使用するモデル名 (デフォルト: "gpt-4o")
             temperature (float): temperatureパラメータ (デフォルト: 0.7)
         Returns:
             Generator[str, None, None]): 返答を順次生成する
