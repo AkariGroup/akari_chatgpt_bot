@@ -32,7 +32,7 @@ Google cloud consoleに登録し、Cloud Speech-to-Text APIを有効化する。
 
 1. (Claudeの文章生成を使う場合)OPENAI KEYの作成   
 [ANTHROPIC](https://www.anthropic.com/)にてユーザ登録しAPI KEYを作成し、~/.bashrcに自身のkeyを記述  
-`export ANTHROPIC_API_KEY_API_KEY=sk-xxxxxxxxxxxxxxx`  
+`export ANTHROPIC_API_KEY=sk-xxxxxxxxxxxxxxx`  
 
 1. (音声合成をweb版で使う場合) VOICEVOX web版のAPI KEYの作成
 [WEB版VOICEVOX API（高速）](https://voicevox.su-shiki.com/su-shikiapis/) にてapikeyを作成し、~/.bashrcに自身のkeyを記述  
