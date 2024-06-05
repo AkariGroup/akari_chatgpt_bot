@@ -1,13 +1,13 @@
 import io
-import json
 import time
 import wave
 from queue import Queue
 from threading import Thread
-from typing import Any
 
 import pyaudio
-import requests
+from urllib.request import urlopen
+from urllib.parse import urlencode
+from urllib.request import Request
 
 from .err_handler import ignoreStderr
 
@@ -77,15 +77,17 @@ class TextToStyleBertVits(object):
         while not self.finished:
             time.sleep(0.01)
 
-    def post_audio_query(
+    def post_synthesis(
         self,
         text: str,
         model_id: int = 0,
         speaker_id: int = 0,
         length: float = 1.0,
         style: str = "Neutral",
-    ) -> Any:
-        """Style-Bert-VITS2サーバーに音声合成クエリを送信する。
+        style_weight: float = 1.0
+    ) -> bytes:
+        """
+        Style-Bert-VITS2サーバーに音声合成要求を送信し、合成された音声データを取得する。
 
         Args:
             text (str): 音声合成対象のテキスト。
@@ -93,11 +95,15 @@ class TextToStyleBertVits(object):
             speaker_id (int, optional): Style-Bert-VITS2の話者番号。デフォルトは0。
             length (float, optional): 音声の再生速度。大きくする程読み上げ速度が遅くなる。デフォルトは1.0。
             style (str, optional): 音声の感情スタイル。"Neutral","Angry","Disgust","Fear","Happy","Sad","Surprise"が選択可能。デフォルトは"Neutral"。
+            style_weight (float, optional): 音声の感情スタイルの重み。値が大きいほど感情の影響が大きくなる。デフォルトは1.0。
 
         Returns:
             Any: 音声合成クエリの応答。
 
         """
+        headers = {
+            "accept": "audio/wav"
+        }
         params = {
             "text": text,
             "model_id": model_id,
@@ -105,31 +111,12 @@ class TextToStyleBertVits(object):
             "length": length,
             "style": style
         }
-        address = "http://" + self.host + ":" + self.port + "/voice"
-        res = requests.post(address, params=params)
-        return res.json()
-
-    def post_synthesis(
-        self,
-        audio_query_response: dict,
-    ) -> bytes:
-        """
-        Style-Bert-VITS2サーバーに音声合成要求を送信し、合成された音声データを取得する。
-
-        Args:
-            audio_query_response (dict): 音声合成クエリの応答。
-
-        Returns:
-            bytes: 合成された音声データ。
-        """
-        params = {"speaker": 8}
-        headers = {"content-type": "application/json"}
-        audio_query_response_json = json.dumps(audio_query_response)
-        address = "http://" + self.host + ":" + self.port + "/synthesis"
-        res = requests.post(
-            address, data=audio_query_response_json, params=params, headers=headers
-        )
-        return res.content
+        address = "http://" + self.host + ":" + \
+            self.port + "/voice" + "?" + urlencode(params)
+        # GETリクエストを作成
+        req = Request(address, headers=headers, method="GET")
+        with urlopen(req) as res:
+            return res.read()
 
     def play_wav(self, wav_file: bytes) -> None:
         """合成された音声データを再生する。
@@ -164,6 +151,5 @@ class TextToStyleBertVits(object):
             text (str): 音声合成対象のテキスト。
 
         """
-        res = self.post_audio_query(text)
-        wav = self.post_synthesis(res)
+        wav = self.post_synthesis(text)
         self.play_wav(wav)
