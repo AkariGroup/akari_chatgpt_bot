@@ -81,7 +81,6 @@ class TextToStyleBertVits(object):
         self,
         text: str,
         model_id: int = 0,
-        speaker_id: int = 0,
         length: float = 1.0,
         style: str = "Neutral",
         style_weight: float = 1.0
@@ -92,9 +91,8 @@ class TextToStyleBertVits(object):
         Args:
             text (str): 音声合成対象のテキスト。
             model_id (int, optional): Style-Bert-VITS2のモデル番号。デフォルトは0。
-            speaker_id (int, optional): Style-Bert-VITS2の話者番号。デフォルトは0。
             length (float, optional): 音声の再生速度。大きくする程読み上げ速度が遅くなる。デフォルトは1.0。
-            style (str, optional): 音声の感情スタイル。"Neutral","Angry","Disgust","Fear","Happy","Sad","Surprise"が選択可能。デフォルトは"Neutral"。
+            style (str, optional): 音声の感情スタイル。デフォルトは"Neutral"。
             style_weight (float, optional): 音声の感情スタイルの重み。値が大きいほど感情の影響が大きくなる。デフォルトは1.0。
 
         Returns:
@@ -107,7 +105,6 @@ class TextToStyleBertVits(object):
         params = {
             "text": text,
             "model_id": model_id,
-            "speaker_id": speaker_id,
             "length": length,
             "style": style
         }
