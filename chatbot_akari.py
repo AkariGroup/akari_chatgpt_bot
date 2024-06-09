@@ -40,7 +40,7 @@ def main() -> None:
         help="Microphone input power threshold",
     )
     parser.add_argument(
-        "-m", "--model", help="LLM model name", default="gpt-3.5-turbo-0613", type=str
+        "-m", "--model", help="LLM model name", default="gpt-3.5-turbo", type=str
     )
     parser.add_argument("--voicevox_local", action="store_true")
     parser.add_argument(
