@@ -58,9 +58,6 @@ class ChatStreamAkari(object):
             "gpt-3.5-turbo",
             "gpt-3.5-turbo-1106",
             "gpt-3.5-turbo-instruct",
-            "gpt-3.5-turbo-16k",
-            "gpt-3.5-turbo-0613",
-            "gpt-3.5-turbo-16k-0613",
         ]
         self.openai_vision_model_name = [
             "gpt-4o",
@@ -298,7 +295,7 @@ class ChatStreamAkari(object):
     def chat_gpt(
         self,
         messages: list,
-        model: str = "gpt-3.5-turbo-0613",
+        model: str = "gpt-3.5-turbo",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
         """ChatGPTを使用して会話を行う
@@ -356,14 +353,14 @@ class ChatStreamAkari(object):
     def chat(
         self,
         messages: list,
-        model: str = "gpt-3.5-turbo-0613",
+        model: str = "gpt-3.5-turbo",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
         """指定したモデルを使用して会話を行う
 
         Args:
             messages (list): 会話のメッセージリスト
-            model (str): 使用するモデル名 (デフォルト: "gpt-3.5-turbo-0613")
+            model (str): 使用するモデル名 (デフォルト: "gpt-3.5-turbo")
             temperature (float): サンプリングの温度パラメータ (デフォルト: 0.7)
         Returns:
             Generator[str, None, None]): 会話の返答を順次生成する
