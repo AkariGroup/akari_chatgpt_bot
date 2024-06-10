@@ -5,88 +5,92 @@ import time
 from concurrent import futures
 
 import grpc
+from lib.style_bert_vits import TextToStyleBertVits
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
-import voicevox_server_pb2
-import voicevox_server_pb2_grpc
+import style_bert_vits_server_pb2_grpc
+import style_bert_vits_server_pb2
 
 
-class VoicevoxServer(voicevox_server_pb2_grpc.VoicevoxServerServiceServicer):
+class StyleBertVitsServer(style_bert_vits_server_pb2_grpc.StyleBertVitsServerServiceServicer):
     """
-    Voicevoxにtextを送信し、音声を再生するgprcサーバ
+    StyleBertVitsにtextを送信し、音声を再生するgprcサーバ
     """
 
     def __init__(self, text_to_voice) -> None:
         self.text_to_voice = text_to_voice
 
-    def SetVoicevox(
+    def SetText(
         self,
-        request: voicevox_server_pb2.SetVoicevoxRequest(),
+        request: style_bert_vits_server_pb2.SetTextRequest(),
         context: grpc.ServicerContext,
-    ) -> voicevox_server_pb2.SetVoicevoxReply:
+    ) -> style_bert_vits_server_pb2.SetTextReply:
         # 即時再生しないようにis_playはFalseで実行
         print(f"Send text: {request.text}")
         self.text_to_voice.put_text(request.text, play_now=False)
-        return voicevox_server_pb2.SetVoicevoxReply(success=True)
+        return style_bert_vits_server_pb2.SetTextReply(success=True)
 
-    def InterruptVoicevox(
+    def SetParam(
         self,
-        request: voicevox_server_pb2.SetVoicevoxRequest(),
+        request: style_bert_vits_server_pb2.SetParamRequest(),
         context: grpc.ServicerContext,
-    ) -> voicevox_server_pb2.InterruptVoicevoxReply:
+    ) -> style_bert_vits_server_pb2.SetParamReply:
+        if request.model_name:
+            self.text_to_voice.set_param(model_name=request.model_name)
+        if request.length:
+            self.text_to_voice.set_param(length=request.length)
+        if request.style:
+            self.text_to_voice.set_param(style=request.style)
+        if request.style_weight:
+            self.text_to_voice.set_param(style_weight=request.style_weight)
+        return style_bert_vits_server_pb2.SetParamReply(success=True)
+
+    def InterruptVoice(
+        self,
+        request: style_bert_vits_server_pb2.InterruptVoiceRequest(),
+        context: grpc.ServicerContext,
+    ) -> style_bert_vits_server_pb2.IntteruptVoiceReply:
         while not self.text_to_voice.queue.empty():
             self.text_to_voice.queue.get()
-        return voicevox_server_pb2.InterruptVoicevoxReply(success=True)
+        return style_bert_vits_server_pb2.InterruptVoiceReply(success=True)
 
     def SetVoicePlayFlg(
         self,
-        request: voicevox_server_pb2.SetVoicevoxRequest(),
+        request: style_bert_vits_server_pb2.SetStyleBertVitsRequest(),
         context: grpc.ServicerContext,
-    ) -> voicevox_server_pb2.SetVoicePlayFlgReply:
+    ) -> style_bert_vits_server_pb2.SetVoicePlayFlgReply:
         self.text_to_voice.play_flg = request.flg
-        return voicevox_server_pb2.SetVoicePlayFlgReply(success=True)
+        return style_bert_vits_server_pb2.SetVoicePlayFlgReply(success=True)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--voicevox_local", action="store_true")
     parser.add_argument(
-        "--voicevox_host",
+        "--voice_host",
         type=str,
         default="127.0.0.1",
-        help="VoiceVox server host",
+        help="Style-Bert-VITS2 server host",
     )
     parser.add_argument(
-        "--voicevox_port",
+        "--voice_port",
         type=str,
-        default="50021",
-        help="VoiceVox server port",
+        default="5000",
+        help="Style-Bert-VITS2 server port",
     )
     args = parser.parse_args()
-    if args.voicevox_local:
-        # local版の場合
-        from lib.voicevox import TextToVoiceVox
 
-        voicevox_host = args.voicevox_host
-        voicevox_port = args.voicevox_port
-        text_to_voice = TextToVoiceVox(voicevox_host, voicevox_port)
-        print("voicevox local pc ver.")
-    else:
-        # web版の場合
-        from lib.conf import VOICEVOX_APIKEY
-        from lib.voicevox import TextToVoiceVoxWeb
-
-        text_to_voice = TextToVoiceVoxWeb(apikey=VOICEVOX_APIKEY)
-        print("voicevox web ver.")
+    host = args.style_bert_vits_host
+    port = args.style_bert_vits_port
+    text_to_voice = TextToStyleBertVits(host, port)
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    voicevox_server_pb2_grpc.add_VoicevoxServerServiceServicer_to_server(
-        VoicevoxServer(text_to_voice), server
+    style_bert_vits_server_pb2_grpc.add_StyleBertVitsServerServiceServicer_to_server(
+        StyleBertVitsServer(text_to_voice), server
     )
     port = "10002"
     server.add_insecure_port("[::]:" + port)
     server.start()
-    print(f"voicevox_server start. port: {port}")
+    print(f"style_bert_vits_server start. port: {port}")
     try:
         while True:
             time.sleep(0.1)

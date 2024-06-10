@@ -34,13 +34,18 @@ Google cloud consoleに登録し、Cloud Speech-to-Text APIを有効化する。
 [ANTHROPIC](https://www.anthropic.com/)にてユーザ登録しAPI KEYを作成し、~/.bashrcに自身のkeyを記述  
 `export ANTHROPIC_API_KEY=sk-xxxxxxxxxxxxxxx`  
 
-1. (音声合成をweb版で使う場合) VOICEVOX web版のAPI KEYの作成
+1. (VoiceVox web版の音声合成を使う場合) VOICEVOX web版のAPI KEYの作成
 [WEB版VOICEVOX API（高速）](https://voicevox.su-shiki.com/su-shikiapis/) にてapikeyを作成し、~/.bashrcに自身のkeyを記述  
 `export VOICEVOX_API_KEY='xxxxxxxxxxxxxxx`  
 
-1. (音声合成をローカルで使う場合) VOICEVOXのダウンロード  
+1. (VoiceVoxの音声合成を使う場合) VOICEVOXのダウンロード  
 [VOICEVOX](https://voicevox.hiroshiba.jp/)をダウンロード、インストールし、起動しておく。  
 AKARIなどで動かす場合は、下記の「VOICEVOXをOSS版で使いたい場合」の手順で同一ネットワーク内の外部PC上にサーバーを立てることを推奨。  
+
+1. (Style-Bert-VITS2の音声合成を使う場合) Style-Bert-VITS2のセットアップ  
+[Style-Bert-VITS2](https://github.com/litagin02/Style-Bert-VITS2)のREADMEに沿ってセットアップし、下記のコマンドでFastAPIサーバを起動する。  
+`python3 server_fastapi.py`  
+AKARIなどで動かす場合は、同一ネットワーク内の外部PC上にサーバーを立てることを推奨。  
 
 1. (AKARIのモーション再生を使う場合) akari_motion_serverのセットアップ  
 `git clone https://github.com/AkariGroup/akari_motion_server`  
