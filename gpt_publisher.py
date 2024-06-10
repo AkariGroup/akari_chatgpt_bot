@@ -49,7 +49,7 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
         if is_finish:
             # 最終応答。高速生成するために、モデルはgpt-3.5-turbo
             for sentence in self.chat_stream_akari_grpc.chat(
-                tmp_messages, model="gpt-3.5-turbo-0613"
+                tmp_messages, model="gpt-3.5-turbo"
             ):
                 print(f"Send voicevox: {sentence}")
                 self.stub.SetVoicevox(
