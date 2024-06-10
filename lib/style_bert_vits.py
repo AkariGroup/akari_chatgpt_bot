@@ -37,6 +37,8 @@ class TextToStyleBertVits(object):
         self.length = 1.0
         self.style = "Neutral"
         self.style_weight = 1.0
+        # 話者モデル名を指定
+        self.set_param(model_name='jvnv-F1-jp')
 
     def __exit__(self) -> None:
         """音声合成スレッドを終了する。"""
@@ -116,7 +118,7 @@ class TextToStyleBertVits(object):
         length: Optional[float] = None,
         style: Optional[str] = None,
         style_weight: Optional[float] = None,
-    ):
+    ) -> None:
         """
         音声合成のパラメータを設定する。
 

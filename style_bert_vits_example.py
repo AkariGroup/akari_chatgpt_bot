@@ -25,7 +25,7 @@ def main() -> None:
 
     # set_paramメソッドでモデル名や音声再生速度、感情スタイルなどを指定することができます。
     # モデル名を指定
-    text_to_voice.set_param(model_name='jvnv-F1-jp')
+    # text_to_voice.set_param(model_name='jvnv-F1-jp')
     # 音声再生速度を指定
     # text_to_voice.set_param(length=2.0)
     # 感情スタイルを指定

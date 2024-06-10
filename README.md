@@ -76,9 +76,32 @@ chatGPTのサンプル
 例) `python3 chatgpt_example.py -m gpt-3.5-turbo-0125 gpt-4-turbo-preview claude-3-sonnet-20240229 claude-3-opus-20240229`  
 
 
-音声合成のサンプル  
+音声合成(VOICEVOX)のサンプル  
 キーボード入力した文章を音声合成で発話  
+
+1. 上記 **VOICEVOXをOSS版で使いたい場合** の手順を元に、別PCでVoicevoxを起動しておく。  
+
+2. サンプルの実行
 `python3 voicevox_example.py`  
+
+   引数は下記が使用可能  
+   - `--voicevox_local`: このオプションをつけた場合、voicevoxのweb版ではなくローカル版を実行する。  
+   - `--voicevox_host`: `--voicevox_local`を有効にした場合、ここで指定したhostのvoicevoxにリクエストを送信する。デフォルトは"127.0.0.1"なのでlocalhostのvoicevoxを利用する。  
+   - `--voicevox_port`: `--voicevox_local`を有効にした場合、ここで指定したportのvoicevoxにリクエストを送信する。デフォルトは50021。  
+
+音声合成(Style-BERT-VITS2)のサンプル  
+キーボード入力した文章を音声合成で発話  
+
+1. セットアップしたStyle-Bert-VITS2のディレクトリ直下で、下記のコマンドでFastAPIサーバを起動する。  
+   `python3 server_fastapi.py`  
+   AKARIで使用する場合は、同一ネットワーク内の外部PC上にサーバーを立てることを推奨。    
+
+2. サンプルの実行
+   `python3 style_bert_vits_example.py`  
+
+   引数は下記が使用可能  
+   - `--voice_host`: ここで指定したhostの`server_fastapi.py`にリクエストを送信する。デフォルトは"127.0.0.1"  
+   - `--voice_port`: ここで指定したportの`server_fastapi.py`にリクエストを送信する。デフォルトは5000。  
 
 ## 音声対話の実行
 実行後、ターミナルでEnterキーを押し、マイクに話しかけると返答が返ってくる。  
@@ -113,10 +136,15 @@ Google音声認識、chatGPT、Voicevoxとのやり取りをする各アプリ�
 
 ### 起動方法
 
-1. 上記 **VOICEVOXをOSS版で使いたい場合** の手順を元に、別PCでVoicevoxを起動しておく。  
 
-2. (AKARIのモーション再生を行う場合)akari_motion_serverを起動する。  
+1. (AKARIのモーション再生を行う場合)akari_motion_serverを起動する。  
    起動方法は https://github.com/AkariGroup/akari_motion_server を参照。  
+
+以下2~4は使用する音声合成の種類によって分岐する。  
+
+**音声合成にVOICEVOXを使う場合**  
+
+2. 上記 **VOICEVOXをOSS版で使いたい場合** の手順を元に、別PCでVoicevoxを起動しておく。  
 
 3. `voicevox_server` を起動する。(Voicevoxへの送信サーバ)  
    `python3 voicevox_server.py`  
@@ -132,6 +160,28 @@ Google音声認識、chatGPT、Voicevoxとのやり取りをする各アプリ�
    引数は下記が使用可能  
    - `--ip`: gpt_serverのIPアドレス。デフォルトは"127.0.0.1"
    - `--port`: gpt_serverのポート。デフォルトは"10001"
+   - `-u`, `--use_style_bert_vits`: 音声合成サーバとして`style_bert_vits_server.py`を使用する場合は、このオプションをつける。
+
+**音声合成にStyle-Bert-VITS2を使う場合**  
+
+2. セットアップしたStyle-Bert-VITS2のディレクトリ直下で、下記のコマンドでFastAPIサーバを起動する。  
+   `python3 server_fastapi.py`  
+   AKARIで使用する場合は、同一ネットワーク内の外部PC上にサーバーを立てることを推奨。  
+
+3. `style_bert_vits_server`を起動する。(Style-Bert-VITS2への送信サーバ)  
+   `python3 style_bert_vits_server.py`  
+
+   引数は下記が使用可能  
+   - `--voice_host`: ここで指定したhostの`server_fastapi.py`にリクエストを送信する。デフォルトは"127.0.0.1"  
+   - `--voice_port`: ここで指定したportの`server_fastapi.py`にリクエストを送信する。デフォルトは5000。  
+
+4. `gpt_publisher`を起動する。(ChatGPTへリクエストを送信し、受信結果を音声合成サーバへ渡す。)  
+   `python3 gpt_publisher.py　--use_style_bert_vits`  
+
+   引数は下記が使用可能  
+   - `--ip`: gpt_serverのIPアドレス。デフォルトは"127.0.0.1"
+   - `--port`: gpt_serverのポート。デフォルトは"10001"
+   - `-u`, `--use_style_bert_vits`: 音声合成サーバとして`style_bert_vits_server.py`を使用する場合は、このオプションをつける。
 
 5. speech_publisher.pyを起動する。(Google音声認識の結果をgpt_publisherへ渡す。)  
    `python3 speech_publisher.py`  
@@ -153,6 +203,7 @@ Google音声認識、chatGPT、Voicevoxとのやり取りをする各アプリ�
 
 ### スクリプトで一括起動する方法
 
+**音声合成にVOICEVOXを使う場合**  
 1. 上記 **VOICEVOXをOSS版で使いたい場合** の手順を元に、別PCでVoicevoxを起動しておく。  
 
 2. スクリプトを実行する。  
@@ -163,6 +214,22 @@ Google音声認識、chatGPT、Voicevoxとのやり取りをする各アプリ�
    akari_motion_serverのパスを入力しなければ、akari_motion_serverは起動せず、モーションの再生は行われません(AKARI以外でも使えます)。  
 
 3. `speech_publisher.py`のターミナルでEnterキーを押し、マイクに話しかけると返答が返ってくる。
+
+**音声合成にStyle-Bert-VITS2を使う場合**  
+1. `script/faster_chatbot.sh`内の27行目~28行目をコメントアウトし、31行目〜32行目を有効化する。
+
+2. セットアップしたStyle-Bert-VITS2のディレクトリ直下で、下記のコマンドでFastAPIサーバを起動する。  
+   `python3 server_fastapi.py`  
+   AKARIで使用する場合は、同一ネットワーク内の外部PC上にサーバーを立てることを推奨。  
+
+3. スクリプトを実行する。  
+
+   `cd script`  
+   `./faster_chatbot.sh {2.でStyle-Bert-VITS2を起動したPCのIPアドレス} {akari_motion_serverのパス}`  
+
+   akari_motion_serverのパスを入力しなければ、akari_motion_serverは起動せず、モーションの再生は行われません(AKARI以外でも使えます)。  
+
+4. `speech_publisher.py`のターミナルでEnterキーを押し、マイクに話しかけると返答が返ってくる。
 
 ## その他
 音声合成では、デフォルトの音声として「VOICEVOX:春日部つむぎ」を使用しています。  
