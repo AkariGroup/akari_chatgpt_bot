@@ -1,5 +1,5 @@
 syntax = "proto3";
-package style_bert_vits_server;
+package voice_server;
 
 message SetTextRequest {
   string text = 1;
@@ -9,7 +9,7 @@ message SetTextReply {
   bool success =1;
 }
 
-message SetParamRequest {
+message SetStyleBertVitsParamRequest {
   optional string model_name = 1;
   optional int32 model_id = 2;
   optional float length = 3;
@@ -17,7 +17,16 @@ message SetParamRequest {
   optional string style_weight = 5;
 }
 
-message SetParamReply {
+message SetStyleBertVitsParamReply {
+  bool success =1;
+}
+
+message SetVoicevoxParamRequest {
+  optional int32 speaker = 1;
+  optional float speed_scale = 2;
+}
+
+message SetVoicevoxParamReply {
   bool success =1;
 }
 
@@ -38,8 +47,10 @@ message SetVoicePlayFlgReply {
 service StyleBertVitsServerService {
     rpc SetText(SetTextRequest)
         returns (SetTextReply);
-    rpc SetParam(SetParamRequest)
-        returns (SetParamReply);
+    rpc SetStyleBertVitsParam(SetStyleBertVitsParamRequest)
+        returns (SetStyleBertVitsParamReply);
+    rpc SetVoicevoxParam(SetVoicevoxParamRequest)
+        returns (SetVoicevoxParamReply);
     rpc InterruptVoice(InterruptVoiceRequest)
         returns (InterruptVoiceReply);
     rpc SetVoicePlayFlg(SetVoicePlayFlgRequest)

@@ -15,15 +15,6 @@ protoc.main(
         "-I.",
         "--python_out=../lib/grpc",
         "--grpc_python_out=../lib/grpc",
-        "voicevox_server.proto",
-    )
-)
-protoc.main(
-    (
-        "",
-        "-I.",
-        "--python_out=../lib/grpc",
-        "--grpc_python_out=../lib/grpc",
-        "style_bert_vits_server.proto",
+        "voice_server.proto",
     )
 )
