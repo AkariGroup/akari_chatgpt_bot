@@ -49,14 +49,14 @@ class StyleBertVitsServer(style_bert_vits_server_pb2_grpc.StyleBertVitsServerSer
         self,
         request: style_bert_vits_server_pb2.InterruptVoiceRequest(),
         context: grpc.ServicerContext,
-    ) -> style_bert_vits_server_pb2.IntteruptVoiceReply:
+    ) -> style_bert_vits_server_pb2.InterruptVoiceReply:
         while not self.text_to_voice.queue.empty():
             self.text_to_voice.queue.get()
         return style_bert_vits_server_pb2.InterruptVoiceReply(success=True)
 
     def SetVoicePlayFlg(
         self,
-        request: style_bert_vits_server_pb2.SetStyleBertVitsRequest(),
+        request: style_bert_vits_server_pb2.SetVoicePlayFlgRequest(),
         context: grpc.ServicerContext,
     ) -> style_bert_vits_server_pb2.SetVoicePlayFlgReply:
         self.text_to_voice.play_flg = request.flg
@@ -79,8 +79,8 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    host = args.style_bert_vits_host
-    port = args.style_bert_vits_port
+    host = args.voice_host
+    port = args.voice_port
     text_to_voice = TextToStyleBertVits(host, port)
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))

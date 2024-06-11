@@ -140,7 +140,7 @@ Google音声認識、chatGPT、Voicevoxとのやり取りをする各アプリ�
 1. (AKARIのモーション再生を行う場合)akari_motion_serverを起動する。  
    起動方法は https://github.com/AkariGroup/akari_motion_server を参照。  
 
-以下2~4は使用する音声合成の種類によって分岐する。  
+以下は使用する音声合成の種類によって分岐する。  
 
 **音声合成にVOICEVOXを使う場合**  
 
@@ -160,7 +160,25 @@ Google音声認識、chatGPT、Voicevoxとのやり取りをする各アプリ�
    引数は下記が使用可能  
    - `--ip`: gpt_serverのIPアドレス。デフォルトは"127.0.0.1"
    - `--port`: gpt_serverのポート。デフォルトは"10001"
-   - `-u`, `--use_style_bert_vits`: 音声合成サーバとして`style_bert_vits_server.py`を使用する場合は、このオプションをつける。
+   - `--use_style_bert_vits`: 音声合成サーバとして`style_bert_vits_server.py`を使用する場合は、このオプションをつける。
+   - 
+5. speech_publisher.pyを起動する。(Google音声認識の結果をgpt_publisherへ渡す。)  
+   `python3 speech_publisher.py`  
+
+   引数は下記が使用可能  
+   - `--robot_ip`: akari_motion_serverのIPアドレス。デフォルトは"127.0.0.1"
+   - `--robot_port`: akari_motion_serverのポート。デフォルトは"50055"
+   - `--gpt_ip`: gpt_serverのIPアドレス。デフォルトは"127.0.0.1"
+   - `--gpt_port`: gpt_serverのポート。デフォルトは"10001"
+   - `--voicevox_ip`: voicevox_serverのIPアドレス。デフォルトは"127.0.0.1"
+   - `--voicevox_port`: voicevox_serverのポート。デフォルトは"10002"
+   - `-t`,`--timeout`: マイク入力がこの時間しきい値以下になったら音声入力を打ち切る。デフォルトは0.5[s]。短いと応答が早くなるが不安定になりやすい。  
+   - `-p`,`--power_threshold`: マイク入力の音量しきい値。デフォルトは0で、0の場合アプリ起動時に周辺環境の音量を取得し、そこから音量しきい値を自動決定する。  
+   - `--progress_report_len`: 音声認識の文字数がここで入力した数値以上になると、一旦gpt_publisherに認識結果を送り、第一声とモーションを生成する(遅延なし応答用)。0にすると無効。デフォルトは8。
+   - `--no_motion`: このオプションをつけた場合、音声入力中のうなずき動作を無効化する。  
+   - `--use_style_bert_vits`: 音声合成サーバとして`style_bert_vits_server.py`を使用する場合は、このオプションをつける。
+
+6. `speech_publisher.py`のターミナルでEnterキーを押し、マイクに話しかけると返答が返ってくる。
 
 **音声合成にStyle-Bert-VITS2を使う場合**  
 
@@ -181,10 +199,10 @@ Google音声認識、chatGPT、Voicevoxとのやり取りをする各アプリ�
    引数は下記が使用可能  
    - `--ip`: gpt_serverのIPアドレス。デフォルトは"127.0.0.1"
    - `--port`: gpt_serverのポート。デフォルトは"10001"
-   - `-u`, `--use_style_bert_vits`: 音声合成サーバとして`style_bert_vits_server.py`を使用する場合は、このオプションをつける。
+   - `--use_style_bert_vits`: 音声合成サーバとして`style_bert_vits_server.py`を使用する場合は、このオプションをつける。
 
 5. speech_publisher.pyを起動する。(Google音声認識の結果をgpt_publisherへ渡す。)  
-   `python3 speech_publisher.py`  
+   `python3 speech_publisher.py --use_style_bert_vits`  
 
    引数は下記が使用可能  
    - `--robot_ip`: akari_motion_serverのIPアドレス。デフォルトは"127.0.0.1"
@@ -197,6 +215,7 @@ Google音声認識、chatGPT、Voicevoxとのやり取りをする各アプリ�
    - `-p`,`--power_threshold`: マイク入力の音量しきい値。デフォルトは0で、0の場合アプリ起動時に周辺環境の音量を取得し、そこから音量しきい値を自動決定する。  
    - `--progress_report_len`: 音声認識の文字数がここで入力した数値以上になると、一旦gpt_publisherに認識結果を送り、第一声とモーションを生成する(遅延なし応答用)。0にすると無効。デフォルトは8。
    - `--no_motion`: このオプションをつけた場合、音声入力中のうなずき動作を無効化する。  
+   - `--use_style_bert_vits`: 音声合成サーバとして`style_bert_vits_server.py`を使用する場合は、このオプションをつける。
 
 6. `speech_publisher.py`のターミナルでEnterキーを押し、マイクに話しかけると返答が返ってくる。
 
@@ -216,16 +235,14 @@ Google音声認識、chatGPT、Voicevoxとのやり取りをする各アプリ�
 3. `speech_publisher.py`のターミナルでEnterキーを押し、マイクに話しかけると返答が返ってくる。
 
 **音声合成にStyle-Bert-VITS2を使う場合**  
-1. `script/faster_chatbot.sh`内の27行目~28行目をコメントアウトし、31行目〜32行目を有効化する。
-
-2. セットアップしたStyle-Bert-VITS2のディレクトリ直下で、下記のコマンドでFastAPIサーバを起動する。  
+1. セットアップしたStyle-Bert-VITS2のディレクトリ直下で、下記のコマンドでFastAPIサーバを起動する。  
    `python3 server_fastapi.py`  
    AKARIで使用する場合は、同一ネットワーク内の外部PC上にサーバーを立てることを推奨。  
 
-3. スクリプトを実行する。  
+2. スクリプトを実行する。  
 
    `cd script`  
-   `./faster_chatbot.sh {2.でStyle-Bert-VITS2を起動したPCのIPアドレス} {akari_motion_serverのパス}`  
+   `./faster_chatbot_bert_vits.sh {2.でStyle-Bert-VITS2を起動したPCのIPアドレス} akari_motion_serverのパス}`  
 
    akari_motion_serverのパスを入力しなければ、akari_motion_serverは起動せず、モーションの再生は行われません(AKARI以外でも使えます)。  
 

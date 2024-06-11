@@ -114,7 +114,7 @@ def main() -> None:
         "--port", help="Gpt server port number", default="10001", type=str
     )
     parser.add_argument(
-        "-u", "--use_style_bert_vits", help="Use Style-Bert-VITS2 instead of voicevox", action="store_true"
+        "--use_style_bert_vits", help="Use Style-Bert-VITS2 instead of voicevox", action="store_true"
     )
     args = parser.parse_args()
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
