@@ -7,11 +7,11 @@ from concurrent import futures
 import grpc
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
-import voicevox_server_pb2
-import voicevox_server_pb2_grpc
+import voice_server_pb2
+import voice_server_pb2_grpc
 
 
-class VoicevoxServer(voicevox_server_pb2_grpc.VoicevoxServerServiceServicer):
+class VoicevoxServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
     """
     Voicevoxにtextを送信し、音声を再生するgprcサーバ
     """
@@ -19,45 +19,64 @@ class VoicevoxServer(voicevox_server_pb2_grpc.VoicevoxServerServiceServicer):
     def __init__(self, text_to_voice) -> None:
         self.text_to_voice = text_to_voice
 
-    def SetVoicevox(
+    def SetText(
         self,
-        request: voicevox_server_pb2.SetVoicevoxRequest(),
+        request: voice_server_pb2.SetTextRequest(),
         context: grpc.ServicerContext,
-    ) -> voicevox_server_pb2.SetVoicevoxReply:
+    ) -> voice_server_pb2.SetTextReply:
         # 即時再生しないようにis_playはFalseで実行
         print(f"Send text: {request.text}")
         self.text_to_voice.put_text(request.text, play_now=False)
-        return voicevox_server_pb2.SetVoicevoxReply(success=True)
+        return voice_server_pb2.SetTextReply(success=True)
 
-    def InterruptVoicevox(
+    def SetStyleBertVitsParam(
         self,
-        request: voicevox_server_pb2.SetVoicevoxRequest(),
+        request: voice_server_pb2.SetParamRequest(),
         context: grpc.ServicerContext,
-    ) -> voicevox_server_pb2.InterruptVoicevoxReply:
+    ) -> voice_server_pb2.SetParamReply:
+        print("SetStyleBertVitsParam is not supported on voicevox_server.")
+        return voice_server_pb2.SetParamReply(success=False)
+
+    def SetVoicevoxParam(
+        self,
+        request: voice_server_pb2.SetVoicevoxParamRequest(),
+        context: grpc.ServicerContext,
+    ) -> voice_server_pb2.SetVoicevoxParamReply:
+        if request.speaker:
+            self.text_to_voice.set_param(speaker=request.speaker)
+        if request.speed_scale:
+            self.text_to_voice.set_param(speed_scale=request.speed_scale)
+        return voice_server_pb2.SetVoicevoxParamReply(success=True)
+
+    def InterruptVoice(
+        self,
+        request: voice_server_pb2.InterruptVoiceRequest(),
+        context: grpc.ServicerContext,
+    ) -> voice_server_pb2.InterruptVoiceReply:
         while not self.text_to_voice.queue.empty():
             self.text_to_voice.queue.get()
-        return voicevox_server_pb2.InterruptVoicevoxReply(success=True)
+        return voice_server_pb2.InterruptVoiceReply(success=True)
 
     def SetVoicePlayFlg(
         self,
-        request: voicevox_server_pb2.SetVoicevoxRequest(),
+        request: voice_server_pb2.SetVoicePlayFlgRequest(),
         context: grpc.ServicerContext,
-    ) -> voicevox_server_pb2.SetVoicePlayFlgReply:
+    ) -> voice_server_pb2.SetVoicePlayFlgReply:
         self.text_to_voice.play_flg = request.flg
-        return voicevox_server_pb2.SetVoicePlayFlgReply(success=True)
+        return voice_server_pb2.SetVoicePlayFlgReply(success=True)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--voicevox_local", action="store_true")
     parser.add_argument(
-        "--voicevox_host",
+        "--voice_host",
         type=str,
         default="127.0.0.1",
         help="VoiceVox server host",
     )
     parser.add_argument(
-        "--voicevox_port",
+        "--voice_port",
         type=str,
         default="50021",
         help="VoiceVox server port",
@@ -67,9 +86,9 @@ def main() -> None:
         # local版の場合
         from lib.voicevox import TextToVoiceVox
 
-        voicevox_host = args.voicevox_host
-        voicevox_port = args.voicevox_port
-        text_to_voice = TextToVoiceVox(voicevox_host, voicevox_port)
+        voice_host = args.voice_host
+        voice_port = args.voice_port
+        text_to_voice = TextToVoiceVox(voice_host, voice_port)
         print("voicevox local pc ver.")
     else:
         # web版の場合
@@ -80,13 +99,13 @@ def main() -> None:
         print("voicevox web ver.")
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    voicevox_server_pb2_grpc.add_VoicevoxServerServiceServicer_to_server(
-        VoicevoxServer(text_to_voice), server
+    voice_server_pb2_grpc.add_VoiceServerServiceServicer_to_server(
+        VoiceServer(text_to_voice), server
     )
     port = "10002"
     server.add_insecure_port("[::]:" + port)
     server.start()
-    print(f"voicevox_server start. port: {port}")
+    print(f"voice_server start. port: {port}")
     try:
         while True:
             time.sleep(0.1)

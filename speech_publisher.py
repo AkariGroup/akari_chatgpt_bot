@@ -7,12 +7,10 @@ from lib.google_speech import get_db_thresh
 from lib.google_speech_grpc import GoogleSpeechGrpc, MicrophoneStreamGrpc
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
-import motion_server_pb2_grpc
+import voice_server_pb2
+import voice_server_pb2_grpc
 import motion_server_pb2
-import style_bert_vits_server_pb2_grpc
-import style_bert_vits_server_pb2
-import voicevox_server_pb2_grpc
-import voicevox_server_pb2
+import motion_server_pb2_grpc
 
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
@@ -62,9 +60,6 @@ def main() -> None:
         help="Not play nod motion",
         action="store_true",
     )
-    parser.add_argument(
-        "--use_style_bert_vits", help="Use Style-Bert-VITS2 instead of voicevox", action="store_true"
-    )
     args = parser.parse_args()
     timeout: float = args.timeout
     power_threshold: float = args.power_threshold
@@ -77,21 +72,14 @@ def main() -> None:
     voice_channel = grpc.insecure_channel(
         args.voice_ip + ":" + args.voice_port
     )
-    use_style_bert_vits = args.use_style_bert_vits
-    if use_style_bert_vits:
-        voice_stub = style_bert_vits_server_pb2_grpc.StyleBertVitsServerServiceStub(
-            voice_channel
-        )
-    else:
-        voice_stub = voicevox_server_pb2_grpc.VoicevoxServerServiceStub(
-            voice_channel)
+    voice_stub = voice_server_pb2_grpc.VoiceServerServiceStub(
+        voice_channel)
 
     google_speech_grpc = GoogleSpeechGrpc(
         gpt_host=args.gpt_ip,
         gpt_port=args.gpt_port,
         voice_host=args.voice_ip,
         voice_port=args.voice_port,
-        use_style_bert_vits=args.use_style_bert_vits
     )
     # power_threshouldが指定されていない場合、周辺音量を収録し、発話判定閾値を決定
     if power_threshold == 0:
@@ -100,24 +88,15 @@ def main() -> None:
 
     while True:
         responses = None
-        with MicrophoneStreamGrpc(RATE, CHUNK, timeout, power_threshold, use_style_bert_vits=args.use_style_bert_vits) as stream:
+        with MicrophoneStreamGrpc(RATE, CHUNK, timeout, power_threshold) as stream:
             print("Enterを入力してから、マイクに話しかけてください")
             input()
-            if use_style_bert_vits:
-                try:
-                    voice_stub.SetVoicePlayFlg(
-                        style_bert_vits_server_pb2.SetVoicePlayFlgRequest(
-                            flg=False)
-                    )
-                except BaseException:
-                    pass
-            else:
-                try:
-                    voice_stub.SetVoicePlayFlg(
-                        voicevox_server_pb2.SetVoicePlayFlgRequest(flg=False)
-                    )
-                except BaseException:
-                    pass
+            try:
+                voice_stub.SetVoicePlayFlg(
+                    voice_server_pb2.SetVoicePlayFlgRequest(flg=False)
+                )
+            except BaseException:
+                pass
             if not args.no_motion:
                 try:
                     motion_stub.SetMotion(

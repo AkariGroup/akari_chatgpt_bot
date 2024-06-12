@@ -8,11 +8,11 @@ import grpc
 from lib.style_bert_vits import TextToStyleBertVits
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
-import style_bert_vits_server_pb2_grpc
-import style_bert_vits_server_pb2
+import voice_server_pb2
+import voice_server_pb2_grpc
 
 
-class StyleBertVitsServer(style_bert_vits_server_pb2_grpc.StyleBertVitsServerServiceServicer):
+class StyleBertVitsServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
     """
     StyleBertVitsにtextを送信し、音声を再生するgprcサーバ
     """
@@ -22,19 +22,19 @@ class StyleBertVitsServer(style_bert_vits_server_pb2_grpc.StyleBertVitsServerSer
 
     def SetText(
         self,
-        request: style_bert_vits_server_pb2.SetTextRequest(),
+        request: voice_server_pb2.SetTextRequest(),
         context: grpc.ServicerContext,
-    ) -> style_bert_vits_server_pb2.SetTextReply:
+    ) -> voice_server_pb2.SetTextReply:
         # 即時再生しないようにis_playはFalseで実行
         print(f"Send text: {request.text}")
         self.text_to_voice.put_text(request.text, play_now=False)
-        return style_bert_vits_server_pb2.SetTextReply(success=True)
+        return voice_server_pb2.SetTextReply(success=True)
 
-    def SetParam(
+    def SetStyleBertVitsParam(
         self,
-        request: style_bert_vits_server_pb2.SetParamRequest(),
+        request: voice_server_pb2.SetParamRequest(),
         context: grpc.ServicerContext,
-    ) -> style_bert_vits_server_pb2.SetParamReply:
+    ) -> voice_server_pb2.SetParamReply:
         if request.model_name:
             self.text_to_voice.set_param(model_name=request.model_name)
         if request.length:
@@ -43,24 +43,32 @@ class StyleBertVitsServer(style_bert_vits_server_pb2_grpc.StyleBertVitsServerSer
             self.text_to_voice.set_param(style=request.style)
         if request.style_weight:
             self.text_to_voice.set_param(style_weight=request.style_weight)
-        return style_bert_vits_server_pb2.SetParamReply(success=True)
+        return voice_server_pb2.SetParamReply(success=True)
+
+    def SetVoicevoxParam(
+        self,
+        request: voice_server_pb2.SetVoicevoxParamRequest(),
+        context: grpc.ServicerContext,
+    ) -> voice_server_pb2.SetVoicevoxParamReply:
+        print("SetVoicevoxParam is not supported on style_bert_vits_server.")
+        return voice_server_pb2.SetVoicevoxParamReply(success=False)
 
     def InterruptVoice(
         self,
-        request: style_bert_vits_server_pb2.InterruptVoiceRequest(),
+        request: voice_server_pb2.InterruptVoiceRequest(),
         context: grpc.ServicerContext,
-    ) -> style_bert_vits_server_pb2.InterruptVoiceReply:
+    ) -> voice_server_pb2.InterruptVoiceReply:
         while not self.text_to_voice.queue.empty():
             self.text_to_voice.queue.get()
-        return style_bert_vits_server_pb2.InterruptVoiceReply(success=True)
+        return voice_server_pb2.InterruptVoiceReply(success=True)
 
     def SetVoicePlayFlg(
         self,
-        request: style_bert_vits_server_pb2.SetVoicePlayFlgRequest(),
+        request: voice_server_pb2.SetVoicePlayFlgRequest(),
         context: grpc.ServicerContext,
-    ) -> style_bert_vits_server_pb2.SetVoicePlayFlgReply:
+    ) -> voice_server_pb2.SetVoicePlayFlgReply:
         self.text_to_voice.play_flg = request.flg
-        return style_bert_vits_server_pb2.SetVoicePlayFlgReply(success=True)
+        return voice_server_pb2.SetVoicePlayFlgReply(success=True)
 
 
 def main() -> None:
@@ -84,13 +92,13 @@ def main() -> None:
     text_to_voice = TextToStyleBertVits(host, port)
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    style_bert_vits_server_pb2_grpc.add_StyleBertVitsServerServiceServicer_to_server(
+    voice_server_pb2_grpc.add_StyleBertVitsServerServiceServicer_to_server(
         StyleBertVitsServer(text_to_voice), server
     )
     port = "10002"
     server.add_insecure_port("[::]:" + port)
     server.start()
-    print(f"style_bert_vits_server start. port: {port}")
+    print(f"voice_server start. port: {port}")
     try:
         while True:
             time.sleep(0.1)

@@ -23,6 +23,6 @@ fi
 cd ../
  . venv/bin/activate
  gnome-terminal --title="style_bert_vits_server" -- bash -ic "python3 style_bert_vits_server.py --voice_host ${ip}"
- gnome-terminal --title="gpt_publisher" -- bash -ic "python3 gpt_publisher.py --use_style_bert_vits"
- gnome-terminal --title="speech_publisher" -- bash -ic "python3 speech_publisher.py --timeout 0.8 --use_style_bert_vits"
+ gnome-terminal --title="gpt_publisher" -- bash -ic "python3 gpt_publisher.py"
+ gnome-terminal --title="speech_publisher" -- bash -ic "python3 speech_publisher.py --timeout 0.8"
 )
