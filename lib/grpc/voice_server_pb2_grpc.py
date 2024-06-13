@@ -5,7 +5,7 @@ import grpc
 import voice_server_pb2 as voice__server__pb2
 
 
-class StyleBertVitsServerServiceStub(object):
+class VoiceServerServiceStub(object):
     """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
@@ -15,33 +15,33 @@ class StyleBertVitsServerServiceStub(object):
             channel: A grpc.Channel.
         """
         self.SetText = channel.unary_unary(
-                '/voice_server.StyleBertVitsServerService/SetText',
+                '/voice_server.VoiceServerService/SetText',
                 request_serializer=voice__server__pb2.SetTextRequest.SerializeToString,
                 response_deserializer=voice__server__pb2.SetTextReply.FromString,
                 )
         self.SetStyleBertVitsParam = channel.unary_unary(
-                '/voice_server.StyleBertVitsServerService/SetStyleBertVitsParam',
+                '/voice_server.VoiceServerService/SetStyleBertVitsParam',
                 request_serializer=voice__server__pb2.SetStyleBertVitsParamRequest.SerializeToString,
                 response_deserializer=voice__server__pb2.SetStyleBertVitsParamReply.FromString,
                 )
         self.SetVoicevoxParam = channel.unary_unary(
-                '/voice_server.StyleBertVitsServerService/SetVoicevoxParam',
+                '/voice_server.VoiceServerService/SetVoicevoxParam',
                 request_serializer=voice__server__pb2.SetVoicevoxParamRequest.SerializeToString,
                 response_deserializer=voice__server__pb2.SetVoicevoxParamReply.FromString,
                 )
         self.InterruptVoice = channel.unary_unary(
-                '/voice_server.StyleBertVitsServerService/InterruptVoice',
+                '/voice_server.VoiceServerService/InterruptVoice',
                 request_serializer=voice__server__pb2.InterruptVoiceRequest.SerializeToString,
                 response_deserializer=voice__server__pb2.InterruptVoiceReply.FromString,
                 )
         self.SetVoicePlayFlg = channel.unary_unary(
-                '/voice_server.StyleBertVitsServerService/SetVoicePlayFlg',
+                '/voice_server.VoiceServerService/SetVoicePlayFlg',
                 request_serializer=voice__server__pb2.SetVoicePlayFlgRequest.SerializeToString,
                 response_deserializer=voice__server__pb2.SetVoicePlayFlgReply.FromString,
                 )
 
 
-class StyleBertVitsServerServiceServicer(object):
+class VoiceServerServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def SetText(self, request, context):
@@ -75,7 +75,7 @@ class StyleBertVitsServerServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
 
-def add_StyleBertVitsServerServiceServicer_to_server(servicer, server):
+def add_VoiceServerServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'SetText': grpc.unary_unary_rpc_method_handler(
                     servicer.SetText,
@@ -104,12 +104,12 @@ def add_StyleBertVitsServerServiceServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'voice_server.StyleBertVitsServerService', rpc_method_handlers)
+            'voice_server.VoiceServerService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
  # This class is part of an EXPERIMENTAL API.
-class StyleBertVitsServerService(object):
+class VoiceServerService(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
@@ -123,7 +123,7 @@ class StyleBertVitsServerService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/voice_server.StyleBertVitsServerService/SetText',
+        return grpc.experimental.unary_unary(request, target, '/voice_server.VoiceServerService/SetText',
             voice__server__pb2.SetTextRequest.SerializeToString,
             voice__server__pb2.SetTextReply.FromString,
             options, channel_credentials,
@@ -140,7 +140,7 @@ class StyleBertVitsServerService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/voice_server.StyleBertVitsServerService/SetStyleBertVitsParam',
+        return grpc.experimental.unary_unary(request, target, '/voice_server.VoiceServerService/SetStyleBertVitsParam',
             voice__server__pb2.SetStyleBertVitsParamRequest.SerializeToString,
             voice__server__pb2.SetStyleBertVitsParamReply.FromString,
             options, channel_credentials,
@@ -157,7 +157,7 @@ class StyleBertVitsServerService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/voice_server.StyleBertVitsServerService/SetVoicevoxParam',
+        return grpc.experimental.unary_unary(request, target, '/voice_server.VoiceServerService/SetVoicevoxParam',
             voice__server__pb2.SetVoicevoxParamRequest.SerializeToString,
             voice__server__pb2.SetVoicevoxParamReply.FromString,
             options, channel_credentials,
@@ -174,7 +174,7 @@ class StyleBertVitsServerService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/voice_server.StyleBertVitsServerService/InterruptVoice',
+        return grpc.experimental.unary_unary(request, target, '/voice_server.VoiceServerService/InterruptVoice',
             voice__server__pb2.InterruptVoiceRequest.SerializeToString,
             voice__server__pb2.InterruptVoiceReply.FromString,
             options, channel_credentials,
@@ -191,7 +191,7 @@ class StyleBertVitsServerService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/voice_server.StyleBertVitsServerService/SetVoicePlayFlg',
+        return grpc.experimental.unary_unary(request, target, '/voice_server.VoiceServerService/SetVoicePlayFlg',
             voice__server__pb2.SetVoicePlayFlgRequest.SerializeToString,
             voice__server__pb2.SetVoicePlayFlgReply.FromString,
             options, channel_credentials,

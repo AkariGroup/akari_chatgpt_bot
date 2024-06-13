@@ -11,7 +11,7 @@ import voice_server_pb2
 import voice_server_pb2_grpc
 
 
-class VoicevoxServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
+class VoiceServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
     """
     Voicevoxにtextを送信し、音声を再生するgprcサーバ
     """
@@ -31,11 +31,11 @@ class VoicevoxServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
 
     def SetStyleBertVitsParam(
         self,
-        request: voice_server_pb2.SetParamRequest(),
+        request: voice_server_pb2.SetStyleBertVitsParamRequest(),
         context: grpc.ServicerContext,
-    ) -> voice_server_pb2.SetParamReply:
+    ) -> voice_server_pb2.SetStyleBertVitsParamReply:
         print("SetStyleBertVitsParam is not supported on voicevox_server.")
-        return voice_server_pb2.SetParamReply(success=False)
+        return voice_server_pb2.SetStyleBertVitsParamReply(success=False)
 
     def SetVoicevoxParam(
         self,

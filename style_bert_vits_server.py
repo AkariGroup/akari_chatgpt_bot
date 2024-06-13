@@ -12,7 +12,7 @@ import voice_server_pb2
 import voice_server_pb2_grpc
 
 
-class StyleBertVitsServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
+class VoiceServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
     """
     StyleBertVitsにtextを送信し、音声を再生するgprcサーバ
     """
@@ -32,9 +32,9 @@ class StyleBertVitsServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
 
     def SetStyleBertVitsParam(
         self,
-        request: voice_server_pb2.SetParamRequest(),
+        request: voice_server_pb2.SetStyleBertVitsParamRequest(),
         context: grpc.ServicerContext,
-    ) -> voice_server_pb2.SetParamReply:
+    ) -> voice_server_pb2.SetStyleBertVitsParamReply:
         if request.model_name:
             self.text_to_voice.set_param(model_name=request.model_name)
         if request.length:
@@ -43,7 +43,7 @@ class StyleBertVitsServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
             self.text_to_voice.set_param(style=request.style)
         if request.style_weight:
             self.text_to_voice.set_param(style_weight=request.style_weight)
-        return voice_server_pb2.SetParamReply(success=True)
+        return voice_server_pb2.SetStyleBertVitsParamReply(success=True)
 
     def SetVoicevoxParam(
         self,
@@ -92,8 +92,8 @@ def main() -> None:
     text_to_voice = TextToStyleBertVits(host, port)
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    voice_server_pb2_grpc.add_StyleBertVitsServerServiceServicer_to_server(
-        StyleBertVitsServer(text_to_voice), server
+    voice_server_pb2_grpc.add_VoiceServerServiceServicer_to_server(
+        VoiceServer(text_to_voice), server
     )
     port = "10002"
     server.add_insecure_port("[::]:" + port)

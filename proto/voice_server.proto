@@ -44,7 +44,7 @@ message SetVoicePlayFlgReply {
   bool success =1;
 }
 
-service StyleBertVitsServerService {
+service VoiceServerService {
     rpc SetText(SetTextRequest)
         returns (SetTextReply);
     rpc SetStyleBertVitsParam(SetStyleBertVitsParamRequest)
