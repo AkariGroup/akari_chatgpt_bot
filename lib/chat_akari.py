@@ -10,6 +10,7 @@ import cv2
 import grpc
 import numpy as np
 import openai
+import google.generativeai as genai
 from gpt_stream_parser import force_parse_json
 
 from .conf import ANTHROPIC_APIKEY
@@ -38,9 +39,11 @@ class ChatStreamAkari(object):
         self.motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(
             motion_channel
         )
-        self.anthropic_client = anthropic.Anthropic(
-            api_key=ANTHROPIC_APIKEY,
-        )
+        self.anthropic_client = None
+        if ANTHROPIC_APIKEY is not None:
+            self.anthropic_client = anthropic.Anthropic(
+                api_key=ANTHROPIC_APIKEY,
+            )
         self.last_char = ["、", "。", "！", "!", "?", "？", "\n", "}"]
         self.openai_model_name = [
             "gpt-4o",
@@ -371,6 +374,9 @@ class ChatStreamAkari(object):
                 messages=messages, model=model, temperature=temperature
             )
         elif model in self.anthropic_model_name:
+            if self.anthropic_client is None:
+                print("Anthropic API key is not set.")
+                return
             yield from self.chat_anthropic(
                 messages=messages, model=model, temperature=temperature
             )
@@ -605,6 +611,9 @@ class ChatStreamAkari(object):
                 messages=messages, model=model, temperature=temperature
             )
         elif model in self.anthropic_model_name:
+            if self.anthropic_client is None:
+                print("Anthropic API key is not set.")
+                return
             yield from self.chat_and_motion_anthropic(
                 messages=messages, model=model, temperature=temperature
             )
