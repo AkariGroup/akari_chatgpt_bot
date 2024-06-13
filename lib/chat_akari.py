@@ -10,7 +10,6 @@ import cv2
 import grpc
 import numpy as np
 import openai
-import google.generativeai as genai
 from gpt_stream_parser import force_parse_json
 
 from .conf import ANTHROPIC_APIKEY
