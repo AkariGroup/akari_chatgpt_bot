@@ -113,6 +113,8 @@ class TextToVoiceVox(object):
             Any: 音声合成クエリの応答。
 
         """
+        if text == "":
+            return None
         params = {
             "text": text,
             "speaker": self.speaker,
@@ -180,8 +182,11 @@ class TextToVoiceVox(object):
 
         """
         res = self.post_audio_query(text)
+        if res is None:
+            return
         wav = self.post_synthesis(res)
-        self.play_wav(wav)
+        if wav is not None:
+            self.play_wav(wav)
 
 
 class TextToVoiceVoxWeb(TextToVoiceVox):
@@ -219,7 +224,7 @@ class TextToVoiceVoxWeb(TextToVoiceVox):
         pitch: int = 0,
         intonation_scale: int = 1,
         speed: int = 1,
-    ) -> bytes:
+    ) -> Optional[bytes]:
         """
         VoiceVoxウェブAPIに音声合成要求を送信し、合成された音声データを取得。
 
@@ -234,6 +239,8 @@ class TextToVoiceVoxWeb(TextToVoiceVox):
             bytes: 合成された音声データ。
 
         """
+        if text == "":
+            return None
         address = (
             "https://deprecatedapis.tts.quest/v2/voicevox/audio/?key="
             + self.apikey
@@ -260,4 +267,5 @@ class TextToVoiceVoxWeb(TextToVoiceVox):
 
         """
         wav = self.post_web(text=text)
-        self.play_wav(wav)
+        if wav is not None:
+            self.play_wav(wav)

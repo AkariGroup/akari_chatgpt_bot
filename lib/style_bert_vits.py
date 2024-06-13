@@ -144,7 +144,7 @@ class TextToStyleBertVits(object):
     def post_synthesis(
         self,
         text: str,
-    ) -> bytes:
+    ) -> Optional[bytes]:
         """
         Style-Bert-VITS2サーバーに音声合成要求を送信し、合成された音声データを取得する。
 
@@ -155,6 +155,8 @@ class TextToStyleBertVits(object):
             Any: 音声合成クエリの応答。
 
         """
+        if text == "":
+            return None
         headers = {
             "accept": "audio/wav"
         }
@@ -206,4 +208,5 @@ class TextToStyleBertVits(object):
 
         """
         wav = self.post_synthesis(text)
-        self.play_wav(wav)
+        if wav is not None:
+            self.play_wav(wav)
