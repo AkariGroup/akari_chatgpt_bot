@@ -304,6 +304,9 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                 short_response=short_response,
             )
         elif model in self.anthropic_model_name:
+            if self.anthropic_client is None:
+                print("Anthropic API key is not set.")
+                return
             yield from self.chat_and_motion_anthropic(
                 messages=messages,
                 model=model,
