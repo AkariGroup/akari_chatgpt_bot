@@ -10,9 +10,11 @@ import cv2
 import grpc
 import numpy as np
 import openai
+import google.generativeai as genai
 from gpt_stream_parser import force_parse_json
 
 from .conf import ANTHROPIC_APIKEY
+from .conf import GEMINI_APIKEY
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
 import motion_server_pb2
@@ -38,9 +40,13 @@ class ChatStreamAkari(object):
         self.motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(
             motion_channel
         )
-        self.anthropic_client = anthropic.Anthropic(
-            api_key=ANTHROPIC_APIKEY,
-        )
+        self.anthropic_client = None
+        if ANTHROPIC_APIKEY is not None:
+            self.anthropic_client = anthropic.Anthropic(
+                api_key=ANTHROPIC_APIKEY,
+            )
+        if GEMINI_APIKEY is not None:
+            genai.configure(api_key=GEMINI_APIKEY)
         self.last_char = ["、", "。", "！", "!", "?", "？", "\n", "}"]
         self.openai_model_name = [
             "gpt-4o",
@@ -74,6 +80,10 @@ class ChatStreamAkari(object):
             "claude-2.1",
             "claude-2.0",
             "claude-instant-1.2",
+        ]
+        self.gemini_model_name = [
+            "gemini-1.5-pro",
+            "gemini-1.5-flash",
         ]
 
     def send_motion(self, name: str) -> None:
@@ -350,6 +360,27 @@ class ChatStreamAkari(object):
                         pass
         yield real_time_response
 
+    def chat_gemini(
+        self,
+        messages: list,
+        model: str = "gemini-1.5-pro",
+        temperature: float = 0.7,
+    ) -> Generator[str, None, None]:
+        """Geminiを使用して会話を行う
+
+        Args:
+            messages (list): 会話のメッセージ
+            model (str): 使用するモデル名 (デフォルト: "gemini-1.5-pro")
+            temperature (float): Geminiのtemperatureパラメータ (デフォルト: 0.7)
+        Returns:
+            Generator[str, None, None]): 会話の返答を順次生成する
+
+        """
+        if GEMINI_APIKEY is None:
+            print("Gemini API key is not set.")
+            return
+
+
     def chat(
         self,
         messages: list,
@@ -371,7 +402,17 @@ class ChatStreamAkari(object):
                 messages=messages, model=model, temperature=temperature
             )
         elif model in self.anthropic_model_name:
+            if self.anthropic_client is None:
+                print("Anthropic API key is not set.")
+                return
             yield from self.chat_anthropic(
+                messages=messages, model=model, temperature=temperature
+            )
+        elif model in self.gemini_model_name:
+            if GEMINI_APIKEY is None:
+                print("Gemini API key is not set.")
+                return
+            yield from self.chat_gemini(
                 messages=messages, model=model, temperature=temperature
             )
         else:
@@ -605,6 +646,9 @@ class ChatStreamAkari(object):
                 messages=messages, model=model, temperature=temperature
             )
         elif model in self.anthropic_model_name:
+            if self.anthropic_client is None:
+                print("Anthropic API key is not set.")
+                return
             yield from self.chat_and_motion_anthropic(
                 messages=messages, model=model, temperature=temperature
             )
