@@ -7,10 +7,10 @@ from lib.google_speech import get_db_thresh
 from lib.google_speech_grpc import GoogleSpeechGrpc, MicrophoneStreamGrpc
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
+import voice_server_pb2
+import voice_server_pb2_grpc
 import motion_server_pb2
 import motion_server_pb2_grpc
-import voicevox_server_pb2
-import voicevox_server_pb2_grpc
 
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
@@ -21,15 +21,19 @@ def main() -> None:
     global host
     global port
     parser = argparse.ArgumentParser()
-    parser.add_argument("--robot_ip", help="Ip address", default="127.0.0.1", type=str)
-    parser.add_argument("--robot_port", help="Port number", default="50055", type=str)
-    parser.add_argument("--gpt_ip", help="Ip address", default="127.0.0.1", type=str)
-    parser.add_argument("--gpt_port", help="Port number", default="10001", type=str)
+    parser.add_argument("--robot_ip", help="Robot ip address",
+                        default="127.0.0.1", type=str)
     parser.add_argument(
-        "--voicevox_ip", help="Ip address", default="127.0.0.1", type=str
+        "--robot_port", help="Robot port number", default="50055", type=str)
+    parser.add_argument("--gpt_ip", help="Gpt server ip address",
+                        default="127.0.0.1", type=str)
+    parser.add_argument(
+        "--gpt_port", help="Gpt server port number", default="10001", type=str)
+    parser.add_argument(
+        "--voice_ip", help="Voice server ip address", default="127.0.0.1", type=str
     )
     parser.add_argument(
-        "--voicevox_port", help="Port number", default="10002", type=str
+        "--voice_port", help="Voice server port number", default="10002", type=str
     )
     parser.add_argument(
         "-t",
@@ -61,18 +65,21 @@ def main() -> None:
     power_threshold: float = args.power_threshold
 
     # grpc stubの設定
-    motion_channel = grpc.insecure_channel(args.robot_ip + ":" + str(args.robot_port))
-    motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(motion_channel)
-    voicevox_channel = grpc.insecure_channel(
-        args.voicevox_ip + ":" + args.voicevox_port
+    motion_channel = grpc.insecure_channel(
+        args.robot_ip + ":" + str(args.robot_port))
+    motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(
+        motion_channel)
+    voice_channel = grpc.insecure_channel(
+        args.voice_ip + ":" + args.voice_port
     )
-    voicevox_stub = voicevox_server_pb2_grpc.VoicevoxServerServiceStub(voicevox_channel)
+    voice_stub = voice_server_pb2_grpc.VoiceServerServiceStub(
+        voice_channel)
 
     google_speech_grpc = GoogleSpeechGrpc(
         gpt_host=args.gpt_ip,
         gpt_port=args.gpt_port,
-        voicevox_host=args.voicevox_ip,
-        voicevox_port=args.voicevox_port,
+        voice_host=args.voice_ip,
+        voice_port=args.voice_port,
     )
     # power_threshouldが指定されていない場合、周辺音量を収録し、発話判定閾値を決定
     if power_threshold == 0:
@@ -85,8 +92,8 @@ def main() -> None:
             print("Enterを入力してから、マイクに話しかけてください")
             input()
             try:
-                voicevox_stub.SetVoicePlayFlg(
-                    voicevox_server_pb2.SetVoicePlayFlgRequest(flg=False)
+                voice_stub.SetVoicePlayFlg(
+                    voice_server_pb2.SetVoicePlayFlgRequest(flg=False)
                 )
             except BaseException:
                 pass
