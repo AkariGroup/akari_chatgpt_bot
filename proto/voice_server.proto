@@ -14,7 +14,7 @@ message SetStyleBertVitsParamRequest {
   optional int32 model_id = 2;
   optional float length = 3;
   optional string style = 4;
-  optional string style_weight = 5;
+  optional float style_weight = 5;
 }
 
 message SetStyleBertVitsParamReply {
