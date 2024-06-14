@@ -7,10 +7,10 @@ from lib.google_speech import get_db_thresh
 from lib.google_speech_grpc import GoogleSpeechGrpc, MicrophoneStreamGrpc
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
-import voice_server_pb2
-import voice_server_pb2_grpc
 import motion_server_pb2
 import motion_server_pb2_grpc
+import voice_server_pb2
+import voice_server_pb2_grpc
 
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
@@ -21,14 +21,18 @@ def main() -> None:
     global host
     global port
     parser = argparse.ArgumentParser()
-    parser.add_argument("--robot_ip", help="Robot ip address",
-                        default="127.0.0.1", type=str)
     parser.add_argument(
-        "--robot_port", help="Robot port number", default="50055", type=str)
-    parser.add_argument("--gpt_ip", help="Gpt server ip address",
-                        default="127.0.0.1", type=str)
+        "--robot_ip", help="Robot ip address", default="127.0.0.1", type=str
+    )
     parser.add_argument(
-        "--gpt_port", help="Gpt server port number", default="10001", type=str)
+        "--robot_port", help="Robot port number", default="50055", type=str
+    )
+    parser.add_argument(
+        "--gpt_ip", help="Gpt server ip address", default="127.0.0.1", type=str
+    )
+    parser.add_argument(
+        "--gpt_port", help="Gpt server port number", default="10001", type=str
+    )
     parser.add_argument(
         "--voice_ip", help="Voice server ip address", default="127.0.0.1", type=str
     )
@@ -65,15 +69,10 @@ def main() -> None:
     power_threshold: float = args.power_threshold
 
     # grpc stubの設定
-    motion_channel = grpc.insecure_channel(
-        args.robot_ip + ":" + str(args.robot_port))
-    motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(
-        motion_channel)
-    voice_channel = grpc.insecure_channel(
-        args.voice_ip + ":" + args.voice_port
-    )
-    voice_stub = voice_server_pb2_grpc.VoiceServerServiceStub(
-        voice_channel)
+    motion_channel = grpc.insecure_channel(args.robot_ip + ":" + str(args.robot_port))
+    motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(motion_channel)
+    voice_channel = grpc.insecure_channel(args.voice_ip + ":" + args.voice_port)
+    voice_stub = voice_server_pb2_grpc.VoiceServerServiceStub(voice_channel)
 
     google_speech_grpc = GoogleSpeechGrpc(
         gpt_host=args.gpt_ip,

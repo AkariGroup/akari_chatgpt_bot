@@ -6,37 +6,38 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
+
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
 
 
-
-
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13motion_server.proto\x12\rmotion_server\"\x82\x01\n\x10SetMotionRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x15\n\x08priority\x18\x02 \x01(\x05H\x00\x88\x01\x01\x12\x13\n\x06repeat\x18\x03 \x01(\x08H\x01\x88\x01\x01\x12\x12\n\x05\x63lear\x18\x04 \x01(\x08H\x02\x88\x01\x01\x42\x0b\n\t_priorityB\t\n\x07_repeatB\x08\n\x06_clear\"!\n\x0eSetMotionReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\"8\n\x12\x43learMotionRequest\x12\x15\n\x08priority\x18\x01 \x01(\x05H\x00\x88\x01\x01\x42\x0b\n\t_priority\"#\n\x10\x43learMotionReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\"7\n\x11StopRepeatRequest\x12\x15\n\x08priority\x18\x01 \x01(\x05H\x00\x88\x01\x01\x42\x0b\n\t_priority\"\"\n\x0fStopRepeatReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\"`\n\x0eSetWaitRequest\x12\x0c\n\x04time\x18\x01 \x01(\x02\x12\x15\n\x08priority\x18\x02 \x01(\x05H\x00\x88\x01\x01\x12\x12\n\x05\x63lear\x18\x03 \x01(\x08H\x01\x88\x01\x01\x42\x0b\n\t_priorityB\x08\n\x06_clear\"\x1f\n\x0cSetWaitReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\x32\xd4\x02\n\x13MotionServerService\x12M\n\tSetMotion\x12\x1f.motion_server.SetMotionRequest\x1a\x1d.motion_server.SetMotionReply\"\x00\x12S\n\x0b\x43learMotion\x12!.motion_server.ClearMotionRequest\x1a\x1f.motion_server.ClearMotionReply\"\x00\x12P\n\nStopRepeat\x12 .motion_server.StopRepeatRequest\x1a\x1e.motion_server.StopRepeatReply\"\x00\x12G\n\x07SetWait\x12\x1d.motion_server.SetWaitRequest\x1a\x1b.motion_server.SetWaitReply\"\x00\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
+    b'\n\x13motion_server.proto\x12\rmotion_server"\x82\x01\n\x10SetMotionRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x15\n\x08priority\x18\x02 \x01(\x05H\x00\x88\x01\x01\x12\x13\n\x06repeat\x18\x03 \x01(\x08H\x01\x88\x01\x01\x12\x12\n\x05\x63lear\x18\x04 \x01(\x08H\x02\x88\x01\x01\x42\x0b\n\t_priorityB\t\n\x07_repeatB\x08\n\x06_clear"!\n\x0eSetMotionReply\x12\x0f\n\x07success\x18\x01 \x01(\x08"8\n\x12\x43learMotionRequest\x12\x15\n\x08priority\x18\x01 \x01(\x05H\x00\x88\x01\x01\x42\x0b\n\t_priority"#\n\x10\x43learMotionReply\x12\x0f\n\x07success\x18\x01 \x01(\x08"7\n\x11StopRepeatRequest\x12\x15\n\x08priority\x18\x01 \x01(\x05H\x00\x88\x01\x01\x42\x0b\n\t_priority""\n\x0fStopRepeatReply\x12\x0f\n\x07success\x18\x01 \x01(\x08"`\n\x0eSetWaitRequest\x12\x0c\n\x04time\x18\x01 \x01(\x02\x12\x15\n\x08priority\x18\x02 \x01(\x05H\x00\x88\x01\x01\x12\x12\n\x05\x63lear\x18\x03 \x01(\x08H\x01\x88\x01\x01\x42\x0b\n\t_priorityB\x08\n\x06_clear"\x1f\n\x0cSetWaitReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\x32\xd4\x02\n\x13MotionServerService\x12M\n\tSetMotion\x12\x1f.motion_server.SetMotionRequest\x1a\x1d.motion_server.SetMotionReply"\x00\x12S\n\x0b\x43learMotion\x12!.motion_server.ClearMotionRequest\x1a\x1f.motion_server.ClearMotionReply"\x00\x12P\n\nStopRepeat\x12 .motion_server.StopRepeatRequest\x1a\x1e.motion_server.StopRepeatReply"\x00\x12G\n\x07SetWait\x12\x1d.motion_server.SetWaitRequest\x1a\x1b.motion_server.SetWaitReply"\x00\x62\x06proto3'
+)
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'motion_server_pb2', _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "motion_server_pb2", _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
 
-  DESCRIPTOR._options = None
-  _globals['_SETMOTIONREQUEST']._serialized_start=39
-  _globals['_SETMOTIONREQUEST']._serialized_end=169
-  _globals['_SETMOTIONREPLY']._serialized_start=171
-  _globals['_SETMOTIONREPLY']._serialized_end=204
-  _globals['_CLEARMOTIONREQUEST']._serialized_start=206
-  _globals['_CLEARMOTIONREQUEST']._serialized_end=262
-  _globals['_CLEARMOTIONREPLY']._serialized_start=264
-  _globals['_CLEARMOTIONREPLY']._serialized_end=299
-  _globals['_STOPREPEATREQUEST']._serialized_start=301
-  _globals['_STOPREPEATREQUEST']._serialized_end=356
-  _globals['_STOPREPEATREPLY']._serialized_start=358
-  _globals['_STOPREPEATREPLY']._serialized_end=392
-  _globals['_SETWAITREQUEST']._serialized_start=394
-  _globals['_SETWAITREQUEST']._serialized_end=490
-  _globals['_SETWAITREPLY']._serialized_start=492
-  _globals['_SETWAITREPLY']._serialized_end=523
-  _globals['_MOTIONSERVERSERVICE']._serialized_start=526
-  _globals['_MOTIONSERVERSERVICE']._serialized_end=866
+    DESCRIPTOR._options = None
+    _globals["_SETMOTIONREQUEST"]._serialized_start = 39
+    _globals["_SETMOTIONREQUEST"]._serialized_end = 169
+    _globals["_SETMOTIONREPLY"]._serialized_start = 171
+    _globals["_SETMOTIONREPLY"]._serialized_end = 204
+    _globals["_CLEARMOTIONREQUEST"]._serialized_start = 206
+    _globals["_CLEARMOTIONREQUEST"]._serialized_end = 262
+    _globals["_CLEARMOTIONREPLY"]._serialized_start = 264
+    _globals["_CLEARMOTIONREPLY"]._serialized_end = 299
+    _globals["_STOPREPEATREQUEST"]._serialized_start = 301
+    _globals["_STOPREPEATREQUEST"]._serialized_end = 356
+    _globals["_STOPREPEATREPLY"]._serialized_start = 358
+    _globals["_STOPREPEATREPLY"]._serialized_end = 392
+    _globals["_SETWAITREQUEST"]._serialized_start = 394
+    _globals["_SETWAITREQUEST"]._serialized_end = 490
+    _globals["_SETWAITREPLY"]._serialized_start = 492
+    _globals["_SETWAITREPLY"]._serialized_end = 523
+    _globals["_MOTIONSERVERSERVICE"]._serialized_start = 526
+    _globals["_MOTIONSERVERSERVICE"]._serialized_end = 866
 # @@protoc_insertion_point(module_scope)

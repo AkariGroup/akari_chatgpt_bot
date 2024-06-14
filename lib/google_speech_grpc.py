@@ -66,11 +66,8 @@ class MicrophoneStreamGrpc(MicrophoneStream):
         )
         gpt_channel = grpc.insecure_channel(gpt_host + ":" + gpt_port)
         self.gpt_stub = gpt_server_pb2_grpc.GptServerServiceStub(gpt_channel)
-        voice_channel = grpc.insecure_channel(
-            voice_host + ":" + voice_port)
-        self.voice_stub = voice_server_pb2_grpc.VoiceServerServiceStub(
-            voice_channel
-        )
+        voice_channel = grpc.insecure_channel(voice_host + ":" + voice_port)
+        self.voice_stub = voice_server_pb2_grpc.VoiceServerServiceStub(voice_channel)
 
     def _fill_buffer(
         self, in_data: bytes, frame_count: int, time_info: Any, status_flags: Any
@@ -90,8 +87,7 @@ class MicrophoneStreamGrpc(MicrophoneStream):
         if self.is_start_callback:
             in_data2 = struct.unpack(f"{len(in_data) / 2:.0f}h", in_data)
             rms = math.sqrt(np.square(in_data2).mean())
-            power = 20 * math.log10(rms) if rms > 0.0 else - \
-                math.inf  # RMS to db
+            power = 20 * math.log10(rms) if rms > 0.0 else -math.inf  # RMS to db
             if power > self.db_thresh:
                 if not self.is_start:
                     self.is_start = True
@@ -102,15 +98,13 @@ class MicrophoneStreamGrpc(MicrophoneStream):
                     self.closed = True
                     try:
                         self.voice_stub.SetVoicePlayFlg(
-                            voice_server_pb2.SetVoicePlayFlgRequest(
-                                flg=True)
+                            voice_server_pb2.SetVoicePlayFlgRequest(flg=True)
                         )
                     except BaseException:
                         print("SetVoicePlayFlg error")
                         pass
                     try:
-                        self.gpt_stub.SendMotion(
-                            gpt_server_pb2.SendMotionRequest())
+                        self.gpt_stub.SendMotion(gpt_server_pb2.SendMotionRequest())
                     except BaseException:
                         print("Send motion error")
                         pass
@@ -142,11 +136,8 @@ class GoogleSpeechGrpc(object):
 
         gpt_channel = grpc.insecure_channel(gpt_host + ":" + gpt_port)
         self.gpt_stub = gpt_server_pb2_grpc.GptServerServiceStub(gpt_channel)
-        voice_channel = grpc.insecure_channel(
-            voice_host + ":" + voice_port)
-        self.voice_stub = voice_server_pb2_grpc.VoiceServerServiceStub(
-            voice_channel
-        )
+        voice_channel = grpc.insecure_channel(voice_host + ":" + voice_port)
+        self.voice_stub = voice_server_pb2_grpc.VoiceServerServiceStub(voice_channel)
 
     def listen_publisher_grpc(
         self, responses: Any, progress_report_len: int = 0
@@ -173,9 +164,7 @@ class GoogleSpeechGrpc(object):
             print("SetVoicePlayFlg error")
             pass
         try:
-            self.voice_stub.InterruptVoice(
-                voice_server_pb2.InterruptVoiceRequest()
-            )
+            self.voice_stub.InterruptVoice(voice_server_pb2.InterruptVoiceRequest())
         except BaseException:
             print("InterruptVoice error")
             pass

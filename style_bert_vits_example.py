@@ -1,4 +1,5 @@
 import argparse
+
 from lib.style_bert_vits import TextToStyleBertVits
 
 
@@ -36,7 +37,9 @@ def main() -> None:
     print("発話させたい文章をキーボード入力後、Enterを押してください。")
     while True:
         text = input("Input: ")
-        text_to_voice.put_text(text=text, )
+        text_to_voice.put_text(
+            text=text,
+        )
         print("")
 
 

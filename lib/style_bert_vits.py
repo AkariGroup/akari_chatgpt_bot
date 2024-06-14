@@ -1,22 +1,21 @@
 import io
+import json
 import time
 import wave
 from queue import Queue
 from threading import Thread
 from typing import Optional
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
 import pyaudio
-from urllib.request import urlopen
-from urllib.parse import urlencode
-from urllib.request import Request
 
 from .err_handler import ignoreStderr
-import json
 
 
 class TextToStyleBertVits(object):
     """
-        Style-Bert-VITS2を使用してテキストから音声を生成するクラス。
+    Style-Bert-VITS2を使用してテキストから音声を生成するクラス。
     """
 
     def __init__(self, host: str = "127.0.0.1", port: str = "5000") -> None:
@@ -38,7 +37,7 @@ class TextToStyleBertVits(object):
         self.style = "Neutral"
         self.style_weight = 1.0
         # 話者モデル名を指定
-        self.set_param(model_name='jvnv-F1-jp')
+        self.set_param(model_name="jvnv-F1-jp")
 
     def __exit__(self) -> None:
         """音声合成スレッドを終了する。"""
@@ -96,18 +95,15 @@ class TextToStyleBertVits(object):
             int: モデル番号。
 
         """
-        headers = {
-            "accept": "application/json"
-        }
-        address = "http://" + self.host + ":" + \
-            self.port + "/models/info"
+        headers = {"accept": "application/json"}
+        address = "http://" + self.host + ":" + self.port + "/models/info"
         # GETリクエストを作成
         req = Request(address, headers=headers, method="GET")
         with urlopen(req) as res:
             model_info = res.read()
             model_info_json = json.loads(model_info)
             for key, details in model_info_json.items():
-                if model_name == details['id2spk']['0']:
+                if model_name == details["id2spk"]["0"]:
                     return key
         raise ValueError("Model name not found")
 
@@ -157,9 +153,7 @@ class TextToStyleBertVits(object):
         """
         if text == "":
             return None
-        headers = {
-            "accept": "audio/wav"
-        }
+        headers = {"accept": "audio/wav"}
         params = {
             "text": text,
             "model_id": self.model_id,
@@ -167,8 +161,9 @@ class TextToStyleBertVits(object):
             "style": self.style,
             "style_weight": self.style_weight,
         }
-        address = "http://" + self.host + ":" + \
-            self.port + "/voice" + "?" + urlencode(params)
+        address = (
+            "http://" + self.host + ":" + self.port + "/voice" + "?" + urlencode(params)
+        )
         # GETリクエストを作成
         req = Request(address, headers=headers, method="GET")
         with urlopen(req) as res:

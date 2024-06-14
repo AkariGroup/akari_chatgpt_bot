@@ -1,5 +1,3 @@
-
-
 import argparse
 import copy
 import os
@@ -10,10 +8,11 @@ import grpc
 from lib.chat_akari_grpc import ChatStreamAkariGrpc
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
-import voice_server_pb2_grpc
-import voice_server_pb2
-import gpt_server_pb2_grpc
 import gpt_server_pb2
+import gpt_server_pb2_grpc
+import voice_server_pb2
+import voice_server_pb2_grpc
+
 
 class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
     """
@@ -27,8 +26,7 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
             self.chat_stream_akari_grpc.create_message(content, role="system")
         ]
         voice_channel = grpc.insecure_channel("localhost:10002")
-        self.stub = voice_server_pb2_grpc.VoiceServerServiceStub(
-            voice_channel)
+        self.stub = voice_server_pb2_grpc.VoiceServerServiceStub(voice_channel)
 
     def SetGpt(
         self, request: gpt_server_pb2.SetGptRequest(), context: grpc.ServicerContext
@@ -45,8 +43,7 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
         else:
             content = f"{request.text}。"
         tmp_messages = copy.deepcopy(self.messages)
-        tmp_messages.append(
-            self.chat_stream_akari_grpc.create_message(content))
+        tmp_messages.append(self.chat_stream_akari_grpc.create_message(content))
         if is_finish:
             self.messages = copy.deepcopy(tmp_messages)
         if is_finish:
@@ -55,13 +52,10 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
                 tmp_messages, model="gpt-3.5-turbo"
             ):
                 print(f"Send to voice server: {sentence}")
-                self.stub.SetText(
-                    voice_server_pb2.SetTextRequest(text=sentence)
-                )
+                self.stub.SetText(voice_server_pb2.SetTextRequest(text=sentence))
                 response += sentence
             self.messages.append(
-                self.chat_stream_akari_grpc.create_message(
-                    response, role="assistant")
+                self.chat_stream_akari_grpc.create_message(response, role="assistant")
             )
         else:
             # 途中での第一声とモーション準備。function_callingの確実性のため、モデルはgpt-4-turbo-preview
@@ -69,9 +63,7 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
                 tmp_messages, model="gpt-4-turbo", short_response=True
             ):
                 print(f"Send to voice server: {sentence}")
-                self.stub.SetText(
-                    voice_server_pb2.SetTextRequest(text=sentence)
-                )
+                self.stub.SetText(voice_server_pb2.SetTextRequest(text=sentence))
                 response += sentence
         print("")
         return gpt_server_pb2.SetGptReply(success=True)
@@ -93,8 +85,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    gpt_server_pb2_grpc.add_GptServerServiceServicer_to_server(
-        GptServer(), server)
+    gpt_server_pb2_grpc.add_GptServerServiceServicer_to_server(GptServer(), server)
     server.add_insecure_port(args.ip + ":" + args.port)
     server.start()
     print(f"gpt_publisher start. port: {args.port}")
