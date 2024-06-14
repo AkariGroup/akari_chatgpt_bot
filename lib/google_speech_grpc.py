@@ -20,8 +20,8 @@ from .google_speech import MicrophoneStream
 sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
 import gpt_server_pb2
 import gpt_server_pb2_grpc
-import voicevox_server_pb2
-import voicevox_server_pb2_grpc
+import voice_server_pb2
+import voice_server_pb2_grpc
 
 # Audio recording parameters
 RATE = 16000
@@ -42,8 +42,8 @@ class MicrophoneStreamGrpc(MicrophoneStream):
         _db_thresh: float = 55.0,
         gpt_host: str = "127.0.0.1",
         gpt_port: str = "10001",
-        voicevox_host: str = "127.0.0.1",
-        voicevox_port: str = "10002",
+        voice_host: str = "127.0.0.1",
+        voice_port: str = "10002",
     ) -> None:
         """クラスの初期化メソッド。
 
@@ -54,8 +54,8 @@ class MicrophoneStreamGrpc(MicrophoneStream):
             _db_thresh (float): 音声が開始されたと判断する音量閾値（デシベル）。デフォルトは55.0デシベル。
             gpt_host (str, optional): GPTサーバーのホスト名。デフォルトは"127.0.0.1"。
             gpt_port (str, optional): GPTサーバーのポート番号。デフォルトは"10001"。
-            voicevox_host (str, optional): VoiceVoxサーバーのホスト名。デフォルトは"127.0.0.1"。
-            voicevox_port (str, optional): VoiceVoxサーバーのポート番号。デフォルトは"10002"。
+            voice_host (str, optional): VoiceVoxサーバーのホスト名。デフォルトは"127.0.0.1"。
+            voice_port (str, optional): VoiceVoxサーバーのポート番号。デフォルトは"10002"。
 
         """
         super().__init__(
@@ -66,10 +66,8 @@ class MicrophoneStreamGrpc(MicrophoneStream):
         )
         gpt_channel = grpc.insecure_channel(gpt_host + ":" + gpt_port)
         self.gpt_stub = gpt_server_pb2_grpc.GptServerServiceStub(gpt_channel)
-        voicevox_channel = grpc.insecure_channel(voicevox_host + ":" + voicevox_port)
-        self.voicevox_stub = voicevox_server_pb2_grpc.VoicevoxServerServiceStub(
-            voicevox_channel
-        )
+        voice_channel = grpc.insecure_channel(voice_host + ":" + voice_port)
+        self.voice_stub = voice_server_pb2_grpc.VoiceServerServiceStub(voice_channel)
 
     def _fill_buffer(
         self, in_data: bytes, frame_count: int, time_info: Any, status_flags: Any
@@ -99,8 +97,8 @@ class MicrophoneStreamGrpc(MicrophoneStream):
                 if time.time() - self.start_time >= self.timeout_thresh:
                     self.closed = True
                     try:
-                        self.voicevox_stub.SetVoicePlayFlg(
-                            voicevox_server_pb2.SetVoicePlayFlgRequest(flg=True)
+                        self.voice_stub.SetVoicePlayFlg(
+                            voice_server_pb2.SetVoicePlayFlgRequest(flg=True)
                         )
                     except BaseException:
                         print("SetVoicePlayFlg error")
@@ -124,23 +122,22 @@ class GoogleSpeechGrpc(object):
         self,
         gpt_host: str = "127.0.0.1",
         gpt_port: str = "10001",
-        voicevox_host: str = "127.0.0.1",
-        voicevox_port: str = "10001",
+        voice_host: str = "127.0.0.1",
+        voice_port: str = "10001",
     ) -> None:
         """GoogleSpeechGrpcオブジェクトを初期化する。
 
         Args:
             gpt_host (str, optional): GPTサーバーのホスト名。デフォルトは"127.0.0.1"。
             gpt_port (str, optional): GPTサーバーのポート番号。デフォルトは"10001"。
-            voicevox_host (str, optional): VoiceVoxサーバーのホスト名。デフォルトは"127.0.0.1"。
-            voicevox_port (str, optional): VoiceVoxサーバーのポート番号。デフォルトは"10001"。
+            voice_host (str, optional): VoiceVoxサーバーのホスト名。デフォルトは"127.0.0.1"。
+            voice_port (str, optional): VoiceVoxサーバーのポート番号。デフォルトは"10001"。
         """
+
         gpt_channel = grpc.insecure_channel(gpt_host + ":" + gpt_port)
         self.gpt_stub = gpt_server_pb2_grpc.GptServerServiceStub(gpt_channel)
-        voicevox_channel = grpc.insecure_channel(voicevox_host + ":" + voicevox_port)
-        self.voicevox_stub = voicevox_server_pb2_grpc.VoicevoxServerServiceStub(
-            voicevox_channel
-        )
+        voice_channel = grpc.insecure_channel(voice_host + ":" + voice_port)
+        self.voice_stub = voice_server_pb2_grpc.VoiceServerServiceStub(voice_channel)
 
     def listen_publisher_grpc(
         self, responses: Any, progress_report_len: int = 0
@@ -160,18 +157,16 @@ class GoogleSpeechGrpc(object):
         transcript = ""
         overwrite_chars = ""
         try:
-            self.voicevox_stub.SetVoicePlayFlg(
-                voicevox_server_pb2.SetVoicePlayFlgRequest(flg=False)
+            self.voice_stub.SetVoicePlayFlg(
+                voice_server_pb2.SetVoicePlayFlgRequest(flg=False)
             )
         except BaseException:
             print("SetVoicePlayFlg error")
             pass
         try:
-            self.voicevox_stub.InterruptVoicevox(
-                voicevox_server_pb2.InterruptVoicevoxRequest()
-            )
+            self.voice_stub.InterruptVoice(voice_server_pb2.InterruptVoiceRequest())
         except BaseException:
-            print("InterruptVoicevox error")
+            print("InterruptVoice error")
             pass
         for response in responses:
             if not response.results:

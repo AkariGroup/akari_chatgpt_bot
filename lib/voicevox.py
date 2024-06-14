@@ -4,7 +4,7 @@ import time
 import wave
 from queue import Queue
 from threading import Thread
-from typing import Any
+from typing import Any, Optional
 
 import pyaudio
 import requests
@@ -29,6 +29,9 @@ class TextToVoiceVox(object):
         self.port = port
         self.play_flg = False
         self.finished = True
+        # デフォルトのspeakerは8(春日部つむぎ)
+        self.speaker = 8
+        self.speed_scale = 1.0
         self.voice_thread = Thread(target=self.text_to_voice_thread)
         self.voice_thread.start()
 
@@ -77,11 +80,27 @@ class TextToVoiceVox(object):
         while not self.finished:
             time.sleep(0.01)
 
+    def set_param(
+        self,
+        speaker: Optional[int] = None,
+        speed_scale: Optional[float] = None,
+    ) -> None:
+        """
+        音声合成のパラメータを設定する。
+
+        Args:
+            speaker (Optional[int], optional): VoiceVoxの話者番号。デフォルトはNone。
+            speed_scale (Optional[float], optional): 音声の再生速度スケール。デフォルトはNone。
+
+        """
+        if speaker is not None:
+            self.speaker = speaker
+        elif speed_scale is not None:
+            self.speed_scale = speed_scale
+
     def post_audio_query(
         self,
         text: str,
-        speaker: int = 8,
-        speed_scale: float = 1.0,
     ) -> Any:
         """VoiceVoxサーバーに音声合成クエリを送信する。
 
@@ -94,10 +113,12 @@ class TextToVoiceVox(object):
             Any: 音声合成クエリの応答。
 
         """
+        if text == "":
+            return None
         params = {
             "text": text,
-            "speaker": speaker,
-            "speed_scale": speed_scale,
+            "speaker": self.speaker,
+            "speed_scale": self.speed_scale,
             "pre_phoneme_length": 0,
             "post_phoneme_length": 0,
         }
@@ -161,8 +182,11 @@ class TextToVoiceVox(object):
 
         """
         res = self.post_audio_query(text)
+        if res is None:
+            return
         wav = self.post_synthesis(res)
-        self.play_wav(wav)
+        if wav is not None:
+            self.play_wav(wav)
 
 
 class TextToVoiceVoxWeb(TextToVoiceVox):
@@ -200,7 +224,7 @@ class TextToVoiceVoxWeb(TextToVoiceVox):
         pitch: int = 0,
         intonation_scale: int = 1,
         speed: int = 1,
-    ) -> bytes:
+    ) -> Optional[bytes]:
         """
         VoiceVoxウェブAPIに音声合成要求を送信し、合成された音声データを取得。
 
@@ -215,6 +239,8 @@ class TextToVoiceVoxWeb(TextToVoiceVox):
             bytes: 合成された音声データ。
 
         """
+        if text == "":
+            return None
         address = (
             "https://deprecatedapis.tts.quest/v2/voicevox/audio/?key="
             + self.apikey
@@ -241,4 +267,5 @@ class TextToVoiceVoxWeb(TextToVoiceVox):
 
         """
         wav = self.post_web(text=text)
-        self.play_wav(wav)
+        if wav is not None:
+            self.play_wav(wav)

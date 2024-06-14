@@ -54,7 +54,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
     def chat_and_motion_gpt(
         self,
         messages: list,
-        model: str = "gpt-4o",
+        model: str = "gpt-4-turbo",
         temperature: float = 0.7,
         short_response: bool = False,
     ) -> Generator[str, None, None]:
@@ -148,6 +148,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                             if not get_motion and "motion" in data_json:
                                 get_motion = True
                                 motion = data_json["motion"]
+                                key = None
                                 if motion == "肯定する":
                                     key = "agree"
                                 elif motion == "否定する":
@@ -247,6 +248,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                             if not get_motion and "motion" in data_json:
                                 get_motion = True
                                 motion = data_json["motion"]
+                                key = None
                                 if motion == "肯定する":
                                     key = "agree"
                                 elif motion == "否定する":
