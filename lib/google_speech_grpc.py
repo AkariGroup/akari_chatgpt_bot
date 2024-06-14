@@ -173,11 +173,11 @@ class GoogleSpeechGrpc(object):
             print("SetVoicePlayFlg error")
             pass
         try:
-            self.voice_stub.InterruptVoicevox(
+            self.voice_stub.InterruptVoice(
                 voice_server_pb2.InterruptVoiceRequest()
             )
         except BaseException:
-            print("InterruptVoicevox error")
+            print("InterruptVoice error")
             pass
         for response in responses:
             if not response.results:

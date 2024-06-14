@@ -66,7 +66,7 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
         else:
             # 途中での第一声とモーション準備。function_callingの確実性のため、モデルはgpt-4-turbo-preview
             for sentence in self.chat_stream_akari_grpc.chat_and_motion(
-                tmp_messages, model="gpt-4o", short_response=True
+                tmp_messages, model="gpt-4-turbo", short_response=True
             ):
                 print(f"Send to voice server: {sentence}")
                 self.stub.SetText(
