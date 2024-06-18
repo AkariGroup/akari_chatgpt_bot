@@ -37,8 +37,11 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
         """
         print(f"send motion {self.cur_motion_name}")
         if self.cur_motion_name == "":
-            self.motion_stub.ClearMotion(motion_server_pb2.ClearMotionRequest())
-            return False
+            try:
+                self.motion_stub.ClearMotion(motion_server_pb2.ClearMotionRequest())
+                return False
+            except BaseException:
+                return False
         try:
             self.motion_stub.SetMotion(
                 motion_server_pb2.SetMotionRequest(
