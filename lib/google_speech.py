@@ -194,9 +194,12 @@ def get_db_thresh() -> float:
             data = stream.read(CHUNK)
             frames.append(data)
         audio_data = np.frombuffer(b"".join(frames), dtype=np.int16)
-        print(audio_data)
-        rms = math.sqrt(np.square(audio_data).mean())
-        power = 20 * math.log10(rms) if rms > 0.0 else -math.inf  # RMS to db
+        rms2 = np.square(audio_data).mean()
+        if rms2 > 0.0:
+            rms = math.sqrt(np.square(audio_data).mean())
+            power = 20 * math.log10(rms) if rms > 0.0 else -math.inf  # RMS to db
+        else:
+            power = 20
         print(f"Sound Levels: {power:.3f}db")
         stream.stop_stream()
         stream.close()
