@@ -133,11 +133,9 @@ class MicrophoneStream(object):
             if self.is_start:
                 self._buff.put(in_data)
                 if time.time() - self.start_time >= self.timeout_thresh:
-                    print("Closed timeout")
                     self.closed = True
             else:
                 if time.time() - self.start_time >= self.start_timeout_thresh:
-                    print("Closed start timeout")
                     self.closed = True
         return None, pyaudio.paContinue
 
