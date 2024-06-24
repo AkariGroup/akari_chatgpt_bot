@@ -126,7 +126,6 @@ class MicrophoneStream(object):
             in_data2 = struct.unpack(f"{len(in_data) / 2:.0f}h", in_data)
             rms = math.sqrt(np.square(in_data2).mean())
             power = 20 * math.log10(rms) if rms > 0.0 else -math.inf  # RMS to db
-            print(power)
             if power > self.db_thresh:
                 if not self.is_start:
                     self.is_start = True
