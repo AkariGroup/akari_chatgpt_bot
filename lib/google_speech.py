@@ -30,6 +30,7 @@ class MicrophoneStream(object):
         rate: float,
         chunk: float,
         _timeout_thresh: float = 0.5,
+        _start_timeout_thresh: float = 4.0,
         _db_thresh: float = 55.0,
     ) -> None:
         """クラスの初期化メソッド。
@@ -38,6 +39,7 @@ class MicrophoneStream(object):
             rate (float): サンプリングレート。
             chunk (float): チャンクサイズ。
             _timeout_thresh (float): 音声が停止したと判断するタイムアウト閾値（秒）。デフォルトは0.5秒。
+            _start_timeout_thresh (float): マイクの入力が開始しないまま終了するまでのタイムアウト閾値（秒）。デフォルトは4.0秒。
             _db_thresh (float): 音声が開始されたと判断する音量閾値（デシベル）。デフォルトは55.0デシベル。
 
         """
@@ -49,6 +51,8 @@ class MicrophoneStream(object):
         self.is_start_callback = False
         self.is_finish = False
         self.timeout_thresh = _timeout_thresh
+        # マイクの入力が開始しないまま終了するまでのthreshold時間[s]
+        self.start_timeout_thresh = _start_timeout_thresh
         self.db_thresh = _db_thresh
         language_code = "ja-JP"  # a BCP-47 language tag
         self.client = speech.SpeechClient()
@@ -130,6 +134,9 @@ class MicrophoneStream(object):
                 self._buff.put(in_data)
                 if time.time() - self.start_time >= self.timeout_thresh:
                     self.closed = True
+            else:
+                if time.time() - self.start_time >= self.start_timeout_thresh:
+                    self.closed = True
         return None, pyaudio.paContinue
 
     def generator(self) -> Union[None, Generator[Any, None, None]]:
@@ -164,6 +171,7 @@ class MicrophoneStream(object):
             Iterable[speech.StreamingRecognizeResponse]: ストリーミング認識の応答
         """
         audio_generator = self.generator()
+        self.start_time = time.time()
         self.start_callback()
         requests = (
             speech.StreamingRecognizeRequest(audio_content=content)

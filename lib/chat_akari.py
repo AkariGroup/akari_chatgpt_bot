@@ -289,11 +289,13 @@ class ChatStreamAkari(object):
                             sentence = real_time_response[:pos]  # 1文の区切り
                             real_time_response = real_time_response[pos:]  # 残りの部分
                             # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
-                            yield sentence
+                            if sentence != "":
+                                yield sentence
                             break
                         else:
                             pass
-            yield real_time_response
+            if real_time_response != "":
+                yield real_time_response
 
     def chat_gpt(
         self,
@@ -347,11 +349,13 @@ class ChatStreamAkari(object):
                         sentence = real_time_response[:pos]  # 1文の区切り
                         real_time_response = real_time_response[pos:]  # 残りの部分
                         # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
-                        yield sentence
+                        if sentence != "":
+                            yield sentence
                         break
                     else:
                         pass
-        yield real_time_response
+        if real_time_response != "":
+            yield real_time_response
 
     def chat(
         self,
@@ -494,7 +498,8 @@ class ChatStreamAkari(object):
                                         sentence_index : sentence_index + pos + 1
                                     ]
                                     sentence_index += pos + 1
-                                    yield sentence
+                                    if sentence != "":
+                                        yield sentence
                                     break
 
     def chat_and_motion_anthropic(
@@ -587,7 +592,8 @@ class ChatStreamAkari(object):
                                         sentence_index : sentence_index + pos + 1
                                     ]
                                     sentence_index += pos + 1
-                                    yield sentence
+                                    if sentence != "":
+                                        yield sentence
                                     break
 
     def chat_and_motion(

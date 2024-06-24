@@ -87,7 +87,9 @@ def main() -> None:
 
     while True:
         responses = None
-        with MicrophoneStreamGrpc(RATE, CHUNK, timeout, power_threshold) as stream:
+        with MicrophoneStreamGrpc(
+            rate=RATE, chunk=CHUNK, _timeout_thresh=timeout, _db_thresh=power_threshold
+        ) as stream:
             print("Enterを入力してから、マイクに話しかけてください")
             input()
             try:

@@ -57,7 +57,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
     def chat_and_motion_gpt(
         self,
         messages: list,
-        model: str = "gpt-4-turbo",
+        model: str = "gpt-4o",
         temperature: float = 0.7,
         short_response: bool = False,
     ) -> Generator[str, None, None]:
@@ -105,6 +105,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
         ]
         if short_response:
             # 短応答の候補のenumリストを追加する。
+            # functions[0]["description"] = "ユーザのメッセージに対する回答を一つ選択し、その感情に近い動作を一つ選択します。",
             functions[0]["parameters"]["properties"]["talk"]["enum"] = [
                 "えーと。",
                 "はい。",
@@ -180,7 +181,8 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                                         sentence_index : sentence_index + pos + 1
                                     ]
                                     sentence_index += pos + 1
-                                    yield sentence
+                                    if sentence != "":
+                                        yield sentence
                                     break
 
     def chat_and_motion_anthropic(
@@ -280,7 +282,8 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                                         sentence_index : sentence_index + pos + 1
                                     ]
                                     sentence_index += pos + 1
-                                    yield sentence
+                                    if sentence != "":
+                                        yield sentence
                                     break
 
     def chat_and_motion(

@@ -39,6 +39,7 @@ class MicrophoneStreamGrpc(MicrophoneStream):
         rate: float,
         chunk: float,
         _timeout_thresh: float = 0.5,
+        _start_timeout_thresh: float = 4.0,
         _db_thresh: float = 55.0,
         gpt_host: str = "127.0.0.1",
         gpt_port: str = "10001",
@@ -62,6 +63,7 @@ class MicrophoneStreamGrpc(MicrophoneStream):
             rate=rate,
             chunk=chunk,
             _timeout_thresh=_timeout_thresh,
+            _start_timeout_thresh=_start_timeout_thresh,
             _db_thresh=_db_thresh,
         )
         gpt_channel = grpc.insecure_channel(gpt_host + ":" + gpt_port)
