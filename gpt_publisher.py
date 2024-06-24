@@ -51,7 +51,7 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
             for sentence in self.chat_stream_akari_grpc.chat(
                 tmp_messages, model="gpt-3.5-turbo"
             ):
-                print(f"Send to voice server: {sentence}")
+                print(f"Send to voice server1: {sentence}")
                 self.stub.SetText(voice_server_pb2.SetTextRequest(text=sentence))
                 response += sentence
             self.messages.append(
@@ -62,7 +62,7 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
             for sentence in self.chat_stream_akari_grpc.chat_and_motion(
                 tmp_messages, model="gpt-4-turbo", short_response=True
             ):
-                print(f"Send to voice server: {sentence}")
+                print(f"Send to voice server2: {sentence}")
                 self.stub.SetText(voice_server_pb2.SetTextRequest(text=sentence))
                 response += sentence
         print("")

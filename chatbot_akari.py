@@ -40,7 +40,7 @@ def main() -> None:
         help="Microphone input power threshold",
     )
     parser.add_argument(
-        "-m", "--model", help="LLM model name", default="gpt-3.5-turbo", type=str
+        "-m", "--model", help="LLM model name", default="gpt-4o", type=str
     )
     parser.add_argument("--voicevox_local", action="store_true")
     parser.add_argument(
@@ -87,7 +87,9 @@ def main() -> None:
         # 音声認識
         text = ""
         responses = None
-        with MicrophoneStream(RATE, CHUNK, timeout, power_threshold) as stream:
+        with MicrophoneStream(
+            rate=RATE, chunk=CHUNK, _timeout_thresh=timeout, _db_thresh=power_threshold
+        ) as stream:
             print("Enterを入力してください")
             input()
             # うなずきモーション再生
