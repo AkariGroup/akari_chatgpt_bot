@@ -73,8 +73,7 @@ class TextToStyleBertVits(object):
         self.queue.put(text)
         self.finished = False
         if blocking:
-            while not self.finished:
-                time.sleep(0.01)
+            self.wait_finish()
 
     def wait_finish(self) -> None:
         """
@@ -205,3 +204,14 @@ class TextToStyleBertVits(object):
         wav = self.post_synthesis(text)
         if wav is not None:
             self.play_wav(wav)
+
+    def is_playing(self) -> bool:
+        """
+        音声再生が実行中かどうかを返す。
+        queueの中身が0かつ再生中の音声がなければFalseを返す。
+
+        Returns:
+            bool: 音声再生中の場合はTrue。
+
+        """
+        return self.finished

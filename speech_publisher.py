@@ -1,39 +1,45 @@
+
 import argparse
 import os
 import sys
 import time
+from concurrent import futures
 
 import grpc
 from lib.google_speech import get_db_thresh
 from lib.google_speech_grpc import GoogleSpeechGrpc, MicrophoneStreamGrpc
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
-import motion_server_pb2
-import motion_server_pb2_grpc
-import voice_server_pb2
-import voice_server_pb2_grpc
-import speech_server_pb2
 import speech_server_pb2_grpc
+import speech_server_pb2
+import voice_server_pb2_grpc
+import voice_server_pb2
+import motion_server_pb2_grpc
+import motion_server_pb2
 
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
 POWER_THRESH_DIFF = 30  # 周辺音量にこの値を足したものをpower_threshouldとする
 enable_input = True
 
+
 class SpeechServer(speech_server_pb2_grpc.SpeechServerServiceServicer):
     """
     音声入力の制御用のgRPCサーバ
     """
-    def ToggleSpeechInput(
+
+    def ToggleSpeech(
         self,
-        request: speech_server_pb2.ToggleSpeechInputRequest,
+        request: speech_server_pb2.ToggleSpeechRequest,
         context: grpc.ServicerContext,
-    ) -> speech_server_pb2.ToggleSpeechInputReply:
+    ) -> speech_server_pb2.ToggleSpeechReply:
         global enable_input
         enable_input = request.enable
         if not request.enable:
+            print("Speech input disabled")
+        else:
             print("Speech input enabled")
-        return speech_server_pb2.ToggleSpeechInputReply(success=True)
+        return speech_server_pb2.ToggleSpeechReply(success=True)
 
 
 def main() -> None:
@@ -82,14 +88,31 @@ def main() -> None:
         help="Not play nod motion",
         action="store_true",
     )
+    parser.add_argument(
+        "--skip_keyboard_input",
+        help="Skip keyboard input for speech recognition",
+        action="store_true",
+    )
     args = parser.parse_args()
     timeout: float = args.timeout
     power_threshold: float = args.power_threshold
 
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    speech_server_pb2_grpc.add_SpeechServerServiceServicer_to_server(
+        SpeechServer(), server
+    )
+    port = "10003"
+    server.add_insecure_port("[::]:" + port)
+    server.start()
+    print(f"speech_server start. port: {port}")
+
     # grpc stubの設定
-    motion_channel = grpc.insecure_channel(args.robot_ip + ":" + str(args.robot_port))
-    motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(motion_channel)
-    voice_channel = grpc.insecure_channel(args.voice_ip + ":" + args.voice_port)
+    motion_channel = grpc.insecure_channel(
+        args.robot_ip + ":" + str(args.robot_port))
+    motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(
+        motion_channel)
+    voice_channel = grpc.insecure_channel(
+        args.voice_ip + ":" + args.voice_port)
     voice_stub = voice_server_pb2_grpc.VoiceServerServiceStub(voice_channel)
 
     google_speech_grpc = GoogleSpeechGrpc(
@@ -116,14 +139,15 @@ def main() -> None:
                 voice_host=args.voice_ip,
                 voice_port=args.voice_port,
             ) as stream:
-                print("Enterを入力してから、マイクに話しかけてください")
-                input()
-                try:
-                    voice_stub.SetVoicePlayFlg(
-                        voice_server_pb2.SetVoicePlayFlgRequest(flg=False)
-                    )
-                except BaseException:
-                    pass
+                if not args.skip_keyboard_input:
+                    print("Enterを入力してから、マイクに話しかけてください")
+                    input()
+                    try:
+                        voice_stub.SetVoicePlayFlg(
+                            voice_server_pb2.SetVoicePlayFlgRequest(flg=False)
+                        )
+                    except BaseException:
+                        pass
                 if not args.no_motion:
                     try:
                         motion_stub.SetMotion(

@@ -44,6 +44,18 @@ message SetVoicePlayFlgReply {
   bool success =1;
 }
 
+message IsVoicePlayingRequest {}
+
+message IsVoicePlayingReply {
+  bool is_playing =1;
+}
+
+message SentenceEndRequest {}
+
+message SentenceEndReply {
+  bool success =1;
+}
+
 service VoiceServerService {
     rpc SetText(SetTextRequest)
         returns (SetTextReply);
@@ -55,4 +67,8 @@ service VoiceServerService {
         returns (InterruptVoiceReply);
     rpc SetVoicePlayFlg(SetVoicePlayFlgRequest)
         returns (SetVoicePlayFlgReply);
+    rpc IsVoicePlaying(IsVoicePlayingRequest)
+        returns (IsVoicePlayingReply);
+    rpc SentenceEnd(SentenceEndRequest)
+        returns (SentenceEndReply);
 }

@@ -1,3 +1,4 @@
+
 import argparse
 import os
 import sys
@@ -8,9 +9,8 @@ import grpc
 from lib.style_bert_vits import TextToStyleBertVits
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
-import voice_server_pb2
 import voice_server_pb2_grpc
-
+import voice_server_pb2
 
 class VoiceServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
     """
@@ -69,6 +69,23 @@ class VoiceServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
     ) -> voice_server_pb2.SetVoicePlayFlgReply:
         self.text_to_voice.play_flg = request.flg
         return voice_server_pb2.SetVoicePlayFlgReply(success=True)
+
+    def IsVoicePlaying(
+        self,
+        request: voice_server_pb2.IsVoicePlayingRequest(),
+        context: grpc.ServicerContext,
+    ) -> voice_server_pb2.IsVoicePlayingReply:
+        return voice_server_pb2.IsVoicePlayingReply(
+            is_playing=not self.text_to_voice.is_playing()
+        )
+
+    def SentenceEnd(
+        self,
+        request: voice_server_pb2.SentenceEndRequest(),
+        context: grpc.ServicerContext,
+    ) -> voice_server_pb2.SentenceEndReply:
+        self.text_to_voice.sentence_end()
+        return voice_server_pb2.SentenceEndReply(success=True)
 
 
 def main() -> None:

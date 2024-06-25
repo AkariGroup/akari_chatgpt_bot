@@ -119,6 +119,7 @@ def main() -> None:
                 text_to_voice.put_text(sentence)
                 response += sentence
                 print(sentence, end="", flush=True)
+            text_to_voice.sentence_end()
             messages.append({"role": "assistant", "content": response})
             print("")
             print("")

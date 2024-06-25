@@ -54,6 +54,8 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
                 print(f"Send to voice server: {sentence}")
                 self.stub.SetText(voice_server_pb2.SetTextRequest(text=sentence))
                 response += sentence
+            # Sentenceの終了を通知
+            self.stub.SentenceEnd(voice_server_pb2.SentenceEndRequest())
             self.messages.append(
                 self.chat_stream_akari_grpc.create_message(response, role="assistant")
             )
