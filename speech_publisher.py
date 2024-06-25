@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+import time
 
 import grpc
 from lib.google_speech import get_db_thresh
@@ -11,15 +12,32 @@ import motion_server_pb2
 import motion_server_pb2_grpc
 import voice_server_pb2
 import voice_server_pb2_grpc
+import speech_server_pb2
+import speech_server_pb2_grpc
 
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
 POWER_THRESH_DIFF = 30  # 周辺音量にこの値を足したものをpower_threshouldとする
+enable_input = True
+
+class SpeechServer(speech_server_pb2_grpc.SpeechServerServiceServicer):
+    """
+    音声入力の制御用のgRPCサーバ
+    """
+    def ToggleSpeechInput(
+        self,
+        request: speech_server_pb2.ToggleSpeechInputRequest,
+        context: grpc.ServicerContext,
+    ) -> speech_server_pb2.ToggleSpeechInputReply:
+        global enable_input
+        enable_input = request.enable
+        if not request.enable:
+            print("Speech input enabled")
+        return speech_server_pb2.ToggleSpeechInputReply(success=True)
 
 
 def main() -> None:
-    global host
-    global port
+    global enable_input
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--robot_ip", help="Robot ip address", default="127.0.0.1", type=str
@@ -87,32 +105,44 @@ def main() -> None:
 
     while True:
         responses = None
-        with MicrophoneStreamGrpc(
-            rate=RATE, chunk=CHUNK, _timeout_thresh=timeout, _db_thresh=power_threshold
-        ) as stream:
-            print("Enterを入力してから、マイクに話しかけてください")
-            input()
-            try:
-                voice_stub.SetVoicePlayFlg(
-                    voice_server_pb2.SetVoicePlayFlgRequest(flg=False)
-                )
-            except BaseException:
-                pass
-            if not args.no_motion:
+        if enable_input:
+            with MicrophoneStreamGrpc(
+                rate=RATE,
+                chunk=CHUNK,
+                _timeout_thresh=timeout,
+                _db_thresh=power_threshold,
+                gpt_host=args.gpt_ip,
+                gpt_port=args.gpt_port,
+                voice_host=args.voice_ip,
+                voice_port=args.voice_port,
+            ) as stream:
+                print("Enterを入力してから、マイクに話しかけてください")
+                input()
                 try:
-                    motion_stub.SetMotion(
-                        motion_server_pb2.SetMotionRequest(
-                            name="nod", priority=3, repeat=True
-                        )
+                    voice_stub.SetVoicePlayFlg(
+                        voice_server_pb2.SetVoicePlayFlgRequest(flg=False)
                     )
                 except BaseException:
-                    print("akari_motion_server is not working.")
-            responses = stream.transcribe()
-            if responses is not None:
-                google_speech_grpc.listen_publisher_grpc(
-                    responses, progress_report_len=args.progress_report_len
-                )
-        print("")
+                    pass
+                if not args.no_motion:
+                    try:
+                        motion_stub.SetMotion(
+                            motion_server_pb2.SetMotionRequest(
+                                name="nod", priority=3, repeat=True
+                            )
+                        )
+                    except BaseException:
+                        print("akari_motion_server is not working.")
+                responses = stream.transcribe()
+                if not enable_input:
+                    continue
+                if responses is not None:
+                    google_speech_grpc.listen_publisher_grpc(
+                        responses, progress_report_len=args.progress_report_len
+                    )
+            print("")
+        else:
+            time.sleep(0.05)
 
 
 if __name__ == "__main__":

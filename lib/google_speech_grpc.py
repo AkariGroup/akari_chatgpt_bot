@@ -23,10 +23,6 @@ import gpt_server_pb2_grpc
 import voice_server_pb2
 import voice_server_pb2_grpc
 
-# Audio recording parameters
-RATE = 16000
-CHUNK = int(RATE / 10)  # 100ms
-
 
 class MicrophoneStreamGrpc(MicrophoneStream):
     """
