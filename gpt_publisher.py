@@ -16,7 +16,7 @@ import voice_server_pb2_grpc
 
 class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
     """
-    chatGPTにtextを送信し、返答をvoicevox_serverに送るgRPCサーバ
+    chatGPTにtextを送信し、返答をvoice_serverに送るgRPCサーバ
     """
 
     def __init__(self) -> None:
