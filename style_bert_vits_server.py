@@ -70,6 +70,23 @@ class VoiceServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
         self.text_to_voice.play_flg = request.flg
         return voice_server_pb2.SetVoicePlayFlgReply(success=True)
 
+    def IsVoicePlaying(
+        self,
+        request: voice_server_pb2.IsVoicePlayingRequest(),
+        context: grpc.ServicerContext,
+    ) -> voice_server_pb2.IsVoicePlayingReply:
+        return voice_server_pb2.IsVoicePlayingReply(
+            is_playing=not self.text_to_voice.is_playing()
+        )
+
+    def SentenceEnd(
+        self,
+        request: voice_server_pb2.SentenceEndRequest(),
+        context: grpc.ServicerContext,
+    ) -> voice_server_pb2.SentenceEndReply:
+        self.text_to_voice.sentence_end()
+        return voice_server_pb2.SentenceEndReply(success=True)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()

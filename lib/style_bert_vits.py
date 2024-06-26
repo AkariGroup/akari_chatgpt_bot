@@ -28,8 +28,10 @@ class TextToStyleBertVits(object):
         self.queue: Queue[str] = Queue()
         self.host = host
         self.port = port
-        self.play_flg = False
-        self.finished = True
+        self.play_flg = False  # 音声再生を実行するフラグ
+        self.finished = True  # 音声再生が完了したかどうかを示すフラグ
+        self.sentence_end_flg = True  # 一文の終わりを示すフラグ
+        self.sentence_end_timeout = 5.0  # 一文の終わりを判定するタイムアウト時間
         self.voice_thread = Thread(target=self.text_to_voice_thread)
         self.voice_thread.start()
         self.model_id = 0
@@ -43,18 +45,28 @@ class TextToStyleBertVits(object):
         """音声合成スレッドを終了する。"""
         self.voice_thread.join()
 
+    def sentence_end(self) -> None:
+        self.sentence_end_flg = True
+
     def text_to_voice_thread(self) -> None:
         """
         音声合成スレッドの実行関数。
         キューからテキストを取り出し、text_to_voice関数を呼び出す。
 
         """
+        last_queue_time = time.time()
         while True:
             if self.queue.qsize() > 0 and self.play_flg:
+                last_queue_time = time.time()
                 text = self.queue.get()
                 self.text_to_voice(text)
             if self.queue.qsize() == 0:
-                self.finished = True
+                # queueが空の状態でsentence_endが送られる、もしくはsentence_end_timeout秒経過した場合finishedにする。
+                if (
+                    self.sentence_end_flg
+                    or time.time() - last_queue_time > self.sentence_end_timeout
+                ):
+                    self.finished = True
 
     def put_text(
         self, text: str, play_now: bool = True, blocking: bool = False
@@ -72,9 +84,9 @@ class TextToStyleBertVits(object):
             self.play_flg = True
         self.queue.put(text)
         self.finished = False
+        self.sentence_end_flg = False
         if blocking:
-            while not self.finished:
-                time.sleep(0.01)
+            self.wait_finish()
 
     def wait_finish(self) -> None:
         """
@@ -205,3 +217,14 @@ class TextToStyleBertVits(object):
         wav = self.post_synthesis(text)
         if wav is not None:
             self.play_wav(wav)
+
+    def is_playing(self) -> bool:
+        """
+        音声再生が実行中かどうかを返す。
+        queueの中身が0かつ再生中の音声がなければFalseを返す。
+
+        Returns:
+            bool: 音声再生中の場合はTrue。
+
+        """
+        return self.finished

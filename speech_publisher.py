@@ -1,6 +1,8 @@
 import argparse
 import os
 import sys
+import time
+from concurrent import futures
 
 import grpc
 from lib.google_speech import get_db_thresh
@@ -9,17 +11,34 @@ from lib.google_speech_grpc import GoogleSpeechGrpc, MicrophoneStreamGrpc
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
 import motion_server_pb2
 import motion_server_pb2_grpc
+import speech_server_pb2
+import speech_server_pb2_grpc
 import voice_server_pb2
 import voice_server_pb2_grpc
 
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
 POWER_THRESH_DIFF = 30  # 周辺音量にこの値を足したものをpower_threshouldとする
+enable_input = True
+
+
+class SpeechServer(speech_server_pb2_grpc.SpeechServerServiceServicer):
+    """
+    音声入力の制御用のgRPCサーバ
+    """
+
+    def ToggleSpeech(
+        self,
+        request: speech_server_pb2.ToggleSpeechRequest,
+        context: grpc.ServicerContext,
+    ) -> speech_server_pb2.ToggleSpeechReply:
+        global enable_input
+        enable_input = request.enable
+        return speech_server_pb2.ToggleSpeechReply(success=True)
 
 
 def main() -> None:
-    global host
-    global port
+    global enable_input
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--robot_ip", help="Robot ip address", default="127.0.0.1", type=str
@@ -64,9 +83,23 @@ def main() -> None:
         help="Not play nod motion",
         action="store_true",
     )
+    parser.add_argument(
+        "--auto",
+        help="Skip keyboard input for speech recognition",
+        action="store_true",
+    )
     args = parser.parse_args()
     timeout: float = args.timeout
     power_threshold: float = args.power_threshold
+
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    speech_server_pb2_grpc.add_SpeechServerServiceServicer_to_server(
+        SpeechServer(), server
+    )
+    port = "10003"
+    server.add_insecure_port("[::]:" + port)
+    server.start()
+    print(f"speech_server start. port: {port}")
 
     # grpc stubの設定
     motion_channel = grpc.insecure_channel(args.robot_ip + ":" + str(args.robot_port))
@@ -87,32 +120,45 @@ def main() -> None:
 
     while True:
         responses = None
-        with MicrophoneStreamGrpc(
-            rate=RATE, chunk=CHUNK, _timeout_thresh=timeout, _db_thresh=power_threshold
-        ) as stream:
-            print("Enterを入力してから、マイクに話しかけてください")
-            input()
-            try:
-                voice_stub.SetVoicePlayFlg(
-                    voice_server_pb2.SetVoicePlayFlgRequest(flg=False)
-                )
-            except BaseException:
-                pass
-            if not args.no_motion:
-                try:
-                    motion_stub.SetMotion(
-                        motion_server_pb2.SetMotionRequest(
-                            name="nod", priority=3, repeat=True
+        if enable_input:
+            with MicrophoneStreamGrpc(
+                rate=RATE,
+                chunk=CHUNK,
+                _timeout_thresh=timeout,
+                _db_thresh=power_threshold,
+                gpt_host=args.gpt_ip,
+                gpt_port=args.gpt_port,
+                voice_host=args.voice_ip,
+                voice_port=args.voice_port,
+            ) as stream:
+                if not args.auto:
+                    print("Enterを入力してから、マイクに話しかけてください")
+                    input()
+                    try:
+                        voice_stub.SetVoicePlayFlg(
+                            voice_server_pb2.SetVoicePlayFlgRequest(flg=False)
                         )
+                    except BaseException:
+                        pass
+                if not args.no_motion:
+                    try:
+                        motion_stub.SetMotion(
+                            motion_server_pb2.SetMotionRequest(
+                                name="nod", priority=3, repeat=True
+                            )
+                        )
+                    except BaseException:
+                        pass
+                responses = stream.transcribe()
+                if not enable_input:
+                    continue
+                if responses is not None:
+                    google_speech_grpc.listen_publisher_grpc(
+                        responses, progress_report_len=args.progress_report_len
                     )
-                except BaseException:
-                    print("akari_motion_server is not working.")
-            responses = stream.transcribe()
-            if responses is not None:
-                google_speech_grpc.listen_publisher_grpc(
-                    responses, progress_report_len=args.progress_report_len
-                )
-        print("")
+            print("")
+        else:
+            time.sleep(0.05)
 
 
 if __name__ == "__main__":

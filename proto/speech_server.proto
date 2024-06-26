@@ -1,0 +1,15 @@
+syntax = "proto3";
+package speech_server;
+
+message ToggleSpeechRequest {
+  bool enable =1;
+}
+
+message ToggleSpeechReply {
+  bool success =1;
+}
+
+service SpeechServerService {
+    rpc ToggleSpeech(ToggleSpeechRequest)
+        returns (ToggleSpeechReply);
+}
