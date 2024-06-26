@@ -44,13 +44,13 @@ def main() -> None:
     )
     parser.add_argument("--voicevox_local", action="store_true")
     parser.add_argument(
-        "--voicevox_host",
+        "--voice_host",
         type=str,
         default="127.0.0.1",
         help="VoiceVox server host",
     )
     parser.add_argument(
-        "--voicevox_port",
+        "--voice_port",
         type=str,
         default="50021",
         help="VoiceVox server port",
@@ -64,8 +64,8 @@ def main() -> None:
     if args.voicevox_local:
         from lib.voicevox import TextToVoiceVox
 
-        host = args.voicevox_host
-        port = args.voicevox_port
+        host = args.voice_host
+        port = args.voice_port
         text_to_voice = TextToVoiceVox(host, port)
     else:
         from lib.conf import VOICEVOX_APIKEY

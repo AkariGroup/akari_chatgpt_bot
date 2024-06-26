@@ -1,4 +1,3 @@
-
 import argparse
 import os
 import sys
@@ -7,10 +6,11 @@ import time
 import grpc
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
-import voice_server_pb2
-import voice_server_pb2_grpc
 import speech_server_pb2
 import speech_server_pb2_grpc
+import voice_server_pb2
+import voice_server_pb2_grpc
+
 
 def main() -> None:
     global enable_input
@@ -30,10 +30,8 @@ def main() -> None:
     args = parser.parse_args()
 
     # grpc stubの設定
-    speech_channel = grpc.insecure_channel(
-        args.speech_ip + ":" + str(args.speech_port))
-    voice_channel = grpc.insecure_channel(
-        args.voice_ip + ":" + args.voice_port)
+    speech_channel = grpc.insecure_channel(args.speech_ip + ":" + str(args.speech_port))
+    voice_channel = grpc.insecure_channel(args.voice_ip + ":" + args.voice_port)
     voice_stub = None
     speech_stub = None
     # Voice serverの接続確認
@@ -55,8 +53,7 @@ def main() -> None:
     while True:
         try:
             grpc.channel_ready_future(speech_channel).result(timeout=0.5)
-            speech_stub = speech_server_pb2_grpc.SpeechServerServiceStub(
-                speech_channel)
+            speech_stub = speech_server_pb2_grpc.SpeechServerServiceStub(speech_channel)
             break
         except grpc.FutureTimeoutError:
             print("Connecting to speech server timeout. Retrying")
@@ -70,11 +67,11 @@ def main() -> None:
     is_voice_playing = False
 
     while True:
-        print(f"bool:{is_voice_playing}")
         if not is_voice_playing:
             try:
                 ret = voice_stub.IsVoicePlaying(
-                    voice_server_pb2.IsVoicePlayingRequest())
+                    voice_server_pb2.IsVoicePlayingRequest()
+                )
                 is_voice_playing = ret.is_playing
             except KeyboardInterrupt:
                 return
@@ -82,11 +79,13 @@ def main() -> None:
                 print("Voice server connection error!")
             if is_voice_playing:
                 speech_stub.ToggleSpeech(
-                    speech_server_pb2.ToggleSpeechRequest(enable=True))
+                    speech_server_pb2.ToggleSpeechRequest(enable=False)
+                )
         else:
             try:
                 ret = voice_stub.IsVoicePlaying(
-                    voice_server_pb2.IsVoicePlayingRequest())
+                    voice_server_pb2.IsVoicePlayingRequest()
+                )
                 is_voice_playing = ret.is_playing
             except KeyboardInterrupt:
                 return
@@ -94,7 +93,8 @@ def main() -> None:
                 print("Voice server connection error!")
             if not is_voice_playing:
                 speech_stub.ToggleSpeech(
-                    speech_server_pb2.ToggleSpeechRequest(enable=False))
+                    speech_server_pb2.ToggleSpeechRequest(enable=True)
+                )
         time.sleep(0.1)
 
 

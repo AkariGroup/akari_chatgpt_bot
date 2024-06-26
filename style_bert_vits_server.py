@@ -1,4 +1,3 @@
-
 import argparse
 import os
 import sys
@@ -9,8 +8,9 @@ import grpc
 from lib.style_bert_vits import TextToStyleBertVits
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
-import voice_server_pb2_grpc
 import voice_server_pb2
+import voice_server_pb2_grpc
+
 
 class VoiceServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
     """

@@ -58,7 +58,10 @@ class TextToVoiceVox(object):
                 self.text_to_voice(text)
             if self.queue.qsize() == 0:
                 # queueが空の状態でsentence_endが送られる、もしくはsentence_end_timeout秒経過した場合finishedにする。
-                if self.sentence_end_flg or time.time() - last_queue_time > self.sentence_end_timeout:
+                if (
+                    self.sentence_end_flg
+                    or time.time() - last_queue_time > self.sentence_end_timeout
+                ):
                     self.finished = True
 
     def put_text(

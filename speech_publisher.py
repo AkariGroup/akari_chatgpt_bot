@@ -1,4 +1,3 @@
-
 import argparse
 import os
 import sys
@@ -10,12 +9,12 @@ from lib.google_speech import get_db_thresh
 from lib.google_speech_grpc import GoogleSpeechGrpc, MicrophoneStreamGrpc
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
-import speech_server_pb2_grpc
-import speech_server_pb2
-import voice_server_pb2_grpc
-import voice_server_pb2
-import motion_server_pb2_grpc
 import motion_server_pb2
+import motion_server_pb2_grpc
+import speech_server_pb2
+import speech_server_pb2_grpc
+import voice_server_pb2
+import voice_server_pb2_grpc
 
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
@@ -35,10 +34,6 @@ class SpeechServer(speech_server_pb2_grpc.SpeechServerServiceServicer):
     ) -> speech_server_pb2.ToggleSpeechReply:
         global enable_input
         enable_input = request.enable
-        if not request.enable:
-            print("Speech input disabled")
-        else:
-            print("Speech input enabled")
         return speech_server_pb2.ToggleSpeechReply(success=True)
 
 
@@ -89,7 +84,7 @@ def main() -> None:
         action="store_true",
     )
     parser.add_argument(
-        "--skip_keyboard_input",
+        "--auto",
         help="Skip keyboard input for speech recognition",
         action="store_true",
     )
@@ -107,12 +102,9 @@ def main() -> None:
     print(f"speech_server start. port: {port}")
 
     # grpc stubの設定
-    motion_channel = grpc.insecure_channel(
-        args.robot_ip + ":" + str(args.robot_port))
-    motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(
-        motion_channel)
-    voice_channel = grpc.insecure_channel(
-        args.voice_ip + ":" + args.voice_port)
+    motion_channel = grpc.insecure_channel(args.robot_ip + ":" + str(args.robot_port))
+    motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(motion_channel)
+    voice_channel = grpc.insecure_channel(args.voice_ip + ":" + args.voice_port)
     voice_stub = voice_server_pb2_grpc.VoiceServerServiceStub(voice_channel)
 
     google_speech_grpc = GoogleSpeechGrpc(
@@ -139,7 +131,7 @@ def main() -> None:
                 voice_host=args.voice_ip,
                 voice_port=args.voice_port,
             ) as stream:
-                if not args.skip_keyboard_input:
+                if not args.auto:
                     print("Enterを入力してから、マイクに話しかけてください")
                     input()
                     try:
@@ -156,7 +148,7 @@ def main() -> None:
                             )
                         )
                     except BaseException:
-                        print("akari_motion_server is not working.")
+                        pass
                 responses = stream.transcribe()
                 if not enable_input:
                     continue
