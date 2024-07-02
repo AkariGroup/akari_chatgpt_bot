@@ -45,11 +45,8 @@ class ChatStreamAkari(object):
             self.anthropic_client = anthropic.Anthropic(
                 api_key=ANTHROPIC_APIKEY,
             )
-<<<<<<< HEAD
         if GEMINI_APIKEY is not None:
             genai.configure(api_key=GEMINI_APIKEY)
-=======
->>>>>>> main
         self.last_char = ["、", "。", "！", "!", "?", "？", "\n", "}"]
         self.openai_model_name = [
             "gpt-4o",
@@ -77,7 +74,6 @@ class ChatStreamAkari(object):
             "gpt-4-1106-vision-preview",
         ]
         self.anthropic_model_name = [
-            "claude-3-5-sonnet-20240620",
             "claude-3-opus-20240229",
             "claude-3-sonnet-20240229",
             "claude-3-haiku-20240307",
@@ -276,6 +272,8 @@ class ChatStreamAkari(object):
         for message in messages:
             if message["role"] == "system":
                 system_message = message["content"]
+            elif message["role"] == "model":
+                message["role"] = "assistant"
             else:
                 user_messages.append(message)
         with self.anthropic_client.messages.stream(
@@ -300,13 +298,11 @@ class ChatStreamAkari(object):
                             sentence = real_time_response[:pos]  # 1文の区切り
                             real_time_response = real_time_response[pos:]  # 残りの部分
                             # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
-                            if sentence != "":
-                                yield sentence
+                            yield sentence
                             break
                         else:
                             pass
-            if real_time_response != "":
-                yield real_time_response
+            yield real_time_response
 
     def chat_gpt(
         self,
@@ -325,6 +321,9 @@ class ChatStreamAkari(object):
 
         """
         result = None
+        for message in messages:
+            if message["role"] == "model":
+                message["role"] = "assistant"
         if model in self.openai_vision_model_name:
             result = openai.chat.completions.create(
                 model=model,
@@ -360,13 +359,11 @@ class ChatStreamAkari(object):
                         sentence = real_time_response[:pos]  # 1文の区切り
                         real_time_response = real_time_response[pos:]  # 残りの部分
                         # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
-                        if sentence != "":
-                            yield sentence
+                        yield sentence
                         break
                     else:
                         pass
-        if real_time_response != "":
-            yield real_time_response
+        yield real_time_response
 
     def chat_gemini(
         self,
@@ -387,7 +384,36 @@ class ChatStreamAkari(object):
         if GEMINI_APIKEY is None:
             print("Gemini API key is not set.")
             return
+        for message in messages:
 
+            if message["role"] == "system" or message["role"] == "assistant":
+                message["role"] = "model"
+            if "content" in message:
+                message["parts"] = message.pop("content")
+        model = genai.GenerativeModel(model)
+        chat = model.start_chat(history=messages[:-1])
+        responses = chat.send_message(messages[-1]["parts"],stream=True)
+        full_response = ""
+        real_time_response = ""
+        for response in responses:
+            text = response.text
+            if text is None:
+                pass
+            else:
+                full_response += text
+                real_time_response += text
+
+                for index, char in enumerate(real_time_response):
+                    if char in self.last_char:
+                        pos = index + 1  # 区切り位置
+                        sentence = real_time_response[:pos]  # 1文の区切り
+                        real_time_response = real_time_response[pos:]  # 残りの部分
+                        # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
+                        yield sentence
+                        break
+                    else:
+                        pass
+        yield real_time_response
 
     def chat(
         self,
@@ -537,8 +563,7 @@ class ChatStreamAkari(object):
                                         sentence_index : sentence_index + pos + 1
                                     ]
                                     sentence_index += pos + 1
-                                    if sentence != "":
-                                        yield sentence
+                                    yield sentence
                                     break
 
     def chat_and_motion_anthropic(
@@ -631,8 +656,7 @@ class ChatStreamAkari(object):
                                         sentence_index : sentence_index + pos + 1
                                     ]
                                     sentence_index += pos + 1
-                                    if sentence != "":
-                                        yield sentence
+                                    yield sentence
                                     break
 
     def chat_and_motion(
