@@ -85,6 +85,7 @@ class MicrophoneStream(object):
         rate: float,
         chunk: float,
         _timeout_thresh: float = 0.5,
+        _start_timeout_thresh: float = 4.0,
         _db_thresh: float = 55.0,
     ) -> None:
         """PyAudioストリームを閉じます。
@@ -93,6 +94,7 @@ class MicrophoneStream(object):
             rate (float): サンプリングレート。
             chunk (float): チャンクサイズ。
             _timeout_thresh (float, optional): 音声が停止したと判断するタイムアウト閾値（秒）。デフォルトは0.5秒。
+            _start_timeout_thresh (float): マイクの入力が開始しないまま終了するまでのタイムアウト閾値（秒）。デフォルトは4.0秒。
             _db_thresh (float, optional): 音声が開始されたと判断する音量閾値（デシベル）。デフォルトは55.0デシベル。
 
         """
