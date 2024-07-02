@@ -10,13 +10,13 @@ from lib.chat_akari_grpc import ChatStreamAkariGrpc
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
 import gpt_server_pb2
 import gpt_server_pb2_grpc
-import voicevox_server_pb2
-import voicevox_server_pb2_grpc
+import voice_server_pb2
+import voice_server_pb2_grpc
 
 
 class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
     """
-    chatGPTにtextを送信し、返答をvoicevox_serverに送るgprcサーバ
+    chatGPTにtextを送信し、返答をvoice_serverに送るgRPCサーバ
     """
 
     def __init__(self) -> None:
@@ -25,8 +25,8 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
         self.messages = [
             self.chat_stream_akari_grpc.create_message(content, role="system")
         ]
-        voicevox_channel = grpc.insecure_channel("localhost:10002")
-        self.stub = voicevox_server_pb2_grpc.VoicevoxServerServiceStub(voicevox_channel)
+        voice_channel = grpc.insecure_channel("localhost:10002")
+        self.stub = voice_server_pb2_grpc.VoiceServerServiceStub(voice_channel)
 
     def SetGpt(
         self, request: gpt_server_pb2.SetGptRequest(), context: grpc.ServicerContext
@@ -51,23 +51,21 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
             for sentence in self.chat_stream_akari_grpc.chat(
                 tmp_messages, model="gpt-3.5-turbo"
             ):
-                print(f"Send voicevox: {sentence}")
-                self.stub.SetVoicevox(
-                    voicevox_server_pb2.SetVoicevoxRequest(text=sentence)
-                )
+                print(f"Send to voice server: {sentence}")
+                self.stub.SetText(voice_server_pb2.SetTextRequest(text=sentence))
                 response += sentence
+            # Sentenceの終了を通知
+            self.stub.SentenceEnd(voice_server_pb2.SentenceEndRequest())
             self.messages.append(
                 self.chat_stream_akari_grpc.create_message(response, role="assistant")
             )
         else:
             # 途中での第一声とモーション準備。function_callingの確実性のため、モデルはgpt-4-turbo-preview
             for sentence in self.chat_stream_akari_grpc.chat_and_motion(
-                tmp_messages, model="gpt-4o", short_response=True
+                tmp_messages, model="gpt-4-turbo", short_response=True
             ):
-                print(f"Send voicevox: {sentence}")
-                self.stub.SetVoicevox(
-                    voicevox_server_pb2.SetVoicevoxRequest(text=sentence)
-                )
+                print(f"Send to voice server: {sentence}")
+                self.stub.SetText(voice_server_pb2.SetTextRequest(text=sentence))
                 response += sentence
         print("")
         return gpt_server_pb2.SetGptReply(success=True)

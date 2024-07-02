@@ -24,5 +24,6 @@ cd ../
  . venv/bin/activate
  gnome-terminal --title="voicevox_server" -- bash -ic "python3 voicevox_server.py --voicevox_local --voice_host ${ip}"
  gnome-terminal --title="gpt_publisher" -- bash -ic "python3 gpt_publisher.py"
- gnome-terminal --title="speech_publisher" -- bash -ic "python3 speech_publisher.py --timeout 0.8"
+ gnome-terminal --title="speech_publisher" -- bash -ic "python3 speech_publisher.py --timeout 0.8 --auto"
+ gnome-terminal --title="talk_controller" -- bash -ic "python3 talk_controller_client.py"
 )

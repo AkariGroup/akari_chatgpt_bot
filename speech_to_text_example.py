@@ -35,11 +35,12 @@ def main() -> None:
     print("マイクに話しかけてください")
     while True:
         responses = None
-        with MicrophoneStream(RATE, CHUNK, timeout, power_threshold) as stream:
+        with MicrophoneStream(
+            rate=RATE, chunk=CHUNK, _timeout_thresh=timeout, _db_thresh=power_threshold
+        ) as stream:
             responses = stream.transcribe()
             if responses is not None:
                 listen_print_loop(responses)
-        print("")
 
 
 if __name__ == "__main__":

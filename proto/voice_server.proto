@@ -1,0 +1,74 @@
+syntax = "proto3";
+package voice_server;
+
+message SetTextRequest {
+  string text = 1;
+}
+
+message SetTextReply {
+  bool success =1;
+}
+
+message SetStyleBertVitsParamRequest {
+  optional string model_name = 1;
+  optional int32 model_id = 2;
+  optional float length = 3;
+  optional string style = 4;
+  optional float style_weight = 5;
+}
+
+message SetStyleBertVitsParamReply {
+  bool success =1;
+}
+
+message SetVoicevoxParamRequest {
+  optional int32 speaker = 1;
+  optional float speed_scale = 2;
+}
+
+message SetVoicevoxParamReply {
+  bool success =1;
+}
+
+message InterruptVoiceRequest {}
+
+message InterruptVoiceReply {
+  bool success =1;
+}
+
+message SetVoicePlayFlgRequest {
+  bool flg = 1;
+}
+
+message SetVoicePlayFlgReply {
+  bool success =1;
+}
+
+message IsVoicePlayingRequest {}
+
+message IsVoicePlayingReply {
+  bool is_playing =1;
+}
+
+message SentenceEndRequest {}
+
+message SentenceEndReply {
+  bool success =1;
+}
+
+service VoiceServerService {
+    rpc SetText(SetTextRequest)
+        returns (SetTextReply);
+    rpc SetStyleBertVitsParam(SetStyleBertVitsParamRequest)
+        returns (SetStyleBertVitsParamReply);
+    rpc SetVoicevoxParam(SetVoicevoxParamRequest)
+        returns (SetVoicevoxParamReply);
+    rpc InterruptVoice(InterruptVoiceRequest)
+        returns (InterruptVoiceReply);
+    rpc SetVoicePlayFlg(SetVoicePlayFlgRequest)
+        returns (SetVoicePlayFlgReply);
+    rpc IsVoicePlaying(IsVoicePlayingRequest)
+        returns (IsVoicePlayingReply);
+    rpc SentenceEnd(SentenceEndRequest)
+        returns (SentenceEndReply);
+}

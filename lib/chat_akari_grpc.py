@@ -37,8 +37,11 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
         """
         print(f"send motion {self.cur_motion_name}")
         if self.cur_motion_name == "":
-            self.motion_stub.ClearMotion(motion_server_pb2.ClearMotionRequest())
-            return False
+            try:
+                self.motion_stub.ClearMotion(motion_server_pb2.ClearMotionRequest())
+                return False
+            except BaseException:
+                return False
         try:
             self.motion_stub.SetMotion(
                 motion_server_pb2.SetMotionRequest(
@@ -102,6 +105,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
         ]
         if short_response:
             # 短応答の候補のenumリストを追加する。
+            # functions[0]["description"] = "ユーザのメッセージに対する回答を一つ選択し、その感情に近い動作を一つ選択します。",
             functions[0]["parameters"]["properties"]["talk"]["enum"] = [
                 "えーと。",
                 "はい。",
@@ -148,6 +152,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                             if not get_motion and "motion" in data_json:
                                 get_motion = True
                                 motion = data_json["motion"]
+                                key = None
                                 if motion == "肯定する":
                                     key = "agree"
                                 elif motion == "否定する":
@@ -176,7 +181,8 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                                         sentence_index : sentence_index + pos + 1
                                     ]
                                     sentence_index += pos + 1
-                                    yield sentence
+                                    if sentence != "":
+                                        yield sentence
                                     break
 
     def chat_and_motion_anthropic(
@@ -247,6 +253,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                             if not get_motion and "motion" in data_json:
                                 get_motion = True
                                 motion = data_json["motion"]
+                                key = None
                                 if motion == "肯定する":
                                     key = "agree"
                                 elif motion == "否定する":
@@ -275,7 +282,8 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                                         sentence_index : sentence_index + pos + 1
                                     ]
                                     sentence_index += pos + 1
-                                    yield sentence
+                                    if sentence != "":
+                                        yield sentence
                                     break
 
     def chat_and_motion(
@@ -304,6 +312,9 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                 short_response=short_response,
             )
         elif model in self.anthropic_model_name:
+            if self.anthropic_client is None:
+                print("Anthropic API key is not set.")
+                return
             yield from self.chat_and_motion_anthropic(
                 messages=messages,
                 model=model,

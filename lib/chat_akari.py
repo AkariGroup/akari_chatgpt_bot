@@ -45,8 +45,11 @@ class ChatStreamAkari(object):
             self.anthropic_client = anthropic.Anthropic(
                 api_key=ANTHROPIC_APIKEY,
             )
+<<<<<<< HEAD
         if GEMINI_APIKEY is not None:
             genai.configure(api_key=GEMINI_APIKEY)
+=======
+>>>>>>> main
         self.last_char = ["、", "。", "！", "!", "?", "？", "\n", "}"]
         self.openai_model_name = [
             "gpt-4o",
@@ -74,6 +77,7 @@ class ChatStreamAkari(object):
             "gpt-4-1106-vision-preview",
         ]
         self.anthropic_model_name = [
+            "claude-3-5-sonnet-20240620",
             "claude-3-opus-20240229",
             "claude-3-sonnet-20240229",
             "claude-3-haiku-20240307",
@@ -296,11 +300,13 @@ class ChatStreamAkari(object):
                             sentence = real_time_response[:pos]  # 1文の区切り
                             real_time_response = real_time_response[pos:]  # 残りの部分
                             # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
-                            yield sentence
+                            if sentence != "":
+                                yield sentence
                             break
                         else:
                             pass
-            yield real_time_response
+            if real_time_response != "":
+                yield real_time_response
 
     def chat_gpt(
         self,
@@ -354,11 +360,13 @@ class ChatStreamAkari(object):
                         sentence = real_time_response[:pos]  # 1文の区切り
                         real_time_response = real_time_response[pos:]  # 残りの部分
                         # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
-                        yield sentence
+                        if sentence != "":
+                            yield sentence
                         break
                     else:
                         pass
-        yield real_time_response
+        if real_time_response != "":
+            yield real_time_response
 
     def chat_gemini(
         self,
@@ -529,7 +537,8 @@ class ChatStreamAkari(object):
                                         sentence_index : sentence_index + pos + 1
                                     ]
                                     sentence_index += pos + 1
-                                    yield sentence
+                                    if sentence != "":
+                                        yield sentence
                                     break
 
     def chat_and_motion_anthropic(
@@ -622,7 +631,8 @@ class ChatStreamAkari(object):
                                         sentence_index : sentence_index + pos + 1
                                     ]
                                     sentence_index += pos + 1
-                                    yield sentence
+                                    if sentence != "":
+                                        yield sentence
                                     break
 
     def chat_and_motion(

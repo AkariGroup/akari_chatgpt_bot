@@ -40,17 +40,17 @@ def main() -> None:
         help="Microphone input power threshold",
     )
     parser.add_argument(
-        "-m", "--model", help="LLM model name", default="gpt-3.5-turbo", type=str
+        "-m", "--model", help="LLM model name", default="gpt-4o", type=str
     )
     parser.add_argument("--voicevox_local", action="store_true")
     parser.add_argument(
-        "--voicevox_host",
+        "--voice_host",
         type=str,
         default="127.0.0.1",
         help="VoiceVox server host",
     )
     parser.add_argument(
-        "--voicevox_port",
+        "--voice_port",
         type=str,
         default="50021",
         help="VoiceVox server port",
@@ -64,8 +64,8 @@ def main() -> None:
     if args.voicevox_local:
         from lib.voicevox import TextToVoiceVox
 
-        host = args.voicevox_host
-        port = args.voicevox_port
+        host = args.voice_host
+        port = args.voice_port
         text_to_voice = TextToVoiceVox(host, port)
     else:
         from lib.conf import VOICEVOX_APIKEY
@@ -87,7 +87,9 @@ def main() -> None:
         # 音声認識
         text = ""
         responses = None
-        with MicrophoneStream(RATE, CHUNK, timeout, power_threshold) as stream:
+        with MicrophoneStream(
+            rate=RATE, chunk=CHUNK, _timeout_thresh=timeout, _db_thresh=power_threshold
+        ) as stream:
             print("Enterを入力してください")
             input()
             # うなずきモーション再生
@@ -117,6 +119,7 @@ def main() -> None:
                 text_to_voice.put_text(sentence)
                 response += sentence
                 print(sentence, end="", flush=True)
+            text_to_voice.sentence_end()
             messages.append({"role": "assistant", "content": response})
             print("")
             print("")
