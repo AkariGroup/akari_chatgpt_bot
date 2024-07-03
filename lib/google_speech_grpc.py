@@ -167,6 +167,8 @@ class GoogleSpeechGrpc(object):
             print("InterruptVoice error")
             pass
         for response in responses:
+            if response.error.code:
+                break
             if not response.results:
                 continue
             result = response.results[0]
