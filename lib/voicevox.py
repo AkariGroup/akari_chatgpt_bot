@@ -125,7 +125,7 @@ class TextToVoiceVox(object):
             Any: 音声合成クエリの応答。
 
         """
-        if text == "":
+        if len(text.strip()) <= 0:
             return None
         params = {
             "text": text,
@@ -262,7 +262,7 @@ class TextToVoiceVoxWeb(TextToVoiceVox):
             bytes: 合成された音声データ。
 
         """
-        if text == "":
+        if len(text.strip()) <= 0:
             return None
         address = (
             "https://deprecatedapis.tts.quest/v2/voicevox/audio/?key="
