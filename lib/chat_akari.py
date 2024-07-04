@@ -7,12 +7,13 @@ from typing import Generator, List, Union
 
 import anthropic
 import cv2
+import google.generativeai as genai
 import grpc
 import numpy as np
 import openai
 from gpt_stream_parser import force_parse_json
 
-from .conf import ANTHROPIC_APIKEY
+from .conf import ANTHROPIC_APIKEY, GEMINI_APIKEY
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
 import motion_server_pb2
@@ -43,6 +44,8 @@ class ChatStreamAkari(object):
             self.anthropic_client = anthropic.Anthropic(
                 api_key=ANTHROPIC_APIKEY,
             )
+        if GEMINI_APIKEY is not None:
+            genai.configure(api_key=GEMINI_APIKEY)
         self.last_char = ["、", "。", "！", "!", "?", "？", "\n", "}"]
         self.openai_model_name = [
             "gpt-4o",
@@ -77,6 +80,10 @@ class ChatStreamAkari(object):
             "claude-2.1",
             "claude-2.0",
             "claude-instant-1.2",
+        ]
+        self.gemini_model_name = [
+            "gemini-1.5-pro",
+            "gemini-1.5-flash",
         ]
 
     def send_motion(self, name: str) -> None:
@@ -265,6 +272,8 @@ class ChatStreamAkari(object):
         for message in messages:
             if message["role"] == "system":
                 system_message = message["content"]
+            elif message["role"] == "model":
+                message["role"] = "assistant"
             else:
                 user_messages.append(message)
         with self.anthropic_client.messages.stream(
@@ -314,6 +323,9 @@ class ChatStreamAkari(object):
 
         """
         result = None
+        for message in messages:
+            if message["role"] == "model":
+                message["role"] = "assistant"
         if model in self.openai_vision_model_name:
             result = openai.chat.completions.create(
                 model=model,
@@ -337,6 +349,68 @@ class ChatStreamAkari(object):
         real_time_response = ""
         for chunk in result:
             text = chunk.choices[0].delta.content
+            if text is None:
+                pass
+            else:
+                full_response += text
+                real_time_response += text
+
+                for index, char in enumerate(real_time_response):
+                    if char in self.last_char:
+                        pos = index + 1  # 区切り位置
+                        sentence = real_time_response[:pos]  # 1文の区切り
+                        real_time_response = real_time_response[pos:]  # 残りの部分
+                        # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
+                        if sentence != "":
+                            yield sentence
+                        break
+                    else:
+                        pass
+        if real_time_response != "":
+            yield real_time_response
+
+    def chat_gemini(
+        self,
+        messages: list,
+        model: str = "gemini-1.5-flash",
+        temperature: float = 0.7,
+    ) -> Generator[str, None, None]:
+        """Geminiを使用して会話を行う
+
+        Args:
+            messages (list): 会話のメッセージ
+            model (str): 使用するモデル名 (デフォルト: "gemini-1.5-flash")
+            temperature (float): Geminiのtemperatureパラメータ (デフォルト: 0.7)
+        Returns:
+            Generator[str, None, None]): 会話の返答を順次生成する
+
+        """
+        if GEMINI_APIKEY is None:
+            print("Gemini API key is not set.")
+            return
+        system_instruction = ""
+        new_messages = []
+        for message in messages:
+            if "content" in message:
+                message["parts"] = message.pop("content")
+            if message["role"] == "system":
+                system_instruction = message["parts"]
+                continue
+            elif message["role"] == "assistant":
+                message["role"] = "model"
+            new_messages.append(message)
+        if system_instruction == "":
+            model = genai.GenerativeModel(model_name=model)
+        else:
+            model = genai.GenerativeModel(
+                model_name=model, system_instruction=system_instruction
+            )
+        chat = model.start_chat(history=new_messages[:-1])
+        responses = chat.send_message(new_messages[-1]["parts"], stream=True)
+        full_response = ""
+        real_time_response = ""
+        for response in responses:
+            text = response.text
             if text is None:
                 pass
             else:
@@ -382,6 +456,13 @@ class ChatStreamAkari(object):
                 print("Anthropic API key is not set.")
                 return
             yield from self.chat_anthropic(
+                messages=messages, model=model, temperature=temperature
+            )
+        elif model in self.gemini_model_name:
+            if GEMINI_APIKEY is None:
+                print("Gemini API key is not set.")
+                return
+            yield from self.chat_gemini(
                 messages=messages, model=model, temperature=temperature
             )
         else:
@@ -596,6 +677,111 @@ class ChatStreamAkari(object):
                                         yield sentence
                                     break
 
+    def chat_and_motion_gemini(
+        self,
+        messages: list,
+        model: str = "gemini-1.5-flash",
+        temperature: float = 0.7,
+    ) -> Generator[str, None, None]:
+        """ChatGPTを使用して会話を行い、会話の内容に応じた動作も生成する
+
+        Args:
+            messages (list): メッセージリスト
+            model (str): 使用するモデル名 (デフォルト: "gpt-4o")
+            temperature (float): ChatGPTのtemperatureパラメータ (デフォルト: 0.7)
+        Returns:
+            Generator[str, None, None]): 会話の返答を順次生成する
+
+        """
+        if GEMINI_APIKEY is None:
+            print("Gemini API key is not set.")
+            return
+        system_instruction = ""
+        new_messages = []
+        for message in messages:
+            if "content" in message:
+                message["parts"] = message.pop("content")
+            if message["role"] == "system":
+                system_instruction = message["parts"]
+                continue
+            elif message["role"] == "assistant":
+                message["role"] = "model"
+            new_messages.append(message)
+        if system_instruction == "":
+            model = genai.GenerativeModel(
+                model_name=model,
+                generation_config={"response_mime_type": "application/json"},
+            )
+        else:
+            model = genai.GenerativeModel(
+                model_name=model,
+                system_instruction=system_instruction,
+                generation_config={"response_mime_type": "application/json"},
+            )
+        chat = model.start_chat(history=new_messages[:-1])
+        message = f"「{new_messages[-1]['parts']}」に対する返答を下記のJSON形式で出力してください。{{\"motion\": 次の()内から動作を一つ選択(\"肯定する\",\"否定する\",\"おじぎ\",\"喜ぶ\",\"笑う\",\"落ち込む\",\"うんざりする\",\"眠る\"), \"talk\": 会話の返答}}"
+        responses = chat.send_message(message, stream=True)
+        full_response = ""
+        real_time_response = ""
+        sentence_index = 0
+        get_motion = False
+        for response in responses:
+            text = response.text
+            if text is None:
+                pass
+            else:
+                full_response += text
+                real_time_response += text
+                try:
+                    data_json = json.loads(full_response)
+                    found_last_char = False
+                    for char in self.last_char:
+                        if real_time_response[-1].find(char) >= 0:
+                            found_last_char = True
+                    if not found_last_char:
+                        data_json["talk"] = data_json["talk"] + "。"
+                except BaseException:
+                    data_json = force_parse_json(full_response)
+                if data_json is not None:
+                    if "talk" in data_json:
+                        if not get_motion and "motion" in data_json:
+                            get_motion = True
+                            motion = data_json["motion"]
+                            if motion == "肯定する":
+                                key = "agree"
+                            elif motion == "否定する":
+                                key = "swing"
+                            elif motion == "おじぎ":
+                                key = "bow"
+                            elif motion == "喜ぶ":
+                                key = "happy"
+                            elif motion == "笑う":
+                                key = "lough"
+                            elif motion == "落ち込む":
+                                key = "depressed"
+                            elif motion == "うんざりする":
+                                key = "amazed"
+                            elif motion == "眠る":
+                                key = "sleep"
+                            elif motion == "ぼんやりする":
+                                key = "lookup"
+                            print("motion: " + motion)
+                            motion_thread = threading.Thread(
+                                target=self.send_motion, args=(key,)
+                            )
+                            motion_thread.start()
+                        real_time_response = str(data_json["talk"])
+                        for char in self.last_char:
+                            pos = real_time_response[sentence_index:].find(char)
+                            if pos >= 0:
+                                sentence = real_time_response[
+                                    sentence_index : sentence_index + pos + 1
+                                ]
+                                sentence_index += pos + 1
+                                if sentence != "":
+                                    yield sentence
+                                break
+
     def chat_and_motion(
         self,
         messages: list,
@@ -621,6 +807,13 @@ class ChatStreamAkari(object):
                 print("Anthropic API key is not set.")
                 return
             yield from self.chat_and_motion_anthropic(
+                messages=messages, model=model, temperature=temperature
+            )
+        elif model in self.gemini_model_name:
+            if GEMINI_APIKEY is None:
+                print("Gemini API key is not set.")
+                return
+            yield from self.chat_and_motion_gemini(
                 messages=messages, model=model, temperature=temperature
             )
         else:

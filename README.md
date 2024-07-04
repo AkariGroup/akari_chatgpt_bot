@@ -26,13 +26,17 @@ Google cloud consoleに登録し、Cloud Speech-to-Text APIを有効化する。
 認証用のjsonをダウンロードし、~/.bashrcにパスを記述  
 `export GOOGLE_APPLICATION_CREDENTIALS=/home/xxx/xxx.json`  
 
-1. (chatGPTの文章生成を使う場合)OPENAI KEYの作成   
+1. (chatGPTの文章生成を使う場合)OPENAI API KEYの作成   
 [OPENAI](https://openai.com/)にてユーザ登録しAPI KEYを作成し、~/.bashrcに自身のkeyを記述  
 `export OPENAI_API_KEY=sk-xxxxxxxxxxxxxxx`  
 
-1. (Claudeの文章生成を使う場合)OPENAI KEYの作成   
+1. (Claudeの文章生成を使う場合)ANTHROPIC API KEYの作成   
 [ANTHROPIC](https://www.anthropic.com/)にてユーザ登録しAPI KEYを作成し、~/.bashrcに自身のkeyを記述  
 `export ANTHROPIC_API_KEY=sk-xxxxxxxxxxxxxxx`  
+
+1. (Geminiの文章生成を使う場合)GEMINI API KEYの作成   
+[Google AI Studio](https://ai.google.dev/aistudio)にてユーザ登録しAPI KEYを作成し、~/.bashrcに自身のkeyを記述  
+`export GEMINI_API_KEY=xxxxxxxxxxxxxxx`  
 
 1. (VoiceVox web版の音声合成を使う場合) VOICEVOX web版のAPI KEYの作成
 [WEB版VOICEVOX API（高速）](https://voicevox.su-shiki.com/su-shikiapis/) にてapikeyを作成し、~/.bashrcに自身のkeyを記述  
