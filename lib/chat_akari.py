@@ -7,14 +7,13 @@ from typing import Generator, List, Union
 
 import anthropic
 import cv2
+import google.generativeai as genai
 import grpc
 import numpy as np
 import openai
-import google.generativeai as genai
 from gpt_stream_parser import force_parse_json
 
-from .conf import ANTHROPIC_APIKEY
-from .conf import GEMINI_APIKEY
+from .conf import ANTHROPIC_APIKEY, GEMINI_APIKEY
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
 import motion_server_pb2

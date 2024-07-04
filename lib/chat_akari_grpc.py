@@ -3,13 +3,12 @@ import os
 import sys
 from typing import Generator
 
-import openai
 import google.generativeai as genai
+import openai
 from gpt_stream_parser import force_parse_json
 
 from .chat_akari import ChatStreamAkari
 from .conf import GEMINI_APIKEY
-
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
 import motion_server_pb2
