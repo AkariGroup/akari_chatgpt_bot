@@ -399,9 +399,12 @@ class ChatStreamAkari(object):
             elif message["role"] == "assistant":
                 message["role"] = "model"
             new_messages.append(message)
-        model = genai.GenerativeModel(
-            model_name=model, system_instruction=system_instruction
-        )
+        if system_instruction == "":
+            model = genai.GenerativeModel(model_name=model)
+        else:
+            model = genai.GenerativeModel(
+                model_name=model, system_instruction=system_instruction
+            )
         chat = model.start_chat(history=new_messages[:-1])
         responses = chat.send_message(new_messages[-1]["parts"], stream=True)
         full_response = ""
@@ -704,11 +707,17 @@ class ChatStreamAkari(object):
             elif message["role"] == "assistant":
                 message["role"] = "model"
             new_messages.append(message)
-        model = genai.GenerativeModel(
-            model_name=model,
-            system_instruction=system_instruction,
-            generation_config={"response_mime_type": "application/json"},
-        )
+        if system_instruction == "":
+            model = genai.GenerativeModel(
+                model_name=model,
+                generation_config={"response_mime_type": "application/json"},
+            )
+        else:
+            model = genai.GenerativeModel(
+                model_name=model,
+                system_instruction=system_instruction,
+                generation_config={"response_mime_type": "application/json"},
+            )
         chat = model.start_chat(history=new_messages[:-1])
         message = f"「{new_messages[-1]['parts']}」に対する返答を下記のJSON形式で出力してください。{{\"motion\": 次の()内から動作を一つ選択(\"肯定する\",\"否定する\",\"おじぎ\",\"喜ぶ\",\"笑う\",\"落ち込む\",\"うんざりする\",\"眠る\"), \"talk\": 会話の返答}}"
         responses = chat.send_message(message, stream=True)

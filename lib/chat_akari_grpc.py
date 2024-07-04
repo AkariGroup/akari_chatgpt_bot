@@ -320,11 +320,17 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
             elif message["role"] == "assistant":
                 message["role"] = "model"
             new_messages.append(message)
-        model = genai.GenerativeModel(
-            model_name=model,
-            system_instruction=system_instruction,
-            generation_config={"response_mime_type": "application/json"},
-        )
+        if system_instruction == "":
+            model = genai.GenerativeModel(
+                model_name=model,
+                generation_config={"response_mime_type": "application/json"},
+            )
+        else:
+            model = genai.GenerativeModel(
+                model_name=model,
+                system_instruction=system_instruction,
+                generation_config={"response_mime_type": "application/json"},
+            )
         chat = model.start_chat(history=new_messages[:-1])
         if short_response:
             # 最後の1文を動作と文章のJSON形式出力指定に修正。一文のみの返答
