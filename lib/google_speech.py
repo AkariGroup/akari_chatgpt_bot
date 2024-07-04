@@ -231,6 +231,8 @@ def listen_print_loop(responses: Any) -> str:
     transcript = ""
     overwrite_chars = ""
     for response in responses:
+        if response.error.code:
+            break
         if not response.results:
             continue
         result = response.results[0]

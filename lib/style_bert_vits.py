@@ -163,7 +163,7 @@ class TextToStyleBertVits(object):
             Any: 音声合成クエリの応答。
 
         """
-        if text == "":
+        if len(text.strip()) <= 0:
             return None
         headers = {"accept": "audio/wav"}
         params = {
