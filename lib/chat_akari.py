@@ -576,7 +576,8 @@ class ChatStreamAkari(object):
                                         sentence_index : sentence_index + pos + 1
                                     ]
                                     sentence_index += pos + 1
-                                    yield sentence
+                                    if sentence != "":
+                                        yield sentence
                                     break
 
     def chat_and_motion_anthropic(
