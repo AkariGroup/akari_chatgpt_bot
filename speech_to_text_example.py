@@ -1,6 +1,5 @@
 import argparse
 
-
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
 POWER_THRESH_DIFF = 25  # 周辺音量にこの値を足したものをpower_threshouldとする

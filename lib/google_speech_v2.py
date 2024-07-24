@@ -14,8 +14,8 @@ from google.cloud.speech_v2 import SpeechClient
 from google.cloud.speech_v2.types import cloud_speech as cloud_speech_types
 from six.moves import queue  # type: ignore
 
-from .err_handler import ignoreStderr
 from .conf import GOOGLE_SPEECH_PROJECT_ID
+from .err_handler import ignoreStderr
 from .google_speech import MicrophoneStream
 
 # Audio recording parameters
