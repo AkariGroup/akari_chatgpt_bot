@@ -23,6 +23,7 @@ AKARI上で動作確認済み。
 
 1. (音声認識を使う場合) Cloud Speech-to-Text APIの有効化、秘密鍵ダウンロード  
 Google cloud consoleに登録し、Cloud Speech-to-Text APIを有効化する。  
+ユーザーをCloud Speech 管理者に登録する。  
 認証用のjsonをダウンロードし、~/.bashrcにパスを記述  
 `export GOOGLE_APPLICATION_CREDENTIALS=/home/xxx/xxx.json`  
 プロジェクトIDを~/.bashrcに記述  
