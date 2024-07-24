@@ -25,6 +25,8 @@ AKARI上で動作確認済み。
 Google cloud consoleに登録し、Cloud Speech-to-Text APIを有効化する。  
 認証用のjsonをダウンロードし、~/.bashrcにパスを記述  
 `export GOOGLE_APPLICATION_CREDENTIALS=/home/xxx/xxx.json`  
+プロジェクトIDを~/.bashrcに記述  
+`export GOOGLE_SPEECH_PROJECT_ID="xxxxxxxxxxx"`
 
 1. (chatGPTの文章生成を使う場合)OPENAI API KEYの作成   
 [OPENAI](https://openai.com/)にてユーザ登録しAPI KEYを作成し、~/.bashrcに自身のkeyを記述  
@@ -90,6 +92,11 @@ AKARIでVOICEVOXのローカル版を使う場合、AKARI本体内のCPUでVOICE
 ### 音声認識のサンプル  
 マイクへの発話を文章に変換  
 `python3 speech_to_text_example.py`  
+   引数は下記が使用可能  
+   - `-t`,`--timeout`: マイク入力がこの時間しきい値以下になったら音声入力を打ち切る。デフォルトは0.5[s]。短いと応答が早くなるが不安定になりやすい。  
+   - `-p`,`--power_threshold`: マイク入力の音量しきい値。デフォルトは0で、0の場合アプリ起動時に周辺環境の音量を取得し、そこから音量しきい値を自動決定する。  
+   - `--v2`: この引数をつけると、google sppech-to-text v2を使用する。引数がない場合はgoogle sppech-to-text v1を使用する。  
+
 
 ### chatGPTのサンプル  
 キーボード入力した文章に対してchatGPTで返答を作成  
@@ -131,7 +138,8 @@ AKARIでVOICEVOXのローカル版を使う場合、AKARI本体内のCPUでVOICE
 引数は下記が使用可能  
 - `-t`,`--timeout`: マイク入力がこの時間しきい値以下になったら音声入力を打ち切る。デフォルトは0.5[s]。短いと応答が早くなるが不安定になりやすい。  
 - `-p`,`--power_threshold`: マイク入力の音量しきい値。デフォルトは0で、0の場合アプリ起動時に周辺環境の音量を取得し、そこから音量しきい値を自動決定する。  
-- `-m`, `--model`: 使用するモデル名を指定可能。モデル名はOpenaiもしくはAnthropicのものが選択可能。  
+- `--v2`: この引数をつけると、google sppech-to-text v2を使用する。引数がない場合はgoogle sppech-to-text v1を使用する。  
+- `-m`, `--model`: 使用するモデル名を指定可能。モデル名はOpenAI, Anthropic, Geminiのものが選択可能。  
 - `--voicevox_local`: このオプションをつけた場合、voicevoxのweb版ではなくローカル版を実行する。  
 - `--voice_host`: `--voicevox_local`を有効にした場合、ここで指定したhostのvoicevoxにリクエストを送信する。デフォルトは"127.0.0.1"なのでlocalhostのvoicevoxを利用する。  
 - `--voice_port`: `--voicevox_local`を有効にした場合、ここで指定したportのvoicevoxにリクエストを送信する。デフォルトは50021。  
@@ -199,6 +207,7 @@ Google音声認識、chatGPT、Voicevoxとのやり取りをする各アプリ�
    - `--progress_report_len`: 音声認識の文字数がここで入力した数値以上になると、一旦gpt_publisherに認識結果を送り、第一声とモーションを生成する(遅延なし応答用)。0にすると無効。デフォルトは8。
    - `--no_motion`: このオプションをつけた場合、音声入力中のうなずき動作を無効化する。  
    - `--auto`: 自動モードの有効化。通常キーボードでEnterキーを入力するまで待つが、この引数をつけるとEnterキーの入力をスキップする。  
+   - `--v2`: この引数をつけると、google sppech-to-text v2を使用する。引数がない場合はgoogle sppech-to-text v1を使用する。  
 
 5. `speech_publisher.py`のターミナルでEnterキーを押し、マイクに話しかけると返答が返ってくる。
 

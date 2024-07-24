@@ -217,7 +217,7 @@ def get_db_thresh() -> float:
     return power
 
 
-def listen_print_loop(responses: Any) -> str:
+def listen_print_loop(responses: object) -> str:
     """Google Cloud Speech-to-Text APIの応答からテキストを取得し、リアルタイムで出力。
 
     Args:
