@@ -4,7 +4,6 @@ import sys
 
 import grpc
 from lib.chat_akari import ChatStreamAkari
-from lib.google_speech import MicrophoneStream, get_db_thresh, listen_print_loop
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
 import motion_server_pb2
@@ -40,6 +39,11 @@ def main() -> None:
         help="Microphone input power threshold",
     )
     parser.add_argument(
+        "--v2",
+        action="store_true",
+        help="Use google speech v2 instead of v1",
+    )
+    parser.add_argument(
         "-m", "--model", help="LLM model name", default="gpt-4o", type=str
     )
     parser.add_argument("--voicevox_local", action="store_true")
@@ -56,6 +60,11 @@ def main() -> None:
         help="VoiceVox server port",
     )
     args = parser.parse_args()
+    if args.v2:
+        from lib.google_speech_v2 import MicrophoneStreamV2 as MicrophoneStream
+        from lib.google_speech_v2 import get_db_thresh, listen_print_loop
+    else:
+        from lib.google_speech import MicrophoneStream, get_db_thresh, listen_print_loop
     timeout: float = args.timeout
     power_threshold: float = args.power_threshold
     if power_threshold == 0:

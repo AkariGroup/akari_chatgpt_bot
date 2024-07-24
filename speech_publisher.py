@@ -6,7 +6,6 @@ from concurrent import futures
 
 import grpc
 from lib.google_speech import get_db_thresh
-from lib.google_speech_grpc import GoogleSpeechGrpc, MicrophoneStreamGrpc
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
 import motion_server_pb2
@@ -88,7 +87,20 @@ def main() -> None:
         help="Skip keyboard input for speech recognition",
         action="store_true",
     )
+    parser.add_argument(
+        "--v2",
+        action="store_true",
+        help="Use google speech v2 instead of v1",
+    )
     args = parser.parse_args()
+    if args.v2:
+        from lib.google_speech_v2_grpc import GoogleSpeechV2Grpc as GoogleSpeechGrpc
+        from lib.google_speech_v2_grpc import (
+            MicrophoneStreamV2Grpc as MicrophoneStreamGrpc,
+        )
+    else:
+        from lib.google_speech_grpc import GoogleSpeechGrpc as GoogleSpeechGrpc
+        from lib.google_speech_grpc import MicrophoneStreamGrpc as MicrophoneStreamGrpc
     timeout: float = args.timeout
     power_threshold: float = args.power_threshold
 

@@ -1,7 +1,5 @@
 import argparse
 
-from lib.google_speech import MicrophoneStream, get_db_thresh, listen_print_loop
-
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
 POWER_THRESH_DIFF = 25  # 周辺音量にこの値を足したものをpower_threshouldとする
@@ -25,7 +23,17 @@ def main() -> None:
         default=0,
         help="Microphone input power threshold",
     )
+    parser.add_argument(
+        "--v2",
+        action="store_true",
+        help="Use google speech v2 instead of v1",
+    )
     args = parser.parse_args()
+    if args.v2:
+        from lib.google_speech_v2 import MicrophoneStreamV2 as MicrophoneStream
+        from lib.google_speech_v2 import get_db_thresh, listen_print_loop
+    else:
+        from lib.google_speech import MicrophoneStream, get_db_thresh, listen_print_loop
     timeout: float = args.timeout
     power_threshold: float = args.power_threshold
     if power_threshold == 0:

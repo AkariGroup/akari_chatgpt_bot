@@ -11,7 +11,7 @@ import grpc
 import numpy as np
 import pyaudio
 
-from .google_speech import MicrophoneStream
+from .google_speech_v2 import MicrophoneStreamV2
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
 import gpt_server_pb2
@@ -20,7 +20,7 @@ import voice_server_pb2
 import voice_server_pb2_grpc
 
 
-class MicrophoneStreamGrpc(MicrophoneStream):
+class MicrophoneStreamV2Grpc(MicrophoneStreamV2):
     """
     マイクから音声をストリーミングするためのクラス。
 
@@ -106,7 +106,7 @@ class MicrophoneStreamGrpc(MicrophoneStream):
         return None, pyaudio.paContinue
 
 
-class GoogleSpeechGrpc(object):
+class GoogleSpeechV2Grpc(object):
     """
     Google Speech-to-Text APIのレスポンスを処理するクラス。
 
@@ -163,8 +163,8 @@ class GoogleSpeechGrpc(object):
             print("InterruptVoice error")
             pass
         for response in responses:
-            if response.error.code:
-                break
+            # if response.error.code:
+            #    break
             if not response.results:
                 continue
             result = response.results[0]
