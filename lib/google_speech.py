@@ -179,7 +179,10 @@ class MicrophoneStream(object):
             speech.StreamingRecognizeRequest(audio_content=content)
             for content in audio_generator
         )
-        responses = self.client.streaming_recognize(self.streaming_config, requests)
+        try:
+            responses = self.client.streaming_recognize(self.streaming_config, requests)
+        except BaseException:
+            pass
         return responses
 
 

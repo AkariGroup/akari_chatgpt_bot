@@ -98,9 +98,12 @@ class MicrophoneStreamV2(MicrophoneStream):
         audio_generator = self.generator()
         self.start_time = time.time()
         self.start_callback()
-        responses = self.client.streaming_recognize(
-            requests=self.requests(self.config_request, audio_generator)
-        )
+        try:
+            responses = self.client.streaming_recognize(
+                requests=self.requests(self.config_request, audio_generator)
+            )
+        except BaseException:
+            pass
         return responses
 
 
