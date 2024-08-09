@@ -4,7 +4,7 @@ import math
 import sys
 import time
 from queue import Queue
-from typing import Iterable, Union
+from typing import Iterable, Optional, Union
 
 import numpy as np
 import pyaudio
@@ -89,15 +89,18 @@ class MicrophoneStreamV2(MicrophoneStream):
         for chunk in audio:
             yield cloud_speech_types.StreamingRecognizeRequest(audio=chunk)
 
-    def transcribe(self) -> Iterable[cloud_speech_types.StreamingRecognizeResponse]:
+    def transcribe(
+        self,
+    ) -> Optional[Iterable[cloud_speech_types.StreamingRecognizeResponse]]:
         """ストリームからの音声をGoogle Cloud Speech-to-Text APIでテキストに変換する。
 
         Returns:
-            Iterable[speech.StreamingRecognizeResponse]: ストリーミング認識の応答
+            Optional[Iterable[speech.StreamingRecognizeResponse]]: ストリーミング認識の応答
         """
         audio_generator = self.generator()
         self.start_time = time.time()
         self.start_callback()
+        responses = None
         try:
             responses = self.client.streaming_recognize(
                 requests=self.requests(self.config_request, audio_generator)
