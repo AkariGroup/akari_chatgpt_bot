@@ -313,14 +313,14 @@ class ChatStreamAkari(object):
     def chat_gpt(
         self,
         messages: list,
-        model: str = "gpt-3.5-turbo",
+        model: str = "gpt-4o",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
         """ChatGPTを使用して会話を行う
 
         Args:
             messages (list): 会話のメッセージ
-            model (str): 使用するモデル名 (デフォルト: "claude-3-sonnet-20240229")
+            model (str): 使用するモデル名 (デフォルト: "gpt-4o")
             temperature (float): ChatGPTのtemperatureパラメータ (デフォルト: 0.7)
         Returns:
             Generator[str, None, None]): 会話の返答を順次生成する
@@ -330,25 +330,14 @@ class ChatStreamAkari(object):
         for message in messages:
             if message["role"] == "model":
                 message["role"] = "assistant"
-        if model in self.openai_vision_model_name:
-            result = openai.chat.completions.create(
-                model=model,
-                messages=messages,
-                max_tokens=1024,
-                n=1,
-                stream=True,
-                temperature=temperature,
-            )
-        elif model in self.openai_model_name:
-            result = openai.chat.completions.create(
-                model=model,
-                messages=messages,
-                max_tokens=1024,
-                n=1,
-                stream=True,
-                temperature=temperature,
-                stop=None,
-            )
+        result = openai.chat.completions.create(
+            model=model,
+            messages=messages,
+            max_tokens=1024,
+            n=1,
+            stream=True,
+            temperature=temperature,
+        )
         full_response = ""
         real_time_response = ""
         for chunk in result:
@@ -438,14 +427,14 @@ class ChatStreamAkari(object):
     def chat(
         self,
         messages: list,
-        model: str = "gpt-3.5-turbo",
+        model: str = "gpt-4o",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
         """指定したモデルを使用して会話を行う
 
         Args:
             messages (list): 会話のメッセージリスト
-            model (str): 使用するモデル名 (デフォルト: "gpt-3.5-turbo")
+            model (str): 使用するモデル名 (デフォルト: "gpt-4o")
             temperature (float): サンプリングの温度パラメータ (デフォルト: 0.7)
         Returns:
             Generator[str, None, None]): 会話の返答を順次生成する

@@ -14,7 +14,7 @@ def main() -> None:
         "--model",
         nargs="+",
         type=str,
-        default=["gpt-3.5-turbo"],
+        default=["gpt-4o"],
         help="Model name list",
     )
     parser.add_argument("-s", "--system", default="", type=str, help="System prompt")

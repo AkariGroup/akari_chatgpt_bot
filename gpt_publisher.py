@@ -47,9 +47,9 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
         if is_finish:
             self.messages = copy.deepcopy(tmp_messages)
         if is_finish:
-            # 最終応答。高速生成するために、モデルはgpt-3.5-turbo
+            # 最終応答。高速生成するために、モデルはgpt-4o
             for sentence in self.chat_stream_akari_grpc.chat(
-                tmp_messages, model="gpt-3.5-turbo"
+                tmp_messages, model="gpt-4o"
             ):
                 print(f"Send to voice server: {sentence}")
                 self.stub.SetText(voice_server_pb2.SetTextRequest(text=sentence))
