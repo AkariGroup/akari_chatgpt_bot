@@ -169,7 +169,7 @@ class MicrophoneStream(object):
 
     def transcribe(
         self,
-    ) -> Optional[Iterable[cloud_speech_types.StreamingRecognizeResponse]]:
+    ) -> Optional[Iterable[speech.StreamingRecognizeResponse]]:
         """ストリームからの音声をGoogle Cloud Speech-to-Text APIでテキストに変換する。
 
         Returns:

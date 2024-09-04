@@ -161,6 +161,8 @@ def main() -> None:
                         )
                     except BaseException:
                         pass
+                while not enable_input:
+                    time.sleep(0.01)
                 responses = stream.transcribe()
                 if not enable_input:
                     continue

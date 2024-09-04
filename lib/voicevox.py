@@ -130,9 +130,9 @@ class TextToVoiceVox(object):
         params = {
             "text": text,
             "speaker": self.speaker,
-            "speed_scale": self.speed_scale,
-            "pre_phoneme_length": 0,
-            "post_phoneme_length": 0,
+            "speedScale": self.speed_scale,
+            "prePhonemeLength": 0,
+            "postPhonemeLength": 0,
         }
         address = "http://" + self.host + ":" + self.port + "/audio_query"
         res = requests.post(address, params=params)
@@ -151,8 +151,9 @@ class TextToVoiceVox(object):
         Returns:
             bytes: 合成された音声データ。
         """
-        params = {"speaker": 8}
+        params = {"speaker": self.speaker}
         headers = {"content-type": "application/json"}
+        audio_query_response["speedScale"] = self.speed_scale
         audio_query_response_json = json.dumps(audio_query_response)
         address = "http://" + self.host + ":" + self.port + "/synthesis"
         res = requests.post(
