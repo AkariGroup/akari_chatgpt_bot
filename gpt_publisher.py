@@ -21,7 +21,10 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
 
     def __init__(self) -> None:
         self.chat_stream_akari_grpc = ChatStreamAkariGrpc()
-        content = "チャットボットとしてロールプレイします。あかりという名前のカメラロボットとして振る舞ってください。性格はポジティブで元気です。"
+        self.SYSTEM_PROMPT_PATH = (
+            f"{os.path.dirname(os.path.realpath(__file__))}/config/system_prompt.txt"
+        )
+        content = open(self.SYSTEM_PROMPT_PATH, "r").read()
         self.messages = [
             self.chat_stream_akari_grpc.create_message(content, role="system")
         ]
@@ -38,10 +41,7 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
         if len(request.text) < 2:
             return gpt_server_pb2.SetGptReply(success=True)
         print(f"Receive: {request.text}")
-        if is_finish:
-            content = f"{request.text}。一文で簡潔に答えてください。"
-        else:
-            content = f"{request.text}。"
+        content = f"{request.text}。"
         tmp_messages = copy.deepcopy(self.messages)
         tmp_messages.append(self.chat_stream_akari_grpc.create_message(content))
         if is_finish:
@@ -60,7 +60,7 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
                 self.chat_stream_akari_grpc.create_message(response, role="assistant")
             )
         else:
-            # 途中での第一声とモーション準備。function_callingの確実性のため、モデルはgpt-4-turbo-preview
+            # 途中での第一声とモーション準備。function_callingの確実性のため、モデルはgpt-4-turbo
             for sentence in self.chat_stream_akari_grpc.chat_and_motion(
                 tmp_messages, model="gpt-4-turbo", short_response=True
             ):

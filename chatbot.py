@@ -1,4 +1,5 @@
 import argparse
+import os
 
 from lib.chat_akari import ChatStreamAkari
 
@@ -74,7 +75,16 @@ def main() -> None:
         text_to_voice = TextToVoiceVoxWeb(apikey=VOICEVOX_APIKEY)
 
     chat_stream_akari = ChatStreamAkari()
-    messages = [{"role": "system", "content": "チャットボットとしてロールプレイをします。"}]
+    SYSTEM_PROMPT_PATH = (
+        f"{os.path.dirname(os.path.realpath(__file__))}/config/system_prompt.txt"
+    )
+    content = open(SYSTEM_PROMPT_PATH, "r").read()
+    messages = [
+        {
+            "role": "system",
+            "content": content,
+        }
+    ]
     while True:
         # 音声認識
         text = ""
@@ -90,8 +100,7 @@ def main() -> None:
         # chatGPT
         # 2文字以上の入力でない場合は回答しない。
         if len(text) >= 2:
-            attention = "。120文字以内で回答してください。"
-            messages.append({"role": "user", "content": text + attention})
+            messages.append({"role": "user", "content": text})
             print(f"User   : {text}")
             print(f"{args.model} :")
             response = ""
