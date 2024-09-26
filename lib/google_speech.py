@@ -166,7 +166,6 @@ class MicrophoneStream(object):
                 time.sleep(0.01)
                 continue
 
-
     def transcribe(
         self,
     ) -> Optional[Iterable[speech.StreamingRecognizeResponse]]:
@@ -174,7 +173,7 @@ class MicrophoneStream(object):
 
         Returns:
             Optional[Iterable[speech.StreamingRecognizeResponse]]: ストリーミング認識の応答
-       """
+        """
         audio_generator = self.generator()
         self.start_time = time.time()
         self.start_callback()

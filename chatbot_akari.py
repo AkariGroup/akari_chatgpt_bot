@@ -84,11 +84,14 @@ def main() -> None:
 
     channel = grpc.insecure_channel(args.robot_ip + ":" + str(args.robot_port))
     stub = motion_server_pb2_grpc.MotionServerServiceStub(channel)
-
+    SYSTEM_PROMPT_PATH = (
+        f"{os.path.dirname(os.path.realpath(__file__))}/config/system_prompt.txt"
+    )
+    content = open(SYSTEM_PROMPT_PATH, "r").read()
     messages = [
         {
             "role": "system",
-            "content": "チャットボットとしてロールプレイをします。あかりという名前の、カメラロボットとして振る舞ってください。句読点を多く使い返答してください。",
+            "content": content,
         }
     ]
     chat_stream_akari = ChatStreamAkari(args.robot_ip, args.robot_port)
@@ -116,8 +119,7 @@ def main() -> None:
         # 2文字以上の入力でない場合は回答しない。
         if len(text) >= 2:
             # chatGPT
-            attention = "。150文字以内で回答してください。"
-            messages.append({"role": "user", "content": text + attention})
+            messages.append({"role": "user", "content": text})
             print(f"User   : {text}")
             print(f"{args.model} :")
             response = ""

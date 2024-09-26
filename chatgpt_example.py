@@ -1,4 +1,5 @@
 import argparse
+import os
 import time
 
 from lib.chat_akari import ChatStreamAkari
@@ -22,9 +23,17 @@ def main() -> None:
     chat_stream_akri = ChatStreamAkari()
     # systemメッセージの作成
     messages_list = []
+    content = None
+    if not args.system:
+        SYSTEM_PROMPT_PATH = (
+            f"{os.path.dirname(os.path.realpath(__file__))}/config/system_prompt.txt"
+        )
+        content = open(SYSTEM_PROMPT_PATH, "r").read()
+    else:
+        content = args.system
     for i in range(0, len(args.model)):
         messages_list.append(
-            [chat_stream_akri.create_message(args.system, role="system")]
+            [chat_stream_akri.create_message(content, role="system")]
         )
     while True:
         print("文章をキーボード入力後、Enterを押してください。")
