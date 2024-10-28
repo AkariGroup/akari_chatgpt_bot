@@ -8,6 +8,7 @@ from typing import Any, Optional
 
 import pyaudio
 import requests
+from lib.en_to_jp import EnToJp
 
 from .err_handler import ignoreStderr
 
@@ -36,6 +37,7 @@ class TextToVoiceVox(object):
         self.speed_scale = 1.0
         self.voice_thread = Thread(target=self.text_to_voice_thread)
         self.voice_thread.start()
+        self.en_to_jp = EnToJp()
 
     def __exit__(self) -> None:
         """音声合成スレッドを終了する。"""
@@ -55,6 +57,8 @@ class TextToVoiceVox(object):
             if self.queue.qsize() > 0 and self.play_flg:
                 last_queue_time = time.time()
                 text = self.queue.get()
+                # textに含まれる英語を極力かな変換する
+                text = self.en_to_jp.text_to_kana(text, True, True, True)
                 self.text_to_voice(text)
             if self.queue.qsize() == 0:
                 # queueが空の状態でsentence_endが送られる、もしくはsentence_end_timeout秒経過した場合finishedにする。

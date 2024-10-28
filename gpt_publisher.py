@@ -91,11 +91,7 @@ def main() -> None:
     server.add_insecure_port(args.ip + ":" + args.port)
     server.start()
     print(f"gpt_publisher start. port: {args.port}")
-    try:
-        while True:
-            pass
-    except KeyboardInterrupt:
-        exit()
+    server.wait_for_termination()
 
 
 if __name__ == "__main__":

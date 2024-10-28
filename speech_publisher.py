@@ -132,47 +132,51 @@ def main() -> None:
 
     while True:
         responses = None
-        if enable_input:
-            with MicrophoneStreamGrpc(
-                rate=RATE,
-                chunk=CHUNK,
-                _timeout_thresh=timeout,
-                _db_thresh=power_threshold,
-                gpt_host=args.gpt_ip,
-                gpt_port=args.gpt_port,
-                voice_host=args.voice_ip,
-                voice_port=args.voice_port,
-            ) as stream:
-                if not args.auto:
-                    print("Enterを入力してから、マイクに話しかけてください")
-                    input()
-                    try:
-                        voice_stub.SetVoicePlayFlg(
-                            voice_server_pb2.SetVoicePlayFlgRequest(flg=False)
+        while not enable_input:
+            time.sleep(0.01)
+        with MicrophoneStreamGrpc(
+            rate=RATE,
+            chunk=CHUNK,
+            _timeout_thresh=timeout,
+            _db_thresh=power_threshold,
+            gpt_host=args.gpt_ip,
+            gpt_port=args.gpt_port,
+            voice_host=args.voice_ip,
+            voice_port=args.voice_port,
+        ) as stream:
+            if not args.auto:
+                print("Enterを入力してから、マイクに話しかけてください")
+                input()
+                try:
+                    voice_stub.SetVoicePlayFlg(
+                        voice_server_pb2.SetVoicePlayFlgRequest(flg=False)
+                    )
+                except BaseException:
+                    pass
+            if not args.no_motion:
+                try:
+                    motion_stub.SetMotion(
+                        motion_server_pb2.SetMotionRequest(
+                            name="nod", priority=3, repeat=True
                         )
-                    except BaseException:
-                        pass
-                if not args.no_motion:
-                    try:
-                        motion_stub.SetMotion(
-                            motion_server_pb2.SetMotionRequest(
-                                name="nod", priority=3, repeat=True
-                            )
-                        )
-                    except BaseException:
-                        pass
-                while not enable_input:
-                    time.sleep(0.01)
+                    )
+                except BaseException:
+                    pass
+            try:
                 responses = stream.transcribe()
-                if not enable_input:
-                    continue
-                if responses is not None:
+            except BaseException:
+                google_speech_grpc.interrupt()
+                continue
+            if responses is not None:
+                try:
                     google_speech_grpc.listen_publisher_grpc(
                         responses, progress_report_len=args.progress_report_len
                     )
-            print("")
-        else:
-            time.sleep(0.05)
+                except BaseException as e:
+                    print(e)
+                    google_speech_grpc.interrupt()
+                    continue
+        print("")
 
 
 if __name__ == "__main__":
