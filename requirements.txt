@@ -1,5 +1,6 @@
 akari-client[depthai]
 akari-proto
+alkana
 anthropic
 google-cloud-speech
 google-generativeai
@@ -9,6 +10,7 @@ grpcio-tools
 openai
 numpy
 PyAudio
+PyJapanglish
 python-dotenv
 six
 SpeechRecognition
