@@ -116,11 +116,7 @@ def main() -> None:
     server.add_insecure_port("[::]:" + port)
     server.start()
     print(f"voice_server start. port: {port}")
-    try:
-        while True:
-            time.sleep(0.1)
-    except KeyboardInterrupt:
-        exit()
+    server.wait_for_termination()
 
 
 if __name__ == "__main__":

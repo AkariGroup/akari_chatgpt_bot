@@ -32,9 +32,7 @@ def main() -> None:
     else:
         content = args.system
     for i in range(0, len(args.model)):
-        messages_list.append(
-            [chat_stream_akri.create_message(content, role="system")]
-        )
+        messages_list.append([chat_stream_akri.create_message(content, role="system")])
     while True:
         print("文章をキーボード入力後、Enterを押してください。")
         text = input("Input: ")
