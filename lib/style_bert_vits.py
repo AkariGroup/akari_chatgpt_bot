@@ -12,6 +12,7 @@ import pyaudio
 
 from .err_handler import ignoreStderr
 
+from lib.en_to_jp import EnToJp
 
 class TextToStyleBertVits(object):
     """
@@ -40,6 +41,7 @@ class TextToStyleBertVits(object):
         self.style_weight = 1.0
         # 話者モデル名を指定
         self.set_param(model_name="jvnv-F1-jp")
+        self.en_to_jp = EnToJp()
 
     def __exit__(self) -> None:
         """音声合成スレッドを終了する。"""
@@ -59,6 +61,8 @@ class TextToStyleBertVits(object):
             if self.queue.qsize() > 0 and self.play_flg:
                 last_queue_time = time.time()
                 text = self.queue.get()
+                # textに含まれる英語を極力かな変換する
+                text = self.en_to_jp.text_to_kana(text, True, True, True)
                 self.text_to_voice(text)
             if self.queue.qsize() == 0:
                 # queueが空の状態でsentence_endが送られる、もしくはsentence_end_timeout秒経過した場合finishedにする。
@@ -216,6 +220,7 @@ class TextToStyleBertVits(object):
         """
         wav = self.post_synthesis(text)
         if wav is not None:
+            print(f"[Play] {text}")
             self.play_wav(wav)
 
     def is_playing(self) -> bool:

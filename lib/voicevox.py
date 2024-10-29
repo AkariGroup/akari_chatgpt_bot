@@ -203,6 +203,7 @@ class TextToVoiceVox(object):
             return
         wav = self.post_synthesis(res)
         if wav is not None:
+            print(f"[Play] {text}")
             self.play_wav(wav)
 
     def is_playing(self) -> bool:

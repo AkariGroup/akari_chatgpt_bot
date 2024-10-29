@@ -11,7 +11,6 @@ class EnToJp(object):
     def __init__(self) -> None:
         self.japanglish = Japanglish()
         self.user_dict_list: Tuple[str, str] = []
-        JAPANGLISH_WORD_LENGTH = 3  # この文字以上の単語を変換対象とする
         EN_TO_JP_DICT_PATH = (
             os.path.dirname(os.path.abspath(__file__))
             + "/../config/en_to_jp_fix_dict.csv"
@@ -66,7 +65,7 @@ class EnToJp(object):
             return word
 
     def replace_english_to_japanglish(self, text, inference: bool = False) -> str:
-        """ "テキストに含まれている英単語をjapanglishでカタカナに変換して返す。JAPANGLISH_WORD_LENGTH以上の文字数の単語が対象
+        """ "テキストに含まれている英単語をjapanglishでカタカナに変換して返す。3文字以上の文字数の単語が対象
 
         Args:
             text (str): 変換対象のテキスト
@@ -77,7 +76,7 @@ class EnToJp(object):
         """
 
         output = ""
-        while word := re.search(r"[a-zA-Z]{JAPANGLISH_WORD_LENGTH,}", text):
+        while word := re.search(r"[a-zA-Z]{3,}", text):
             output += text[: word.start()] + self.word_to_japanglish(
                 word.group(), inference
             )
@@ -85,7 +84,7 @@ class EnToJp(object):
         return output + text
 
     def word_to_japanglish(self, word: str, inference: bool = False) -> str:
-        """英単語がカタカナに変換できる場合はjapanglishでカタカナにして返す。JAPANGLISH_WORD_LENGTH以上の文字数の単語が対象
+        """英単語がカタカナに変換できる場合はjapanglishでカタカナにして返す。3文字以上の文字数の単語が対象
 
         Args:
             word (str): 変換対象の英単語
@@ -97,8 +96,8 @@ class EnToJp(object):
         if self.japanglish.convert(word.lower(), inference) is not None:
             return self.japanglish.convert(word.lower(), inference)
         else:
-            if re.fullmatch(r"(?:[A-Z][a-z]{JAPANGLISH_WORD_LENGTH,}){2,}", word):
-                m = re.match(r"[A-Z][a-z]{JAPANGLISH_WORD_LENGTH,}", word)
+            if re.fullmatch(r"(?:[A-Z][a-z]{3,}){2,}", word):
+                m = re.match(r"[A-Z][a-z]{3,}", word)
                 first = self.word_to_japanglish(m.group())
                 second = self.word_to_japanglish(word[m.end() :])
                 return first + second
