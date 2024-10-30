@@ -24,10 +24,11 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
         self.SYSTEM_PROMPT_PATH = (
             f"{os.path.dirname(os.path.realpath(__file__))}/config/system_prompt.txt"
         )
-        content = open(self.SYSTEM_PROMPT_PATH, "r").read()
-        self.messages = [
-            self.chat_stream_akari_grpc.create_message(content, role="system")
-        ]
+        self.messages = []
+        with open(self.SYSTEM_PROMPT_PATH, "r") as f:
+            self.messages = [
+                self.chat_stream_akari_grpc.create_message(f.read(), role="system")
+            ]
         voice_channel = grpc.insecure_channel("localhost:10002")
         self.stub = voice_server_pb2_grpc.VoiceServerServiceStub(voice_channel)
 

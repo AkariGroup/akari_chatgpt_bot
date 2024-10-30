@@ -9,10 +9,10 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 import pyaudio
+from lib.en_to_jp import EnToJp
 
 from .err_handler import ignoreStderr
 
-from lib.en_to_jp import EnToJp
 
 class TextToStyleBertVits(object):
     """
