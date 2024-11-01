@@ -157,7 +157,7 @@ class TextToVoiceVox(object):
         """
         params = {"speaker": self.speaker}
         headers = {"content-type": "application/json"}
-        audio_query_response["speedScale"] = str(self.speed_scale)
+        audio_query_response["speedScale"] = self.speed_scale
         audio_query_response_json = json.dumps(audio_query_response)
         address = "http://" + self.host + ":" + self.port + "/synthesis"
         res = requests.post(
