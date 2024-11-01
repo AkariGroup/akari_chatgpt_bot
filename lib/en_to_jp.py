@@ -53,7 +53,7 @@ class EnToJp(object):
         if kana := alkana.get_kana(word.lower()):
             # ユーザー辞書に登録されている場合はユーザー辞書の値を返す
             for user_dict in self.user_dict_list:
-                if word == user_dict[0]:
+                if word.lower() == user_dict[0]:
                     return user_dict[1]
             return kana
         else:
