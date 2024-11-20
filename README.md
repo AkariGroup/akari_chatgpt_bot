@@ -66,11 +66,8 @@ AKARI本体内のCPUでAivisSpeech Engineを実行すると処理時間がかか
 下記の手順でセットアップ  
 `git clone https://github.com/Aivis-Project/AivisSpeech-Engine.git`  
 `cd AivisSpeech-Engine`  
-`sudo add-apt-repository ppa:deadsnakes/ppa`  
-`sudo apt update`  
-`sudo apt install python3.11 python3.11-venv`  
-`pip install poetry`  
-`poetry install`  
+`docker build ./ -t aivis`  
+`docker run -it -p 10101:10101 aivis`
 
 下記のコマンドでFastAPIサーバを起動する。  
 `poetry run python3.11 run.py --use_gpu`  
