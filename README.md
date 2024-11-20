@@ -298,3 +298,6 @@ Google音声認識、chatGPT、Voicevoxとのやり取りをする各アプリ�
    `./faster_chatbot_bert_vits_auto.sh {2.でStyle-Bert-VITS2を起動したPCのIPアドレス} akari_motion_serverのパス}`  
 
    akari_motion_serverのパスを入力しなければ、akari_motion_serverは起動せず、モーションの再生は行われません(AKARI以外でも使えます)。  
+
+## その他
+Voicevoxの音声合成では、デフォルトの音声として「VOICEVOX:春日部つむぎ」を使用しています。  
