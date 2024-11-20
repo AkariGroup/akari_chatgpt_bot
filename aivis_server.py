@@ -3,9 +3,9 @@ import os
 import sys
 import time
 from concurrent import futures
-from typing import Any
 
 import grpc
+from lib.aivis import TextToAivis
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib/grpc"))
 import voice_server_pb2
@@ -14,10 +14,10 @@ import voice_server_pb2_grpc
 
 class VoiceServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
     """
-    Voicevoxにtextを送信し、音声を再生するgprcサーバ
+    Aivisにtextを送信し、音声を再生するgprcサーバ
     """
 
-    def __init__(self, text_to_voice: Any) -> None:
+    def __init__(self, text_to_voice) -> None:
         self.text_to_voice = text_to_voice
 
     def SetText(
@@ -35,27 +35,28 @@ class VoiceServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
         request: voice_server_pb2.SetStyleBertVitsParamRequest(),
         context: grpc.ServicerContext,
     ) -> voice_server_pb2.SetStyleBertVitsParamReply:
-        print("SetStyleBertVitsParam is not supported on voicevox_server.")
-        return voice_server_pb2.SetStyleBertVitsParamReply(success=False)
+        print("SetStyleBertVitsParam is not supported on aivis_server.")
+        return voice_server_pb2.SetStyleBertVitsParamReply(success=True)
 
     def SetVoicevoxParam(
         self,
         request: voice_server_pb2.SetVoicevoxParamRequest(),
         context: grpc.ServicerContext,
     ) -> voice_server_pb2.SetVoicevoxParamReply:
-        if request.speaker:
-            self.text_to_voice.set_param(speaker=request.speaker)
-        if request.speed_scale:
-            self.text_to_voice.set_param(speed_scale=request.speed_scale)
-        return voice_server_pb2.SetVoicevoxParamReply(success=True)
+        print("SetVoicevoxParam is not supported on aivis_server.")
+        return voice_server_pb2.SetVoicevoxParamReply(success=False)
 
     def SetAivisParam(
         self,
         request: voice_server_pb2.SetAivisParamRequest(),
         context: grpc.ServicerContext,
     ) -> voice_server_pb2.SetAivisParamReply:
-        print("SetAivisParam is not supported on voicevox_server.")
-        return voice_server_pb2.SetAivisParamReply(success=False)
+        self.text_to_voice.set_param(
+            speaker=request.speaker,
+            style=request.style,
+            speed_scale=request.speed_scale,
+        )
+        return voice_server_pb2.SetAivisParamReply(success=True)
 
     def InterruptVoice(
         self,
@@ -94,35 +95,23 @@ class VoiceServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--voicevox_local", action="store_true")
     parser.add_argument(
         "--voice_host",
         type=str,
         default="127.0.0.1",
-        help="VoiceVox server host",
+        help="Aivis-Speech server host",
     )
     parser.add_argument(
         "--voice_port",
         type=str,
-        default="50021",
-        help="VoiceVox server port",
+        default="10101",
+        help="Aivis-Speech server port",
     )
     args = parser.parse_args()
-    if args.voicevox_local:
-        # local版の場合
-        from lib.voicevox import TextToVoiceVox
 
-        voice_host = args.voice_host
-        voice_port = args.voice_port
-        text_to_voice = TextToVoiceVox(voice_host, voice_port)
-        print("voicevox local pc ver.")
-    else:
-        # web版の場合
-        from lib.conf import VOICEVOX_APIKEY
-        from lib.voicevox import TextToVoiceVoxWeb
-
-        text_to_voice = TextToVoiceVoxWeb(apikey=VOICEVOX_APIKEY)
-        print("voicevox web ver.")
+    host = args.voice_host
+    port = args.voice_port
+    text_to_voice = TextToAivis(host, port)
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     voice_server_pb2_grpc.add_VoiceServerServiceServicer_to_server(

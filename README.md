@@ -61,6 +61,17 @@ AKARIでVOICEVOXのローカル版を使う場合、AKARI本体内のCPUでVOICE
 `python3 server_fastapi.py`  
 AKARIなどで動かす場合は、同一ネットワーク内の外部PC上にサーバーを立てることを推奨。  
 
+1. (AivisSpeechの音声合成を使う場合) AivisSpeech Engineのセットアップ  
+AKARI本体内のCPUでAivisSpeech Engineを実行すると処理時間がかかるので、リモートPC上(特にGPUありのPC)で実行することを推奨する。  
+下記の手順でセットアップ  
+`git clone https://github.com/Aivis-Project/AivisSpeech-Engine.git`  
+`cd AivisSpeech-Engine`  
+`docker build ./ -t aivis`  
+`docker run -it -p 10101:10101 aivis`
+
+下記のコマンドでFastAPIサーバを起動する。  
+`poetry run python3.11 run.py --use_gpu`  
+
 1. (AKARIのモーション再生を使う場合) akari_motion_serverのセットアップ  
 `git clone https://github.com/AkariGroup/akari_motion_server`  
 akari_motion_server内のREADME.mdに沿ってセットアップする。  
@@ -87,6 +98,9 @@ AKARIでVOICEVOXのローカル版を使う場合、AKARI本体内のCPUでVOICE
    (Style-Bert-VITS2)  
       Style-Bert-VITS2のディレクトリ直下で下記を実行  
       `python3 server_fastapi.py`  
+   (AivisSpeech)
+      AivisSpeech Engineのディレクトリ直下で下記を実行  
+      `poetry run python3.11 run.py --use_gpu`  
 
 ## サンプルの実行
 
@@ -126,6 +140,15 @@ AKARIでVOICEVOXのローカル版を使う場合、AKARI本体内のCPUでVOICE
    引数は下記が使用可能  
    - `--voice_host`: ここで指定したhostの`server_fastapi.py`にリクエストを送信する。デフォルトは"127.0.0.1"  
    - `--voice_port`: ここで指定したportの`server_fastapi.py`にリクエストを送信する。デフォルトは5000。  
+
+### 音声合成(Aivis Speech)のサンプル  
+キーボード入力した文章を音声合成で発話  
+
+`python3 aivis_example.py`  
+
+   引数は下記が使用可能  
+   - `--voice_host`: ここで指定したhostにリクエストを送信する。デフォルトは"127.0.0.1"  
+   - `--voice_port`: ここで指定したportにリクエストを送信する。デフォルトは10101。  
 
 ### 英単語→カナ変換のサンプル
 キーボード入力した文章内の英単語をカタカナに変換する。
@@ -191,6 +214,16 @@ Google音声認識、chatGPT、Voicevoxとのやり取りをする各アプリ�
    引数は下記が使用可能  
    - `--voice_host`: ここで指定したhostの`server_fastapi.py`にリクエストを送信する。デフォルトは"127.0.0.1"  
    - `--voice_port`: ここで指定したportの`server_fastapi.py`にリクエストを送信する。デフォルトは5000。  
+
+**音声合成にAivis Speechを使う場合**  
+
+2. `aivis_server`を起動する。(Aivis Speechへの送信サーバ)  
+   `python3 aivis_server.py`  
+
+   引数は下記が使用可能  
+   - `--voice_host`: ここで指定したhostにリクエストを送信する。デフォルトは"127.0.0.1"
+   - `--voice_port`: ここで指定したportにリクエストを送信する。デフォルトは10101。
+
 
 3. `gpt_publisher`を起動する。(ChatGPTへリクエストを送信し、受信結果を音声合成サーバへ渡す。)  
    `python3 gpt_publisher.py`  

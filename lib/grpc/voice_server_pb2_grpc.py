@@ -29,6 +29,11 @@ class VoiceServerServiceStub(object):
                 request_serializer=voice__server__pb2.SetVoicevoxParamRequest.SerializeToString,
                 response_deserializer=voice__server__pb2.SetVoicevoxParamReply.FromString,
                 )
+        self.SetAivisParam = channel.unary_unary(
+                '/voice_server.VoiceServerService/SetAivisParam',
+                request_serializer=voice__server__pb2.SetAivisParamRequest.SerializeToString,
+                response_deserializer=voice__server__pb2.SetAivisParamReply.FromString,
+                )
         self.InterruptVoice = channel.unary_unary(
                 '/voice_server.VoiceServerService/InterruptVoice',
                 request_serializer=voice__server__pb2.InterruptVoiceRequest.SerializeToString,
@@ -67,6 +72,12 @@ class VoiceServerServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def SetVoicevoxParam(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SetAivisParam(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -113,6 +124,11 @@ def add_VoiceServerServiceServicer_to_server(servicer, server):
                     servicer.SetVoicevoxParam,
                     request_deserializer=voice__server__pb2.SetVoicevoxParamRequest.FromString,
                     response_serializer=voice__server__pb2.SetVoicevoxParamReply.SerializeToString,
+            ),
+            'SetAivisParam': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetAivisParam,
+                    request_deserializer=voice__server__pb2.SetAivisParamRequest.FromString,
+                    response_serializer=voice__server__pb2.SetAivisParamReply.SerializeToString,
             ),
             'InterruptVoice': grpc.unary_unary_rpc_method_handler(
                     servicer.InterruptVoice,
@@ -192,6 +208,23 @@ class VoiceServerService(object):
         return grpc.experimental.unary_unary(request, target, '/voice_server.VoiceServerService/SetVoicevoxParam',
             voice__server__pb2.SetVoicevoxParamRequest.SerializeToString,
             voice__server__pb2.SetVoicevoxParamReply.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def SetAivisParam(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/voice_server.VoiceServerService/SetAivisParam',
+            voice__server__pb2.SetAivisParamRequest.SerializeToString,
+            voice__server__pb2.SetAivisParamReply.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
