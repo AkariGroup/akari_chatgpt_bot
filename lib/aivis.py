@@ -234,7 +234,6 @@ class TextToAivis(object):
         """
         headers = {"content-type": "application/json"}
         address = "http://" + self.host + ":" + self.port + "/speakers"
-        print(address)
         res = requests.get(address, headers=headers)
         return res.json()
 
@@ -283,7 +282,6 @@ class TextToAivis(object):
             int: 話者ID。
         """
         speakers = self.get_speaker()
-        print(f"name: {speaker_name}, style: {style_name}")
         for speaker in speakers:
             if speaker["name"] == speaker_name:
                 for style in speaker["styles"]:
