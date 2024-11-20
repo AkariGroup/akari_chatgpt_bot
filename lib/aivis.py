@@ -285,7 +285,6 @@ class TextToAivis(object):
         for speaker in speakers:
             if speaker["name"] == speaker_name:
                 for style in speaker["styles"]:
-                    print(f"style: {style['name']}")
                     if style["name"] == style_name:
                         return style["id"]
                 print(f"Style: {style_name} not found in speaker: {speaker_name}.")

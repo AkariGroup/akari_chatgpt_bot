@@ -24,22 +24,28 @@ def main() -> None:
     port = args.voice_port
     text_to_voice = TextToAivis(host, port)
 
+    print(f"Speaker一覧: {text_to_voice.get_speaker_names()}")
+
     # set_paramメソッドでモデル名や音声再生速度、感情スタイルなどを指定することができます。
     # モデル名を指定
-    # text_to_voice.set_param(model_name='jvnv-F1-jp')
+    # text_to_voice.set_param(speaker='Anneli')
     # 音声再生速度を指定
-    # text_to_voice.set_param(length=2.0)
+    # text_to_voice.set_param(speed_scale=1.3)
     # 感情スタイルを指定
-    # text_to_voice.set_param(style='Happy')
-    # 感情スタイルの重みを指定
-    # text_to_voice.set_param(style_weight=3.0)
+    # text_to_voice.set_param(style="怒り・悲しみ")
+
+    print(f"現在のSpeaker: {text_to_voice.speaker}")
+    print("")
+    print(
+        f"{text_to_voice.speaker}のスタイル一覧: {text_to_voice.get_style_names(text_to_voice.speaker)}"
+    )
+    print(f"現在のStyle: {text_to_voice.style}")
+    print("")
 
     print("発話させたい文章をキーボード入力後、Enterを押してください。")
     while True:
         text = input("Input: ")
-        text_to_voice.put_text(
-            text=text,
-        )
+        text_to_voice.put_text(text=text, blocking=True)
         print("")
 
 
