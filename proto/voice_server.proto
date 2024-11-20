@@ -30,6 +30,16 @@ message SetVoicevoxParamReply {
   bool success =1;
 }
 
+message SetAivisParamRequest {
+  optional string speaker = 1;
+  optional string style = 2;
+  optional float speed_scale = 3;
+}
+
+message SetAivisParamReply {
+  bool success =1;
+}
+
 message InterruptVoiceRequest {}
 
 message InterruptVoiceReply {
@@ -63,6 +73,8 @@ service VoiceServerService {
         returns (SetStyleBertVitsParamReply);
     rpc SetVoicevoxParam(SetVoicevoxParamRequest)
         returns (SetVoicevoxParamReply);
+    rpc SetAivisParam(SetAivisParamRequest)
+        returns (SetAivisParamReply);
     rpc InterruptVoice(InterruptVoiceRequest)
         returns (InterruptVoiceReply);
     rpc SetVoicePlayFlg(SetVoicePlayFlgRequest)
