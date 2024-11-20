@@ -73,7 +73,7 @@ AKARI本体内のCPUでAivisSpeech Engineを実行すると処理時間がかか
 `poetry install`  
 
 下記のコマンドでFastAPIサーバを起動する。  
-`poetry run python3.11 run.py`  
+`poetry run python3.11 run.py --use_gpu`  
 
 1. (AKARIのモーション再生を使う場合) akari_motion_serverのセットアップ  
 `git clone https://github.com/AkariGroup/akari_motion_server`  
@@ -103,7 +103,7 @@ AKARIでVOICEVOXのローカル版を使う場合、AKARI本体内のCPUでVOICE
       `python3 server_fastapi.py`  
    (AivisSpeech)
       AivisSpeech Engineのディレクトリ直下で下記を実行  
-      `poetry run python3.11 run.py`  
+      `poetry run python3.11 run.py --use_gpu`  
 
 ## サンプルの実行
 
