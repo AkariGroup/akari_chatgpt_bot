@@ -63,14 +63,10 @@ AKARIなどで動かす場合は、同一ネットワーク内の外部PC上に�
 
 1. (AivisSpeechの音声合成を使う場合) AivisSpeech Engineのセットアップ  
 AKARI本体内のCPUでAivisSpeech Engineを実行すると処理時間がかかるので、リモートPC上(特にGPUありのPC)で実行することを推奨する。  
-下記の手順でセットアップ  
-`git clone https://github.com/Aivis-Project/AivisSpeech-Engine.git`  
-`cd AivisSpeech-Engine`  
-`docker build ./ -t aivis`  
-`docker run -it -p 10101:10101 aivis`
-
+下記はnvidia GPU搭載のLinux PC、Cuda 12.4、cuDNN9がセットアップされている場合の手順。  
+[AivisSpeech enginiのreleaseページ](https://github.com/Aivis-Project/AivisSpeech-Engine/releases)から最新のAivisSpeech Engineをダウンロードする。  
 下記のコマンドでFastAPIサーバを起動する。  
-`poetry run python3.11 run.py --use_gpu`  
+`./run --use_gpu`  
 
 1. (AKARIのモーション再生を使う場合) akari_motion_serverのセットアップ  
 `git clone https://github.com/AkariGroup/akari_motion_server`  
@@ -100,7 +96,7 @@ AKARIでVOICEVOXのローカル版を使う場合、AKARI本体内のCPUでVOICE
       `python3 server_fastapi.py`  
    (AivisSpeech)
       AivisSpeech Engineのディレクトリ直下で下記を実行  
-      `poetry run python3.11 run.py --use_gpu`  
+      `./run --use_gpu`  
 
 ## サンプルの実行
 
