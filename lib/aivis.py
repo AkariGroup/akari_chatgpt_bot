@@ -1,16 +1,24 @@
+import grpc
 import io
 import json
+import os
+import sys
 import time
 import wave
 from queue import Queue
 from threading import Thread
 from typing import Any, Optional
 
+import numpy as np
 import pyaudio
 import requests
 from lib.en_to_jp import EnToJp
 
 from .err_handler import ignoreStderr
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
+import motion_server_pb2
+import motion_server_pb2_grpc
 
 
 class TextToAivis(object):
@@ -18,16 +26,28 @@ class TextToAivis(object):
     Aivisを使用してテキストから音声を生成するクラス。
     """
 
-    def __init__(self, host: str = "127.0.0.1", port: str = "10101") -> None:
+    def __init__(
+        self,
+        host: str = "127.0.0.1",
+        port: str = "10101",
+        motion_host: str = "127.0.0.1",
+        motion_port: str = "50055",
+    ) -> None:
         """クラスの初期化メソッド。
         Args:
             host (str, optional): Aivisサーバーのホスト名。デフォルトは "127.0.0.1"。
             port (str, optional): Aivisサーバーのポート番号。デフォルトは "10101"。
+            motion_host (str, optional): モーションサーバーのホスト名。デフォルトは"127.0.0.1"。
+            motion_port (str, optional): モーションサーバーのポート番号。デフォルトは"50055"。
 
         """
         self.queue: Queue[str] = Queue()
         self.host = host
         self.port = port
+        motion_channel = grpc.insecure_channel(motion_host + ":" + motion_port)
+        self.motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(
+            motion_channel
+        )
         self.play_flg = False  # 音声再生を実行するフラグ
         self.finished = True  # 音声再生が完了したかどうかを示すフラグ
         self.sentence_end_flg = True  # 一文の終わりを示すフラグ
@@ -42,6 +62,16 @@ class TextToAivis(object):
         # print(self.get_speaker_names())
         # print(self.get_style_names(self.speaker))
         self.speaker_id = self.get_speaker_id(self.speaker, self.style)
+        self.tilt_rate = 0.0  # 送信するtiltのrate(0.0~1.0)
+        self.HEAD_RESET_INTERVAL = (
+            0.3  # この時間更新がなければ、tiltの指令値を0にリセットする[sec]
+        )
+        self.Tilt_RATE_DB_MAX = 40.0  # tilt_rate上限の音声出力値[dB]
+        self.TILT_RATE_DB_MIN = 15.0  # tilt_rate下限の音声出力値[dB]
+        self.TILT_ANGLE_MAX = 0.25  # Tiltの最大角度[rad]
+        self.TILT_ANGLE_MIN = -0.25  # Tiltの最小角度[rad]
+        self.head_motion_thread = Thread(target=self.head_motion_control, daemon=True)
+        self.head_motion_thread.start()
 
     def __exit__(self) -> None:
         """音声合成スレッドを終了する。"""
@@ -192,6 +222,10 @@ class TextToAivis(object):
             chunk = 1024
             data = wr.readframes(chunk)
             while data and self.play_flg:
+                audio_data = np.frombuffer(data, dtype=np.int16)
+                rms = np.sqrt(np.mean(audio_data**2))
+                db = 20 * np.log10(rms) if rms > 0.0 else 0.0
+                self.tilt_rate = self.db_to_mouth_rate(db)
                 stream.write(data)
                 data = wr.readframes(chunk)
             time.sleep(0.2)
@@ -291,3 +325,46 @@ class TextToAivis(object):
                 return None
             print(f"Speaker: {speaker_name} not found.")
         return None
+
+    def db_to_head_rate(self, db: float) -> float:
+        """
+        音声の音量[dB]からヘッドの動き具合を算出する。
+
+        Args:
+            db (float): 音声の音量[dB]。
+
+        Returns:
+            float: ヘッドの動き具合。
+
+        """
+        if db > self.TILT_RATE_DB_MAX:
+            return 1.0
+        elif db < self.TILT_RATE_DB_MIN:
+            return 0.0
+        return (db - self.TILT_RATE_DB_MIN) / (
+            self.TILT_RATE_DB_MAX - self.TILT_RATE_DB_MIN
+        )
+
+    def head_motion_control(self) -> None:
+        """
+        音声出力に合わせてヘッドを動かす。
+        """
+        last_update_time = time.time()
+        prev_tilt_rate = 0.0
+        while True:
+            if self.tilt_rate != prev_tilt_rate:
+                val = (
+                    self.tilt_rate * 0.8 * (self.TILT_ANGLE_MAX - self.TILT_ANGLE_MIN)
+                    + self.TILT_ANGLE_MIN
+                )
+                try:
+                    self.motion_stub.SetPos(
+                        motion_server_pb2.SetPosRequest(tilt=val, priority=3)
+                    )
+                except BaseException:
+                    pass
+                last_update_time = time.time()
+                prev_tilt_rate = self.tilt_rate
+            if time.time() - last_update_time > self.HEAD_RESET_INTERVAL:
+                self.tilt_rate = 0.0
+            time.sleep(0.03)
