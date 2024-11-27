@@ -1,0 +1,22 @@
+[tool.pysen]
+version = "0.10"
+
+[tool.pysen.lint]
+enable_black = true
+enable_flake8 = true
+enable_isort = true
+enable_mypy = true
+mypy_preset = "strict"
+line_length = 88
+py_version = "py38"
+mypy_ignore_packages = ["akari_proto.*"]
+
+[[tool.pysen.lint.mypy_targets]]
+  paths = [".", "lib/"]
+
+[tool.pysen.lint.source]
+  includes = [".", "lib/"]
+  excludes = []
+  exclude_globs = [
+    "lib/grpc/",
+  ]

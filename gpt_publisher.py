@@ -49,6 +49,7 @@ class GptServer(gpt_server_pb2_grpc.GptServerServiceServicer):
             self.messages = copy.deepcopy(tmp_messages)
         if is_finish:
             # 最終応答。高速生成するために、モデルはgpt-4o
+            self.stub.StartHeadControl(voice_server_pb2.StartHeadControlRequest())
             for sentence in self.chat_stream_akari_grpc.chat(
                 tmp_messages, model="gpt-4o"
             ):

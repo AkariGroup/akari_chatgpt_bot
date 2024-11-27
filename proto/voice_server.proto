@@ -66,6 +66,13 @@ message SentenceEndReply {
   bool success =1;
 }
 
+message StartHeadControlRequest {}
+
+message StartHeadControlReply {
+  bool success =1;
+}
+
+
 service VoiceServerService {
     rpc SetText(SetTextRequest)
         returns (SetTextReply);
@@ -83,4 +90,6 @@ service VoiceServerService {
         returns (IsVoicePlayingReply);
     rpc SentenceEnd(SentenceEndRequest)
         returns (SentenceEndReply);
+    rpc StartHeadControl(StartHeadControlRequest)
+        returns (StartHeadControlReply);
 }

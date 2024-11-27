@@ -92,6 +92,14 @@ class VoiceServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
         self.text_to_voice.sentence_end()
         return voice_server_pb2.SentenceEndReply(success=True)
 
+    def StartHeadControl(
+        self,
+        request: voice_server_pb2.StartHeadControlRequest(),
+        context: grpc.ServicerContext,
+    ) -> voice_server_pb2.StartHeadControlReply:
+        self.text_to_voice.start_head_control()
+        return voice_server_pb2.StartHeadControlReply(success=False)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -107,11 +115,31 @@ def main() -> None:
         default="10101",
         help="Aivis-Speech server port",
     )
+    parser.add_argument(
+        "--robot_ip", help="Robot ip address", default="127.0.0.1", type=str
+    )
+    parser.add_argument(
+        "--robot_port", help="Robot port number", default="50055", type=str
+    )
+    parser.add_argument(
+        "--no_motion",
+        help="Not play nod motion",
+        action="store_true",
+    )
     args = parser.parse_args()
-
     host = args.voice_host
     port = args.voice_port
-    text_to_voice = TextToAivis(host, port)
+    motion_server_host = None
+    motion_server_port = None
+    if not args.no_motion:
+        motion_server_host = args.robot_ip
+        motion_server_port = args.robot_port
+    text_to_voice = TextToAivis(
+        host=host,
+        port=port,
+        motion_host=motion_server_host,
+        motion_port=motion_server_port,
+    )
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     voice_server_pb2_grpc.add_VoiceServerServiceServicer_to_server(

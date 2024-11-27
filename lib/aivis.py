@@ -1,4 +1,3 @@
-import grpc
 import io
 import json
 import os
@@ -6,9 +5,10 @@ import sys
 import time
 import wave
 from queue import Queue
-from threading import Thread
+from threading import Event, Thread
 from typing import Any, Optional
 
+import grpc
 import numpy as np
 import pyaudio
 import requests
@@ -30,8 +30,8 @@ class TextToAivis(object):
         self,
         host: str = "127.0.0.1",
         port: str = "10101",
-        motion_host: str = "127.0.0.1",
-        motion_port: str = "50055",
+        motion_host: Optional[str] = "127.0.0.1",
+        motion_port: Optional[str] = "50055",
     ) -> None:
         """クラスの初期化メソッド。
         Args:
@@ -44,10 +44,12 @@ class TextToAivis(object):
         self.queue: Queue[str] = Queue()
         self.host = host
         self.port = port
-        motion_channel = grpc.insecure_channel(motion_host + ":" + motion_port)
-        self.motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(
-            motion_channel
-        )
+        self.motion_stub = None
+        if motion_host is not None or motion_port is not None:
+            motion_channel = grpc.insecure_channel(motion_host + ":" + motion_port)
+            self.motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(
+                motion_channel
+            )
         self.play_flg = False  # 音声再生を実行するフラグ
         self.finished = True  # 音声再生が完了したかどうかを示すフラグ
         self.sentence_end_flg = True  # 一文の終わりを示すフラグ
@@ -56,23 +58,24 @@ class TextToAivis(object):
         self.speaker = "Anneli"
         self.style = "ノーマル"
         self.speed_scale = 1.0
+        self.tilt_rate = 0.0  # 送信するtiltのrate(0.0~1.0)
+        self.HEAD_RESET_INTERVAL = 0.3  # この時間更新がなければ、tiltの指令値を0にリセットする[sec]
+        self.TILT_GAIN = -0.8  # 音声出力の音量からtiltのrateに変換するゲイン
+        self.TILT_RATE_DB_MAX = 40.0  # tilt_rate上限の音声出力値[dB]
+        self.TILT_RATE_DB_MIN = 5.0  # tilt_rate下限の音声出力値[dB]
+        self.TILT_ANGLE_MAX = 0.35  # Tiltの最大角度[rad]
+        self.TILT_ANGLE_MIN = -0.1  # Tiltの最小角度[rad]
+        self.HEAD_MOTION_INTERVAL = 0.15  # ヘッドモーションの更新周期[sec]
+        self.event = Event()
+        self.head_motion_thread = Thread(target=self.head_motion_control, daemon=True)
+        if self.motion_stub is not None:
+            self.head_motion_thread.start()
         self.voice_thread = Thread(target=self.text_to_voice_thread)
         self.voice_thread.start()
         self.en_to_jp = EnToJp()
         # print(self.get_speaker_names())
         # print(self.get_style_names(self.speaker))
         self.speaker_id = self.get_speaker_id(self.speaker, self.style)
-        self.tilt_rate = 0.0  # 送信するtiltのrate(0.0~1.0)
-        self.HEAD_RESET_INTERVAL = (
-            0.3  # この時間更新がなければ、tiltの指令値を0にリセットする[sec]
-        )
-        self.TILT_GAIN = 0.8  # 音声出力の音量からtiltのrateに変換するゲイン
-        self.TILT_RATE_DB_MAX = 40.0  # tilt_rate上限の音声出力値[dB]
-        self.TILT_RATE_DB_MIN = 5.0  # tilt_rate下限の音声出力値[dB]
-        self.TILT_ANGLE_MAX = 0.15  # Tiltの最大角度[rad]
-        self.TILT_ANGLE_MIN = -0.15  # Tiltの最小角度[rad]
-        self.head_motion_thread = Thread(target=self.head_motion_control, daemon=True)
-        self.head_motion_thread.start()
 
     def __exit__(self) -> None:
         """音声合成スレッドを終了する。"""
@@ -102,6 +105,8 @@ class TextToAivis(object):
                     or time.time() - last_queue_time > self.sentence_end_timeout
                 ):
                     self.finished = True
+                    if self.motion_stub is not None:
+                        self.event.clear()
 
     def put_text(
         self, text: str, play_now: bool = True, blocking: bool = False
@@ -353,23 +358,39 @@ class TextToAivis(object):
         last_update_time = time.time()
         prev_tilt_rate = 0.0
         while True:
+            self.event.wait()
+            loop_start_time = time.time()
             if self.tilt_rate != prev_tilt_rate:
                 val = (
-                    self.tilt_rate
-                    * self.TILT_GAIN
-                    * (self.TILT_ANGLE_MAX - self.TILT_ANGLE_MIN)
-                    + self.TILT_ANGLE_MIN
+                    -1 * self.tilt_rate * (self.TILT_ANGLE_MAX - self.TILT_ANGLE_MIN)
+                    + self.TILT_ANGLE_MAX
                 )
-                try:
-                    self.motion_stub.SetPos(
-                        motion_server_pb2.SetPosRequest(tilt=val, priority=3)
-                    )
-                    print(f"send val: {val}")
-                except BaseException as e:
-                    print(f"Failed to send motion command: {e}")
-                    pass
+                if self.motion_stub is not None:
+                    try:
+                        self.motion_stub.ClearMotion(
+                            motion_server_pb2.ClearMotionRequest(priority=3)
+                        )
+                    except BaseException as e:
+                        print(f"Failed to ClearMotion command: {e}")
+                        pass
+                    try:
+                        self.motion_stub.SetPos(
+                            motion_server_pb2.SetPosRequest(tilt=val, priority=3)
+                        )
+                    except BaseException as e:
+                        print(f"Failed to send SetPos command: {e}")
+                        pass
                 last_update_time = time.time()
                 prev_tilt_rate = self.tilt_rate
             if time.time() - last_update_time > self.HEAD_RESET_INTERVAL:
                 self.tilt_rate = 0.0
-            time.sleep(0.1)
+            wait_time = self.HEAD_MOTION_INTERVAL - (time.time() - loop_start_time)
+            if wait_time > 0:
+                time.sleep(wait_time)
+
+    def start_head_control(self) -> None:
+        """
+        ヘッドモーションを開始する。
+        """
+        if self.motion_stub is not None:
+            self.event.set()

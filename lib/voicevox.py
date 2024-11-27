@@ -1,4 +1,3 @@
-import grpc
 import io
 import json
 import os
@@ -9,6 +8,7 @@ from queue import Queue
 from threading import Thread
 from typing import Any, Optional
 
+import grpc
 import numpy as np
 import pyaudio
 import requests
@@ -60,9 +60,7 @@ class TextToVoiceVox(object):
         self.voice_thread.start()
         self.en_to_jp = EnToJp()
         self.tilt_rate = 0.0  # 送信するtiltのrate(0.0~1.0)
-        self.HEAD_RESET_INTERVAL = (
-            0.3  # この時間更新がなければ、tiltの指令値を0にリセットする[sec]
-        )
+        self.HEAD_RESET_INTERVAL = 0.3  # この時間更新がなければ、tiltの指令値を0にリセットする[sec]
         self.TILT_GAIN = 0.8  # 音声出力の音量からtiltのrateに変換するゲイン
         self.TILT_RATE_DB_MAX = 40.0  # tilt_rate上限の音声出力値[dB]
         self.TILT_RATE_DB_MIN = 5.0  # tilt_rate下限の音声出力値[dB]

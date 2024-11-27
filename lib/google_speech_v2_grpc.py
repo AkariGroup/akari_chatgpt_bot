@@ -5,7 +5,7 @@ import os
 import struct
 import sys
 import time
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 import grpc
 import numpy as np
@@ -16,6 +16,8 @@ from .google_speech_v2 import MicrophoneStreamV2
 sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
 import gpt_server_pb2
 import gpt_server_pb2_grpc
+import motion_server_pb2
+import motion_server_pb2_grpc
 import voice_server_pb2
 import voice_server_pb2_grpc
 
@@ -37,6 +39,8 @@ class MicrophoneStreamV2Grpc(MicrophoneStreamV2):
         gpt_port: str = "10001",
         voice_host: str = "127.0.0.1",
         voice_port: str = "10002",
+        motion_server_host: Optional[str] = "127.0.0.1",
+        motion_server_port: Optional[str] = "50055",
     ) -> None:
         """クラスの初期化メソッド。
 
@@ -49,7 +53,8 @@ class MicrophoneStreamV2Grpc(MicrophoneStreamV2):
             gpt_port (str, optional): GPTサーバーのポート番号。デフォルトは"10001"。
             voice_host (str, optional): VoiceVoxサーバーのホスト名。デフォルトは"127.0.0.1"。
             voice_port (str, optional): VoiceVoxサーバーのポート番号。デフォルトは"10002"。
-
+            motion_server_host (str, optional): モーションサーバーのIPアドレス。デフォルトは"127.0.0.1"。
+            motion_server_port (str, optional): モーションサーバーのポート番号。デフォルトは"50055"。
         """
         super().__init__(
             rate=rate,
@@ -62,6 +67,14 @@ class MicrophoneStreamV2Grpc(MicrophoneStreamV2):
         self.gpt_stub = gpt_server_pb2_grpc.GptServerServiceStub(gpt_channel)
         voice_channel = grpc.insecure_channel(voice_host + ":" + voice_port)
         self.voice_stub = voice_server_pb2_grpc.VoiceServerServiceStub(voice_channel)
+        self.motion_stub = None
+        if motion_server_host is not None and motion_server_port is not None:
+            motion_channel = grpc.insecure_channel(
+                motion_server_host + ":" + motion_server_port
+            )
+            self.motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(
+                motion_channel
+            )
 
     def _fill_buffer(
         self, in_data: bytes, frame_count: int, time_info: Any, status_flags: Any
@@ -85,6 +98,15 @@ class MicrophoneStreamV2Grpc(MicrophoneStreamV2):
             if power > self.db_thresh:
                 if not self.is_start:
                     self.is_start = True
+                    if self.motion_stub is not None:
+                        try:
+                            self.motion_stub.SetMotion(
+                                motion_server_pb2.SetMotionRequest(
+                                    name="nod", priority=3, repeat=True
+                                )
+                            )
+                        except BaseException:
+                            pass
                 self.start_time = time.time()
             if self.is_start:
                 self._buff.put(in_data)

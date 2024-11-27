@@ -54,6 +54,11 @@ class VoiceServerServiceStub(object):
                 request_serializer=voice__server__pb2.SentenceEndRequest.SerializeToString,
                 response_deserializer=voice__server__pb2.SentenceEndReply.FromString,
                 )
+        self.StartHeadControl = channel.unary_unary(
+                '/voice_server.VoiceServerService/StartHeadControl',
+                request_serializer=voice__server__pb2.StartHeadControlRequest.SerializeToString,
+                response_deserializer=voice__server__pb2.StartHeadControlReply.FromString,
+                )
 
 
 class VoiceServerServiceServicer(object):
@@ -107,6 +112,12 @@ class VoiceServerServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def StartHeadControl(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_VoiceServerServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -149,6 +160,11 @@ def add_VoiceServerServiceServicer_to_server(servicer, server):
                     servicer.SentenceEnd,
                     request_deserializer=voice__server__pb2.SentenceEndRequest.FromString,
                     response_serializer=voice__server__pb2.SentenceEndReply.SerializeToString,
+            ),
+            'StartHeadControl': grpc.unary_unary_rpc_method_handler(
+                    servicer.StartHeadControl,
+                    request_deserializer=voice__server__pb2.StartHeadControlRequest.FromString,
+                    response_serializer=voice__server__pb2.StartHeadControlReply.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -293,5 +309,22 @@ class VoiceServerService(object):
         return grpc.experimental.unary_unary(request, target, '/voice_server.VoiceServerService/SentenceEnd',
             voice__server__pb2.SentenceEndRequest.SerializeToString,
             voice__server__pb2.SentenceEndReply.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def StartHeadControl(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/voice_server.VoiceServerService/StartHeadControl',
+            voice__server__pb2.StartHeadControlRequest.SerializeToString,
+            voice__server__pb2.StartHeadControlReply.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
