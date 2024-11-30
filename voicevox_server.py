@@ -91,6 +91,14 @@ class VoiceServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
         self.text_to_voice.sentence_end()
         return voice_server_pb2.SentenceEndReply(success=True)
 
+    def StartHeadControl(
+        self,
+        request: voice_server_pb2.StartHeadControlRequest(),
+        context: grpc.ServicerContext,
+    ) -> voice_server_pb2.StartHeadControlReply:
+        self.text_to_voice.start_head_control()
+        return voice_server_pb2.StartHeadControlReply(success=False)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -107,21 +115,44 @@ def main() -> None:
         default="50021",
         help="VoiceVox server port",
     )
+    parser.add_argument(
+        "--robot_ip", help="Robot ip address", default="127.0.0.1", type=str
+    )
+    parser.add_argument(
+        "--robot_port", help="Robot port number", default="50055", type=str
+    )
+    parser.add_argument(
+        "--no_motion",
+        help="Not play nod motion",
+        action="store_true",
+    )
     args = parser.parse_args()
+    motion_server_host = None
+    motion_server_port = None
+    if not args.no_motion:
+        motion_server_host = args.robot_ip
+        motion_server_port = args.robot_port
     if args.voicevox_local:
         # local版の場合
         from lib.voicevox import TextToVoiceVox
 
-        voice_host = args.voice_host
-        voice_port = args.voice_port
-        text_to_voice = TextToVoiceVox(voice_host, voice_port)
+        text_to_voice = TextToVoiceVox(
+            host=args.voice_host,
+            port=args.voice_port,
+            motion_host=motion_server_host,
+            motion_port=motion_server_port,
+        )
         print("voicevox local pc ver.")
     else:
         # web版の場合
         from lib.conf import VOICEVOX_APIKEY
         from lib.voicevox import TextToVoiceVoxWeb
 
-        text_to_voice = TextToVoiceVoxWeb(apikey=VOICEVOX_APIKEY)
+        text_to_voice = TextToVoiceVoxWeb(
+            apikey=VOICEVOX_APIKEY,
+            motion_host=motion_server_host,
+            motion_port=motion_server_port,
+        )
         print("voicevox web ver.")
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
