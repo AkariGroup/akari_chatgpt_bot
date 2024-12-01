@@ -51,7 +51,6 @@ class TextToStyleBertVits(object):
             self.motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(
                 motion_channel
             )
-        self.play_flg = False  # 音声再生を実行するフラグ
         self.finished = True  # 音声再生が完了したかどうかを示すフラグ
         self.sentence_end_flg = False  # 一文の終わりを示すフラグ
         self.sentence_end_timeout = 5.0  # 一文の終わりを判定するタイムアウト時間
@@ -85,7 +84,16 @@ class TextToStyleBertVits(object):
         self.voice_thread.join()
 
     def sentence_end(self) -> None:
+        """音声合成の一文の終わりを示すフラグを立てる。"""
         self.sentence_end_flg = True
+
+    def enable_voice_play(self) -> None:
+        """音声再生を開始する。"""
+        self.text_to_voice_event.set()
+
+    def disable_voice_play(self) -> None:
+        """音声再生を停止する。"""
+        self.text_to_voice_event.clear()
 
     def text_to_voice_thread(self) -> None:
         """
@@ -97,7 +105,6 @@ class TextToStyleBertVits(object):
         queue_start = False
         while True:
             self.text_to_voice_event.wait()
-            self.play_flg = True
             if self.queue.qsize() > 0:
                 queue_start = True
                 last_queue_time = time.time()
@@ -249,7 +256,7 @@ class TextToStyleBertVits(object):
             )
             chunk = 1024
             data = wr.readframes(chunk)
-            while data and self.play_flg:
+            while data:
                 audio_data = np.frombuffer(data, dtype=np.int16)
                 rms = np.sqrt(np.mean(audio_data**2))
                 db = 20 * np.log10(rms) if rms > 0.0 else 0.0

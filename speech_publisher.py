@@ -153,8 +153,8 @@ def main() -> None:
                 print("Enterを入力してから、マイクに話しかけてください")
                 input()
                 try:
-                    voice_stub.SetVoicePlayFlg(
-                        voice_server_pb2.SetVoicePlayFlgRequest(flg=False)
+                    voice_stub.DisableVoicePlay(
+                        voice_server_pb2.DisableVoicePlayRequest()
                     )
                 except BaseException:
                     pass

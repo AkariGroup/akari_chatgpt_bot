@@ -46,11 +46,17 @@ message InterruptVoiceReply {
   bool success =1;
 }
 
-message SetVoicePlayFlgRequest {
-  bool flg = 1;
+message EnableVoicePlayRequest {
 }
 
-message SetVoicePlayFlgReply {
+message EnableVoicePlayReply {
+  bool success =1;
+}
+
+message DisableVoicePlayRequest {
+}
+
+message DisableVoicePlayReply {
   bool success =1;
 }
 
@@ -84,8 +90,10 @@ service VoiceServerService {
         returns (SetAivisParamReply);
     rpc InterruptVoice(InterruptVoiceRequest)
         returns (InterruptVoiceReply);
-    rpc SetVoicePlayFlg(SetVoicePlayFlgRequest)
-        returns (SetVoicePlayFlgReply);
+    rpc EnableVoicePlay(EnableVoicePlayRequest)
+        returns (EnableVoicePlayReply);
+    rpc DisableVoicePlay(DisableVoicePlayRequest)
+        returns (DisableVoicePlayReply);
     rpc IsVoicePlaying(IsVoicePlayingRequest)
         returns (IsVoicePlayingReply);
     rpc SentenceEnd(SentenceEndRequest)

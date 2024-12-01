@@ -113,11 +113,11 @@ class MicrophoneStreamGrpc(MicrophoneStream):
                 if time.time() - self.start_time >= self.timeout_thresh:
                     self.closed = True
                     try:
-                        self.voice_stub.SetVoicePlayFlg(
-                            voice_server_pb2.SetVoicePlayFlgRequest(flg=True)
+                        self.voice_stub.EnableVoicePlay(
+                            voice_server_pb2.EnableVoicePlayRequest()
                         )
                     except BaseException:
-                        print("SetVoicePlayFlg error")
+                        print("EnableVoicePlay error")
                         pass
                     try:
                         self.gpt_stub.SendMotion(gpt_server_pb2.SendMotionRequest())
@@ -173,11 +173,11 @@ class GoogleSpeechGrpc(object):
         transcript = ""
         overwrite_chars = ""
         try:
-            self.voice_stub.SetVoicePlayFlg(
-                voice_server_pb2.SetVoicePlayFlgRequest(flg=False)
+            self.voice_stub.DisableVoicePlay(
+                voice_server_pb2.DisableVoicePlayRequest()
             )
         except BaseException:
-            print("SetVoicePlayFlg error")
+            print("Disable voice play error")
             pass
         try:
             self.voice_stub.InterruptVoice(voice_server_pb2.InterruptVoiceRequest())
