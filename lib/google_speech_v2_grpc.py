@@ -76,6 +76,33 @@ class MicrophoneStreamV2Grpc(MicrophoneStreamV2):
                 motion_channel
             )
 
+    def __exit__(
+        self,
+        rate: float,
+        chunk: float,
+        _timeout_thresh: float = 0.5,
+        _start_timeout_thresh: float = 4.0,
+        _db_thresh: float = 55.0,
+    ) -> None:
+        """PyAudioストリームを閉じます。
+
+        Args:
+            rate (float): サンプリングレート。
+            chunk (float): チャンクサイズ。
+            _timeout_thresh (float, optional): 音声が停止したと判断するタイムアウト閾値（秒）。デフォルトは0.5秒。
+            _start_timeout_thresh (float): マイクの入力が開始しないまま終了するまでのタイムアウト閾値（秒）。デフォルトは4.0秒。
+            _db_thresh (float, optional): 音声が開始されたと判断する音量閾値（デシベル）。デフォルトは55.0デシベル。
+
+        """
+        super().__exit__(
+            rate, chunk, _timeout_thresh, _start_timeout_thresh, _db_thresh
+        )
+        try:
+            self.gpt_stub.SendMotion(gpt_server_pb2.SendMotionRequest())
+        except BaseException:
+            print("Send motion error")
+            pass
+
     def _fill_buffer(
         self, in_data: bytes, frame_count: int, time_info: Any, status_flags: Any
     ) -> Union[None, Any]:
@@ -111,6 +138,7 @@ class MicrophoneStreamV2Grpc(MicrophoneStreamV2):
             if self.is_start:
                 self._buff.put(in_data)
                 if time.time() - self.start_time >= self.timeout_thresh:
+                    self.is_start = False
                     self.closed = True
                     try:
                         self.voice_stub.EnableVoicePlay(
@@ -118,11 +146,6 @@ class MicrophoneStreamV2Grpc(MicrophoneStreamV2):
                         )
                     except BaseException:
                         print("EnableVoicePlay error")
-                        pass
-                    try:
-                        self.gpt_stub.SendMotion(gpt_server_pb2.SendMotionRequest())
-                    except BaseException:
-                        print("Send motion error")
                         pass
                     return None, pyaudio.paComplete
         return None, pyaudio.paContinue
@@ -173,9 +196,7 @@ class GoogleSpeechV2Grpc(object):
         transcript = ""
         overwrite_chars = ""
         try:
-            self.voice_stub.DisableVoicePlay(
-                voice_server_pb2.DisableVoicePlayRequest()
-            )
+            self.voice_stub.DisableVoicePlay(voice_server_pb2.DisableVoicePlayRequest())
         except BaseException:
             print("DisableVoicePlay error")
             pass

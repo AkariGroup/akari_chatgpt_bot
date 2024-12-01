@@ -3,6 +3,7 @@ import os
 import sys
 import time
 from concurrent import futures
+from typing import Any
 
 import grpc
 from lib.style_bert_vits import TextToStyleBertVits
@@ -17,7 +18,7 @@ class VoiceServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
     StyleBertVitsにtextを送信し、音声を再生するgprcサーバ
     """
 
-    def __init__(self, text_to_voice) -> None:
+    def __init__(self, text_to_voice: Any) -> None:
         self.text_to_voice = text_to_voice
 
     def SetText(

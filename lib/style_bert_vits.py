@@ -55,9 +55,7 @@ class TextToStyleBertVits(object):
         self.sentence_end_flg = False  # 一文の終わりを示すフラグ
         self.sentence_end_timeout = 10.0  # 一文の終わりを判定するタイムアウト時間
         self.tilt_rate = 0.0  # 送信するtiltのrate(0.0~1.0)
-        self.HEAD_RESET_INTERVAL = (
-            0.3  # この時間更新がなければ、tiltの指令値を0にリセットする[sec]
-        )
+        self.HEAD_RESET_INTERVAL = 0.3  # この時間更新がなければ、tiltの指令値を0にリセットする[sec]
         self.TILT_GAIN = -0.8  # 音声出力の音量からtiltのrateに変換するゲイン
         self.TILT_RATE_DB_MAX = 40.0  # tilt_rate上限の音声出力値[dB]
         self.TILT_RATE_DB_MIN = 5.0  # tilt_rate下限の音声出力値[dB]
@@ -89,12 +87,10 @@ class TextToStyleBertVits(object):
 
     def enable_voice_play(self) -> None:
         """音声再生を開始する。"""
-        print("Enable voice play")
         self.text_to_voice_event.set()
 
     def disable_voice_play(self) -> None:
         """音声再生を停止する。"""
-        print("Disable voice play")
         self.text_to_voice_event.clear()
 
     def text_to_voice_thread(self) -> None:
@@ -116,9 +112,9 @@ class TextToStyleBertVits(object):
                 self.text_to_voice(text)
             else:
                 # queueが空の状態でsentence_endが送られる、もしくはsentence_end_timeout秒経過した場合finishedにする。
-                if (
-                    self.sentence_end_flg
-                    or (queue_start and time.time() - last_queue_time > self.sentence_end_timeout)
+                if self.sentence_end_flg or (
+                    queue_start
+                    and time.time() - last_queue_time > self.sentence_end_timeout
                 ):
                     self.finished = True
                     queue_start = False
@@ -128,7 +124,9 @@ class TextToStyleBertVits(object):
                         # 初期位置にヘッドを戻す
                         try:
                             self.motion_stub.SetPos(
-                                motion_server_pb2.SetPosRequest(tilt=self.TILT_ANGLE_MAX, priority=3)
+                                motion_server_pb2.SetPosRequest(
+                                    tilt=self.TILT_ANGLE_MAX, priority=3
+                                )
                             )
                         except BaseException as e:
                             print(f"Failed to send SetPos command: {e}")

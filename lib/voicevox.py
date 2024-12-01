@@ -30,8 +30,8 @@ class TextToVoiceVox(object):
         self,
         host: str = "127.0.0.1",
         port: str = "52001",
-        motion_host: str = "127.0.0.1",
-        motion_port: str = "50055",
+        motion_host: Optional[str] = "127.0.0.1",
+        motion_port: Optional[str] = "50055",
     ) -> None:
         """クラスの初期化メソッド。
         Args:
@@ -50,9 +50,8 @@ class TextToVoiceVox(object):
             self.motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(
                 motion_channel
             )
-        self.play_flg = False  # 音声再生を実行するフラグ
         self.finished = True  # 音声再生が完了したかどうかを示すフラグ
-        self.sentence_end_flg = True  # 一文の終わりを示すフラグ
+        self.sentence_end_flg = False  # 一文の終わりを示すフラグ
         self.sentence_end_timeout = 5.0  # 一文の終わりを判定するタイムアウト時間
         # デフォルトのspeakerは8(春日部つむぎ)
         self.speaker = 8
@@ -69,25 +68,26 @@ class TextToVoiceVox(object):
         self.head_motion_thread = Thread(target=self.head_motion_control, daemon=True)
         if self.motion_stub is not None:
             self.head_motion_thread.start()
+        self.text_to_voice_event = Event()
         self.voice_thread = Thread(target=self.text_to_voice_thread)
         self.voice_thread.start()
         self.en_to_jp = EnToJp()
-        self.tilt_rate = 0.0  # 送信するtiltのrate(0.0~1.0)
-        self.HEAD_RESET_INTERVAL = 0.3  # この時間更新がなければ、tiltの指令値を0にリセットする[sec]
-        self.TILT_GAIN = 0.8  # 音声出力の音量からtiltのrateに変換するゲイン
-        self.TILT_RATE_DB_MAX = 40.0  # tilt_rate上限の音声出力値[dB]
-        self.TILT_RATE_DB_MIN = 5.0  # tilt_rate下限の音声出力値[dB]
-        self.TILT_ANGLE_MAX = 0.15  # Tiltの最大角度[rad]
-        self.TILT_ANGLE_MIN = -0.15  # Tiltの最小角度[rad]
-        self.head_motion_thread = Thread(target=self.head_motion_control, daemon=True)
-        self.head_motion_thread.start()
 
     def __exit__(self) -> None:
         """音声合成スレッドを終了する。"""
         self.voice_thread.join()
 
     def sentence_end(self) -> None:
+        """音声合成の一文の終わりを示すフラグを立てる。"""
         self.sentence_end_flg = True
+
+    def enable_voice_play(self) -> None:
+        """音声再生を開始する。"""
+        self.text_to_voice_event.set()
+
+    def disable_voice_play(self) -> None:
+        """音声再生を停止する。"""
+        self.text_to_voice_event.clear()
 
     def text_to_voice_thread(self) -> None:
         """
@@ -96,22 +96,39 @@ class TextToVoiceVox(object):
 
         """
         last_queue_time = time.time()
+        queue_start = False
         while True:
-            if self.queue.qsize() > 0 and self.play_flg:
+            self.text_to_voice_event.wait()
+            if self.queue.qsize() > 0:
+                queue_start = True
                 last_queue_time = time.time()
                 text = self.queue.get()
                 # textに含まれる英語を極力かな変換する
                 text = self.en_to_jp.text_to_kana(text, True, True, True)
                 self.text_to_voice(text)
-            if self.queue.qsize() == 0:
+            else:
                 # queueが空の状態でsentence_endが送られる、もしくはsentence_end_timeout秒経過した場合finishedにする。
-                if (
-                    self.sentence_end_flg
-                    or time.time() - last_queue_time > self.sentence_end_timeout
+                if self.sentence_end_flg or (
+                    queue_start
+                    and time.time() - last_queue_time > self.sentence_end_timeout
                 ):
                     self.finished = True
+                    queue_start = False
                     if self.motion_stub is not None:
+                        print("Stop head control")
                         self.event.clear()
+                        # 初期位置にヘッドを戻す
+                        try:
+                            self.motion_stub.SetPos(
+                                motion_server_pb2.SetPosRequest(
+                                    tilt=self.TILT_ANGLE_MAX, priority=3
+                                )
+                            )
+                        except BaseException as e:
+                            print(f"Failed to send SetPos command: {e}")
+                            pass
+                    self.sentence_end_flg = False
+                    self.text_to_voice_event.clear()
 
     def put_text(
         self, text: str, play_now: bool = True, blocking: bool = False
@@ -126,10 +143,9 @@ class TextToVoiceVox(object):
 
         """
         if play_now:
-            self.play_flg = True
+            self.text_to_voice_event.set()
         self.queue.put(text)
         self.finished = False
-        self.sentence_end_flg = False
         if blocking:
             self.wait_finish()
 
@@ -228,7 +244,7 @@ class TextToVoiceVox(object):
             )
             chunk = 1024
             data = wr.readframes(chunk)
-            while data and self.play_flg:
+            while data:
                 audio_data = np.frombuffer(data, dtype=np.int16)
                 rms = np.sqrt(np.mean(audio_data**2))
                 db = 20 * np.log10(rms) if rms > 0.0 else 0.0

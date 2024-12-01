@@ -3,6 +3,7 @@ import os
 import sys
 import time
 from concurrent import futures
+from typing import Any
 
 import grpc
 from lib.aivis import TextToAivis
@@ -17,7 +18,7 @@ class VoiceServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
     Aivisにtextを送信し、音声を再生するgprcサーバ
     """
 
-    def __init__(self, text_to_voice) -> None:
+    def __init__(self, text_to_voice: Any) -> None:
         self.text_to_voice = text_to_voice
 
     def SetText(
@@ -67,13 +68,21 @@ class VoiceServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
             self.text_to_voice.queue.get()
         return voice_server_pb2.InterruptVoiceReply(success=True)
 
-    def SetVoicePlayFlg(
+    def EnableVoicePlay(
         self,
-        request: voice_server_pb2.SetVoicePlayFlgRequest(),
+        request: voice_server_pb2.EnableVoicePlayRequest(),
         context: grpc.ServicerContext,
-    ) -> voice_server_pb2.SetVoicePlayFlgReply:
-        self.text_to_voice.play_flg = request.flg
-        return voice_server_pb2.SetVoicePlayFlgReply(success=True)
+    ) -> voice_server_pb2.EnableVoicePlayReply:
+        self.text_to_voice.enable_voice_play()
+        return voice_server_pb2.EnableVoicePlayReply(success=True)
+
+    def DisableVoicePlay(
+        self,
+        request: voice_server_pb2.DisableVoicePlayRequest(),
+        context: grpc.ServicerContext,
+    ) -> voice_server_pb2.DisableVoicePlayReply:
+        self.text_to_voice.disable_voice_play()
+        return voice_server_pb2.DisableVoicePlayReply(success=True)
 
     def IsVoicePlaying(
         self,

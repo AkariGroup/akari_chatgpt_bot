@@ -201,6 +201,9 @@ Google音声認識、chatGPT、Voicevoxとのやり取りをする各アプリ�
    - `--voicevox_local`: このオプションをつけた場合、voicevoxのweb版ではなくローカル版を実行する。  
    - `--voice_host`: `--voicevox_local`を有効にした場合、ここで指定したhostのvoicevoxにリクエストを送信する。デフォルトは"127.0.0.1"なのでlocalhostのvoicevoxを利用する。  
    - `--voice_port`: `--voicevox_local`を有効にした場合、ここで指定したportのvoicevoxにリクエストを送信する。デフォルトは50021。  
+   - `--robot_ip`: akari_motion_serverのIPアドレス。デフォルトは"127.0.0.1"  
+   - `--robot_port`: akari_motion_serverのポート。デフォルトは"50055"  
+   - `--no_motion`: このオプションをつけると、発話に応じてヘッドが動く動作を無効化する。  
 
 **音声合成にStyle-Bert-VITS2を使う場合**  
 
@@ -210,6 +213,10 @@ Google音声認識、chatGPT、Voicevoxとのやり取りをする各アプリ�
    引数は下記が使用可能  
    - `--voice_host`: ここで指定したhostの`server_fastapi.py`にリクエストを送信する。デフォルトは"127.0.0.1"  
    - `--voice_port`: ここで指定したportの`server_fastapi.py`にリクエストを送信する。デフォルトは5000。  
+   - `--robot_ip`: akari_motion_serverのIPアドレス。デフォルトは"127.0.0.1"  
+   - `--robot_port`: akari_motion_serverのポート。デフォルトは"50055"  
+   - `--no_motion`: このオプションをつけると、発話に応じてヘッドが動く動作を無効化する。  
+  
 
 **音声合成にAivis Speechを使う場合**  
 
@@ -217,8 +224,11 @@ Google音声認識、chatGPT、Voicevoxとのやり取りをする各アプリ�
    `python3 aivis_server.py`  
 
    引数は下記が使用可能  
-   - `--voice_host`: ここで指定したhostにリクエストを送信する。デフォルトは"127.0.0.1"
-   - `--voice_port`: ここで指定したportにリクエストを送信する。デフォルトは10101。
+   - `--voice_host`: ここで指定したhostにリクエストを送信する。デフォルトは"127.0.0.1"  
+   - `--voice_port`: ここで指定したportにリクエストを送信する。デフォルトは10101。  
+   - `--robot_ip`: akari_motion_serverのIPアドレス。デフォルトは"127.0.0.1"  
+   - `--robot_port`: akari_motion_serverのポート。デフォルトは"50055"  
+   - `--no_motion`: このオプションをつけると、発話に応じてヘッドが動く動作を無効化する。  
 
 
 3. `gpt_publisher`を起動する。(ChatGPTへリクエストを送信し、受信結果を音声合成サーバへ渡す。)  
