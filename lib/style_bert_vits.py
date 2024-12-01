@@ -53,7 +53,7 @@ class TextToStyleBertVits(object):
             )
         self.finished = True  # 音声再生が完了したかどうかを示すフラグ
         self.sentence_end_flg = False  # 一文の終わりを示すフラグ
-        self.sentence_end_timeout = 5.0  # 一文の終わりを判定するタイムアウト時間
+        self.sentence_end_timeout = 10.0  # 一文の終わりを判定するタイムアウト時間
         self.tilt_rate = 0.0  # 送信するtiltのrate(0.0~1.0)
         self.HEAD_RESET_INTERVAL = (
             0.3  # この時間更新がなければ、tiltの指令値を0にリセットする[sec]
@@ -89,10 +89,12 @@ class TextToStyleBertVits(object):
 
     def enable_voice_play(self) -> None:
         """音声再生を開始する。"""
+        print("Enable voice play")
         self.text_to_voice_event.set()
 
     def disable_voice_play(self) -> None:
         """音声再生を停止する。"""
+        print("Disable voice play")
         self.text_to_voice_event.clear()
 
     def text_to_voice_thread(self) -> None:
@@ -123,6 +125,14 @@ class TextToStyleBertVits(object):
                     if self.motion_stub is not None:
                         print("Stop head control")
                         self.event.clear()
+                        # 初期位置にヘッドを戻す
+                        try:
+                            self.motion_stub.SetPos(
+                                motion_server_pb2.SetPosRequest(tilt=self.TILT_ANGLE_MAX, priority=3)
+                            )
+                        except BaseException as e:
+                            print(f"Failed to send SetPos command: {e}")
+                            pass
                     self.sentence_end_flg = False
                     self.text_to_voice_event.clear()
 
@@ -261,7 +271,6 @@ class TextToStyleBertVits(object):
                 rms = np.sqrt(np.mean(audio_data**2))
                 db = 20 * np.log10(rms) if rms > 0.0 else 0.0
                 self.tilt_rate = self.db_to_head_rate(db)
-                print(self.tilt_rate)
                 stream.write(data)
                 data = wr.readframes(chunk)
             time.sleep(0.2)
@@ -317,7 +326,6 @@ class TextToStyleBertVits(object):
         while True:
             self.event.wait()
             loop_start_time = time.time()
-            print(f"tilt_rate: {self.tilt_rate}, prev_tilt_rate: {prev_tilt_rate}")
             if self.tilt_rate != prev_tilt_rate:
                 val = (
                     -1 * self.tilt_rate * (self.TILT_ANGLE_MAX - self.TILT_ANGLE_MIN)
@@ -351,5 +359,4 @@ class TextToStyleBertVits(object):
         ヘッドモーションを開始する。
         """
         if self.motion_stub is not None:
-            print("Start head control")
             self.event.set()
