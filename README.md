@@ -66,7 +66,7 @@ AKARI本体内のCPUでAivisSpeech Engineを実行すると処理時間がかか
 下記はnvidia GPU搭載のLinux PC、Cuda 12.4、cuDNN9がセットアップされている場合の手順。  
 [AivisSpeech enginiのreleaseページ](https://github.com/Aivis-Project/AivisSpeech-Engine/releases)から最新のAivisSpeech Engineをダウンロードする。  
 下記のコマンドでFastAPIサーバを起動する。  
-`./run --use_gpu`  
+`./run --use_gpu --host {起動しているPCのIPアドレス}`  
 
 1. (AKARIのモーション再生を使う場合) akari_motion_serverのセットアップ  
 `git clone https://github.com/AkariGroup/akari_motion_server`  
@@ -80,7 +80,7 @@ AKARIでVOICEVOXのローカル版を使う場合、AKARI本体内のCPUでVOICE
 (nvidia GPU版)  
 `docker pull voicevox/voicevox_engine:nvidia-ubuntu20.04-latest`  
 
-上記でVOICEVOXを起動した後、AKARI上で"--voicevox_host"にこのPCのIPアドレスを指定する。  
+上記でVOICEVOXを起動した後、AKARI上で"--voice_host"にこのPCのIPアドレスを指定する。  
 
 ## 実行準備
 1. 音声合成を使う場合、実行したい環境に合わせて下記を起動する。  
@@ -125,8 +125,8 @@ AKARIでVOICEVOXのローカル版を使う場合、AKARI本体内のCPUでVOICE
 
    引数は下記が使用可能  
    - `--voicevox_local`: このオプションをつけた場合、voicevoxのweb版ではなくローカル版を実行する。  
-   - `--voicevox_host`: `--voicevox_local`を有効にした場合、ここで指定したhostのvoicevoxにリクエストを送信する。デフォルトは"127.0.0.1"なのでlocalhostのvoicevoxを利用する。  
-   - `--voicevox_port`: `--voicevox_local`を有効にした場合、ここで指定したportのvoicevoxにリクエストを送信する。デフォルトは50021。  
+   - `--voice_host`: `--voicevox_local`を有効にした場合、ここで指定したhostのvoicevoxにリクエストを送信する。デフォルトは"127.0.0.1"なのでlocalhostのvoicevoxを利用する。  
+   - `--voice_port`: `--voicevox_local`を有効にした場合、ここで指定したportのvoicevoxにリクエストを送信する。デフォルトは50021。  
 
 ### 音声合成(Style-BERT-VITS2)のサンプル  
 キーボード入力した文章を音声合成で発話  
