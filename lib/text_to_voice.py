@@ -111,7 +111,6 @@ class TextToVoice(metaclass=ABCMeta):
                     self.finished = True
                     queue_start = False
                     if self.motion_stub is not None:
-                        print("Stop head control")
                         self.event.clear()
                         if self.motion_stub is not None:
                             # 初期位置にヘッドを戻す
