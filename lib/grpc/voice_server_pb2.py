@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12voice_server.proto\x12\x0cvoice_server\"\x1e\n\x0eSetTextRequest\x12\x0c\n\x04text\x18\x01 \x01(\t\"\x1f\n\x0cSetTextReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\"\xd4\x01\n\x1cSetStyleBertVitsParamRequest\x12\x17\n\nmodel_name\x18\x01 \x01(\tH\x00\x88\x01\x01\x12\x15\n\x08model_id\x18\x02 \x01(\x05H\x01\x88\x01\x01\x12\x13\n\x06length\x18\x03 \x01(\x02H\x02\x88\x01\x01\x12\x12\n\x05style\x18\x04 \x01(\tH\x03\x88\x01\x01\x12\x19\n\x0cstyle_weight\x18\x05 \x01(\x02H\x04\x88\x01\x01\x42\r\n\x0b_model_nameB\x0b\n\t_model_idB\t\n\x07_lengthB\x08\n\x06_styleB\x0f\n\r_style_weight\"-\n\x1aSetStyleBertVitsParamReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\"e\n\x17SetVoicevoxParamRequest\x12\x14\n\x07speaker\x18\x01 \x01(\x05H\x00\x88\x01\x01\x12\x18\n\x0bspeed_scale\x18\x02 \x01(\x02H\x01\x88\x01\x01\x42\n\n\x08_speakerB\x0e\n\x0c_speed_scale\"(\n\x15SetVoicevoxParamReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\"\x80\x01\n\x14SetAivisParamRequest\x12\x14\n\x07speaker\x18\x01 \x01(\tH\x00\x88\x01\x01\x12\x12\n\x05style\x18\x02 \x01(\tH\x01\x88\x01\x01\x12\x18\n\x0bspeed_scale\x18\x03 \x01(\x02H\x02\x88\x01\x01\x42\n\n\x08_speakerB\x08\n\x06_styleB\x0e\n\x0c_speed_scale\"%\n\x12SetAivisParamReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\"\x17\n\x15InterruptVoiceRequest\"&\n\x13InterruptVoiceReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\"%\n\x16SetVoicePlayFlgRequest\x12\x0b\n\x03\x66lg\x18\x01 \x01(\x08\"\'\n\x14SetVoicePlayFlgReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\"\x17\n\x15IsVoicePlayingRequest\")\n\x13IsVoicePlayingReply\x12\x12\n\nis_playing\x18\x01 \x01(\x08\"\x14\n\x12SentenceEndRequest\"#\n\x10SentenceEndReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\x32\xe1\x05\n\x12VoiceServerService\x12\x43\n\x07SetText\x12\x1c.voice_server.SetTextRequest\x1a\x1a.voice_server.SetTextReply\x12m\n\x15SetStyleBertVitsParam\x12*.voice_server.SetStyleBertVitsParamRequest\x1a(.voice_server.SetStyleBertVitsParamReply\x12^\n\x10SetVoicevoxParam\x12%.voice_server.SetVoicevoxParamRequest\x1a#.voice_server.SetVoicevoxParamReply\x12U\n\rSetAivisParam\x12\".voice_server.SetAivisParamRequest\x1a .voice_server.SetAivisParamReply\x12X\n\x0eInterruptVoice\x12#.voice_server.InterruptVoiceRequest\x1a!.voice_server.InterruptVoiceReply\x12[\n\x0fSetVoicePlayFlg\x12$.voice_server.SetVoicePlayFlgRequest\x1a\".voice_server.SetVoicePlayFlgReply\x12X\n\x0eIsVoicePlaying\x12#.voice_server.IsVoicePlayingRequest\x1a!.voice_server.IsVoicePlayingReply\x12O\n\x0bSentenceEnd\x12 .voice_server.SentenceEndRequest\x1a\x1e.voice_server.SentenceEndReplyb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12voice_server.proto\x12\x0cvoice_server\"\x1e\n\x0eSetTextRequest\x12\x0c\n\x04text\x18\x01 \x01(\t\"\x1f\n\x0cSetTextReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\"\xd4\x01\n\x1cSetStyleBertVitsParamRequest\x12\x17\n\nmodel_name\x18\x01 \x01(\tH\x00\x88\x01\x01\x12\x15\n\x08model_id\x18\x02 \x01(\x05H\x01\x88\x01\x01\x12\x13\n\x06length\x18\x03 \x01(\x02H\x02\x88\x01\x01\x12\x12\n\x05style\x18\x04 \x01(\tH\x03\x88\x01\x01\x12\x19\n\x0cstyle_weight\x18\x05 \x01(\x02H\x04\x88\x01\x01\x42\r\n\x0b_model_nameB\x0b\n\t_model_idB\t\n\x07_lengthB\x08\n\x06_styleB\x0f\n\r_style_weight\"-\n\x1aSetStyleBertVitsParamReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\"e\n\x17SetVoicevoxParamRequest\x12\x14\n\x07speaker\x18\x01 \x01(\x05H\x00\x88\x01\x01\x12\x18\n\x0bspeed_scale\x18\x02 \x01(\x02H\x01\x88\x01\x01\x42\n\n\x08_speakerB\x0e\n\x0c_speed_scale\"(\n\x15SetVoicevoxParamReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\"\x80\x01\n\x14SetAivisParamRequest\x12\x14\n\x07speaker\x18\x01 \x01(\tH\x00\x88\x01\x01\x12\x12\n\x05style\x18\x02 \x01(\tH\x01\x88\x01\x01\x12\x18\n\x0bspeed_scale\x18\x03 \x01(\x02H\x02\x88\x01\x01\x42\n\n\x08_speakerB\x08\n\x06_styleB\x0e\n\x0c_speed_scale\"%\n\x12SetAivisParamReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\"\x17\n\x15InterruptVoiceRequest\"&\n\x13InterruptVoiceReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\"\x18\n\x16\x45nableVoicePlayRequest\"\'\n\x14\x45nableVoicePlayReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\"\x19\n\x17\x44isableVoicePlayRequest\"(\n\x15\x44isableVoicePlayReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\"\x17\n\x15IsVoicePlayingRequest\")\n\x13IsVoicePlayingReply\x12\x12\n\nis_playing\x18\x01 \x01(\x08\"\x14\n\x12SentenceEndRequest\"#\n\x10SentenceEndReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\"\x19\n\x17StartHeadControlRequest\"(\n\x15StartHeadControlReply\x12\x0f\n\x07success\x18\x01 \x01(\x08\x32\xa1\x07\n\x12VoiceServerService\x12\x43\n\x07SetText\x12\x1c.voice_server.SetTextRequest\x1a\x1a.voice_server.SetTextReply\x12m\n\x15SetStyleBertVitsParam\x12*.voice_server.SetStyleBertVitsParamRequest\x1a(.voice_server.SetStyleBertVitsParamReply\x12^\n\x10SetVoicevoxParam\x12%.voice_server.SetVoicevoxParamRequest\x1a#.voice_server.SetVoicevoxParamReply\x12U\n\rSetAivisParam\x12\".voice_server.SetAivisParamRequest\x1a .voice_server.SetAivisParamReply\x12X\n\x0eInterruptVoice\x12#.voice_server.InterruptVoiceRequest\x1a!.voice_server.InterruptVoiceReply\x12[\n\x0f\x45nableVoicePlay\x12$.voice_server.EnableVoicePlayRequest\x1a\".voice_server.EnableVoicePlayReply\x12^\n\x10\x44isableVoicePlay\x12%.voice_server.DisableVoicePlayRequest\x1a#.voice_server.DisableVoicePlayReply\x12X\n\x0eIsVoicePlaying\x12#.voice_server.IsVoicePlayingRequest\x1a!.voice_server.IsVoicePlayingReply\x12O\n\x0bSentenceEnd\x12 .voice_server.SentenceEndRequest\x1a\x1e.voice_server.SentenceEndReply\x12^\n\x10StartHeadControl\x12%.voice_server.StartHeadControlRequest\x1a#.voice_server.StartHeadControlReplyb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -41,18 +41,26 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_INTERRUPTVOICEREQUEST']._serialized_end=701
   _globals['_INTERRUPTVOICEREPLY']._serialized_start=703
   _globals['_INTERRUPTVOICEREPLY']._serialized_end=741
-  _globals['_SETVOICEPLAYFLGREQUEST']._serialized_start=743
-  _globals['_SETVOICEPLAYFLGREQUEST']._serialized_end=780
-  _globals['_SETVOICEPLAYFLGREPLY']._serialized_start=782
-  _globals['_SETVOICEPLAYFLGREPLY']._serialized_end=821
-  _globals['_ISVOICEPLAYINGREQUEST']._serialized_start=823
-  _globals['_ISVOICEPLAYINGREQUEST']._serialized_end=846
-  _globals['_ISVOICEPLAYINGREPLY']._serialized_start=848
-  _globals['_ISVOICEPLAYINGREPLY']._serialized_end=889
-  _globals['_SENTENCEENDREQUEST']._serialized_start=891
-  _globals['_SENTENCEENDREQUEST']._serialized_end=911
-  _globals['_SENTENCEENDREPLY']._serialized_start=913
-  _globals['_SENTENCEENDREPLY']._serialized_end=948
-  _globals['_VOICESERVERSERVICE']._serialized_start=951
-  _globals['_VOICESERVERSERVICE']._serialized_end=1688
+  _globals['_ENABLEVOICEPLAYREQUEST']._serialized_start=743
+  _globals['_ENABLEVOICEPLAYREQUEST']._serialized_end=767
+  _globals['_ENABLEVOICEPLAYREPLY']._serialized_start=769
+  _globals['_ENABLEVOICEPLAYREPLY']._serialized_end=808
+  _globals['_DISABLEVOICEPLAYREQUEST']._serialized_start=810
+  _globals['_DISABLEVOICEPLAYREQUEST']._serialized_end=835
+  _globals['_DISABLEVOICEPLAYREPLY']._serialized_start=837
+  _globals['_DISABLEVOICEPLAYREPLY']._serialized_end=877
+  _globals['_ISVOICEPLAYINGREQUEST']._serialized_start=879
+  _globals['_ISVOICEPLAYINGREQUEST']._serialized_end=902
+  _globals['_ISVOICEPLAYINGREPLY']._serialized_start=904
+  _globals['_ISVOICEPLAYINGREPLY']._serialized_end=945
+  _globals['_SENTENCEENDREQUEST']._serialized_start=947
+  _globals['_SENTENCEENDREQUEST']._serialized_end=967
+  _globals['_SENTENCEENDREPLY']._serialized_start=969
+  _globals['_SENTENCEENDREPLY']._serialized_end=1004
+  _globals['_STARTHEADCONTROLREQUEST']._serialized_start=1006
+  _globals['_STARTHEADCONTROLREQUEST']._serialized_end=1031
+  _globals['_STARTHEADCONTROLREPLY']._serialized_start=1033
+  _globals['_STARTHEADCONTROLREPLY']._serialized_end=1073
+  _globals['_VOICESERVERSERVICE']._serialized_start=1076
+  _globals['_VOICESERVERSERVICE']._serialized_end=2005
 # @@protoc_insertion_point(module_scope)

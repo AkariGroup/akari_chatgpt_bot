@@ -35,9 +35,7 @@ def main() -> None:
         # userメッセージの追加
         print(f"User   : {text}")
         try:
-            voice_stub.SetVoicePlayFlg(
-                voice_server_pb2.SetVoicePlayFlgRequest(flg=True)
-            )
+            voice_stub.EnableVoicePlay(voice_server_pb2.EnableVoicePlayRequest())
             voice_stub.SetText(voice_server_pb2.SetTextRequest(text=text))
             voice_stub.SentenceEnd(voice_server_pb2.SentenceEndRequest())
         except BaseException:

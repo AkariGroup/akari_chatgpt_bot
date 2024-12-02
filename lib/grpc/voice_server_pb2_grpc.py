@@ -39,10 +39,15 @@ class VoiceServerServiceStub(object):
                 request_serializer=voice__server__pb2.InterruptVoiceRequest.SerializeToString,
                 response_deserializer=voice__server__pb2.InterruptVoiceReply.FromString,
                 )
-        self.SetVoicePlayFlg = channel.unary_unary(
-                '/voice_server.VoiceServerService/SetVoicePlayFlg',
-                request_serializer=voice__server__pb2.SetVoicePlayFlgRequest.SerializeToString,
-                response_deserializer=voice__server__pb2.SetVoicePlayFlgReply.FromString,
+        self.EnableVoicePlay = channel.unary_unary(
+                '/voice_server.VoiceServerService/EnableVoicePlay',
+                request_serializer=voice__server__pb2.EnableVoicePlayRequest.SerializeToString,
+                response_deserializer=voice__server__pb2.EnableVoicePlayReply.FromString,
+                )
+        self.DisableVoicePlay = channel.unary_unary(
+                '/voice_server.VoiceServerService/DisableVoicePlay',
+                request_serializer=voice__server__pb2.DisableVoicePlayRequest.SerializeToString,
+                response_deserializer=voice__server__pb2.DisableVoicePlayReply.FromString,
                 )
         self.IsVoicePlaying = channel.unary_unary(
                 '/voice_server.VoiceServerService/IsVoicePlaying',
@@ -53,6 +58,11 @@ class VoiceServerServiceStub(object):
                 '/voice_server.VoiceServerService/SentenceEnd',
                 request_serializer=voice__server__pb2.SentenceEndRequest.SerializeToString,
                 response_deserializer=voice__server__pb2.SentenceEndReply.FromString,
+                )
+        self.StartHeadControl = channel.unary_unary(
+                '/voice_server.VoiceServerService/StartHeadControl',
+                request_serializer=voice__server__pb2.StartHeadControlRequest.SerializeToString,
+                response_deserializer=voice__server__pb2.StartHeadControlReply.FromString,
                 )
 
 
@@ -89,7 +99,13 @@ class VoiceServerServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def SetVoicePlayFlg(self, request, context):
+    def EnableVoicePlay(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DisableVoicePlay(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -102,6 +118,12 @@ class VoiceServerServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def SentenceEnd(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def StartHeadControl(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -135,10 +157,15 @@ def add_VoiceServerServiceServicer_to_server(servicer, server):
                     request_deserializer=voice__server__pb2.InterruptVoiceRequest.FromString,
                     response_serializer=voice__server__pb2.InterruptVoiceReply.SerializeToString,
             ),
-            'SetVoicePlayFlg': grpc.unary_unary_rpc_method_handler(
-                    servicer.SetVoicePlayFlg,
-                    request_deserializer=voice__server__pb2.SetVoicePlayFlgRequest.FromString,
-                    response_serializer=voice__server__pb2.SetVoicePlayFlgReply.SerializeToString,
+            'EnableVoicePlay': grpc.unary_unary_rpc_method_handler(
+                    servicer.EnableVoicePlay,
+                    request_deserializer=voice__server__pb2.EnableVoicePlayRequest.FromString,
+                    response_serializer=voice__server__pb2.EnableVoicePlayReply.SerializeToString,
+            ),
+            'DisableVoicePlay': grpc.unary_unary_rpc_method_handler(
+                    servicer.DisableVoicePlay,
+                    request_deserializer=voice__server__pb2.DisableVoicePlayRequest.FromString,
+                    response_serializer=voice__server__pb2.DisableVoicePlayReply.SerializeToString,
             ),
             'IsVoicePlaying': grpc.unary_unary_rpc_method_handler(
                     servicer.IsVoicePlaying,
@@ -149,6 +176,11 @@ def add_VoiceServerServiceServicer_to_server(servicer, server):
                     servicer.SentenceEnd,
                     request_deserializer=voice__server__pb2.SentenceEndRequest.FromString,
                     response_serializer=voice__server__pb2.SentenceEndReply.SerializeToString,
+            ),
+            'StartHeadControl': grpc.unary_unary_rpc_method_handler(
+                    servicer.StartHeadControl,
+                    request_deserializer=voice__server__pb2.StartHeadControlRequest.FromString,
+                    response_serializer=voice__server__pb2.StartHeadControlReply.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -246,7 +278,7 @@ class VoiceServerService(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def SetVoicePlayFlg(request,
+    def EnableVoicePlay(request,
             target,
             options=(),
             channel_credentials=None,
@@ -256,9 +288,26 @@ class VoiceServerService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/voice_server.VoiceServerService/SetVoicePlayFlg',
-            voice__server__pb2.SetVoicePlayFlgRequest.SerializeToString,
-            voice__server__pb2.SetVoicePlayFlgReply.FromString,
+        return grpc.experimental.unary_unary(request, target, '/voice_server.VoiceServerService/EnableVoicePlay',
+            voice__server__pb2.EnableVoicePlayRequest.SerializeToString,
+            voice__server__pb2.EnableVoicePlayReply.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def DisableVoicePlay(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/voice_server.VoiceServerService/DisableVoicePlay',
+            voice__server__pb2.DisableVoicePlayRequest.SerializeToString,
+            voice__server__pb2.DisableVoicePlayReply.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -293,5 +342,22 @@ class VoiceServerService(object):
         return grpc.experimental.unary_unary(request, target, '/voice_server.VoiceServerService/SentenceEnd',
             voice__server__pb2.SentenceEndRequest.SerializeToString,
             voice__server__pb2.SentenceEndReply.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def StartHeadControl(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/voice_server.VoiceServerService/StartHeadControl',
+            voice__server__pb2.StartHeadControlRequest.SerializeToString,
+            voice__server__pb2.StartHeadControlReply.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

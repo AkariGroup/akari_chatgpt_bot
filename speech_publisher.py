@@ -17,7 +17,7 @@ import voice_server_pb2_grpc
 
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
-POWER_THRESH_DIFF = 30  # 周辺音量にこの値を足したものをpower_threshouldとする
+POWER_THRESH_DIFF = 20  # 周辺音量にこの値を足したものをpower_threshouldとする
 enable_input = True
 
 
@@ -101,6 +101,11 @@ def main() -> None:
     else:
         from lib.google_speech_grpc import GoogleSpeechGrpc as GoogleSpeechGrpc
         from lib.google_speech_grpc import MicrophoneStreamGrpc as MicrophoneStreamGrpc
+    motion_server_host = None
+    motion_server_port = None
+    if not args.no_motion:
+        motion_server_host = args.robot_ip
+        motion_server_port = args.robot_port
     timeout: float = args.timeout
     power_threshold: float = args.power_threshold
 
@@ -114,8 +119,6 @@ def main() -> None:
     print(f"speech_server start. port: {port}")
 
     # grpc stubの設定
-    motion_channel = grpc.insecure_channel(args.robot_ip + ":" + str(args.robot_port))
-    motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(motion_channel)
     voice_channel = grpc.insecure_channel(args.voice_ip + ":" + args.voice_port)
     voice_stub = voice_server_pb2_grpc.VoiceServerServiceStub(voice_channel)
 
@@ -143,22 +146,15 @@ def main() -> None:
             gpt_port=args.gpt_port,
             voice_host=args.voice_ip,
             voice_port=args.voice_port,
+            motion_server_host=motion_server_host,
+            motion_server_port=motion_server_port,
         ) as stream:
             if not args.auto:
                 print("Enterを入力してから、マイクに話しかけてください")
                 input()
                 try:
-                    voice_stub.SetVoicePlayFlg(
-                        voice_server_pb2.SetVoicePlayFlgRequest(flg=False)
-                    )
-                except BaseException:
-                    pass
-            if not args.no_motion:
-                try:
-                    motion_stub.SetMotion(
-                        motion_server_pb2.SetMotionRequest(
-                            name="nod", priority=3, repeat=True
-                        )
+                    voice_stub.DisableVoicePlay(
+                        voice_server_pb2.DisableVoicePlayRequest()
                     )
                 except BaseException:
                     pass

@@ -46,11 +46,17 @@ message InterruptVoiceReply {
   bool success =1;
 }
 
-message SetVoicePlayFlgRequest {
-  bool flg = 1;
+message EnableVoicePlayRequest {
 }
 
-message SetVoicePlayFlgReply {
+message EnableVoicePlayReply {
+  bool success =1;
+}
+
+message DisableVoicePlayRequest {
+}
+
+message DisableVoicePlayReply {
   bool success =1;
 }
 
@@ -66,6 +72,13 @@ message SentenceEndReply {
   bool success =1;
 }
 
+message StartHeadControlRequest {}
+
+message StartHeadControlReply {
+  bool success =1;
+}
+
+
 service VoiceServerService {
     rpc SetText(SetTextRequest)
         returns (SetTextReply);
@@ -77,10 +90,14 @@ service VoiceServerService {
         returns (SetAivisParamReply);
     rpc InterruptVoice(InterruptVoiceRequest)
         returns (InterruptVoiceReply);
-    rpc SetVoicePlayFlg(SetVoicePlayFlgRequest)
-        returns (SetVoicePlayFlgReply);
+    rpc EnableVoicePlay(EnableVoicePlayRequest)
+        returns (EnableVoicePlayReply);
+    rpc DisableVoicePlay(DisableVoicePlayRequest)
+        returns (DisableVoicePlayReply);
     rpc IsVoicePlaying(IsVoicePlayingRequest)
         returns (IsVoicePlayingReply);
     rpc SentenceEnd(SentenceEndRequest)
         returns (SentenceEndReply);
+    rpc StartHeadControl(StartHeadControlRequest)
+        returns (StartHeadControlReply);
 }

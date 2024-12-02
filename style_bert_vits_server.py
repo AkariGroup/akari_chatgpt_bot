@@ -3,6 +3,7 @@ import os
 import sys
 import time
 from concurrent import futures
+from typing import Any
 
 import grpc
 from lib.style_bert_vits import TextToStyleBertVits
@@ -17,7 +18,7 @@ class VoiceServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
     StyleBertVitsにtextを送信し、音声を再生するgprcサーバ
     """
 
-    def __init__(self, text_to_voice) -> None:
+    def __init__(self, text_to_voice: Any) -> None:
         self.text_to_voice = text_to_voice
 
     def SetText(
@@ -70,13 +71,21 @@ class VoiceServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
             self.text_to_voice.queue.get()
         return voice_server_pb2.InterruptVoiceReply(success=True)
 
-    def SetVoicePlayFlg(
+    def EnableVoicePlay(
         self,
-        request: voice_server_pb2.SetVoicePlayFlgRequest(),
+        request: voice_server_pb2.EnableVoicePlayRequest(),
         context: grpc.ServicerContext,
-    ) -> voice_server_pb2.SetVoicePlayFlgReply:
-        self.text_to_voice.play_flg = request.flg
-        return voice_server_pb2.SetVoicePlayFlgReply(success=True)
+    ) -> voice_server_pb2.EnableVoicePlayReply:
+        self.text_to_voice.enable_voice_play()
+        return voice_server_pb2.EnableVoicePlayReply(success=True)
+
+    def DisableVoicePlay(
+        self,
+        request: voice_server_pb2.DisableVoicePlayRequest(),
+        context: grpc.ServicerContext,
+    ) -> voice_server_pb2.DisableVoicePlayReply:
+        self.text_to_voice.disable_voice_play()
+        return voice_server_pb2.DisableVoicePlayReply(success=True)
 
     def IsVoicePlaying(
         self,
@@ -95,6 +104,14 @@ class VoiceServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
         self.text_to_voice.sentence_end()
         return voice_server_pb2.SentenceEndReply(success=True)
 
+    def StartHeadControl(
+        self,
+        request: voice_server_pb2.StartHeadControlRequest(),
+        context: grpc.ServicerContext,
+    ) -> voice_server_pb2.StartHeadControlReply:
+        self.text_to_voice.start_head_control()
+        return voice_server_pb2.StartHeadControlReply(success=False)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -110,11 +127,32 @@ def main() -> None:
         default="5000",
         help="Style-Bert-VITS2 server port",
     )
+    parser.add_argument(
+        "--robot_ip", help="Robot ip address", default="127.0.0.1", type=str
+    )
+    parser.add_argument(
+        "--robot_port", help="Robot port number", default="50055", type=str
+    )
+    parser.add_argument(
+        "--no_motion",
+        help="Not play nod motion",
+        action="store_true",
+    )
     args = parser.parse_args()
 
     host = args.voice_host
     port = args.voice_port
-    text_to_voice = TextToStyleBertVits(host, port)
+    motion_server_host = None
+    motion_server_port = None
+    if not args.no_motion:
+        motion_server_host = args.robot_ip
+        motion_server_port = args.robot_port
+    text_to_voice = TextToStyleBertVits(
+        host=host,
+        port=port,
+        motion_host=motion_server_host,
+        motion_port=motion_server_port,
+    )
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     voice_server_pb2_grpc.add_VoiceServerServiceServicer_to_server(

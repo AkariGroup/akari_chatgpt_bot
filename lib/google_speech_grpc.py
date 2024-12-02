@@ -5,7 +5,7 @@ import os
 import struct
 import sys
 import time
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 import grpc
 import numpy as np
@@ -16,6 +16,8 @@ from .google_speech import MicrophoneStream
 sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
 import gpt_server_pb2
 import gpt_server_pb2_grpc
+import motion_server_pb2
+import motion_server_pb2_grpc
 import voice_server_pb2
 import voice_server_pb2_grpc
 
@@ -37,6 +39,8 @@ class MicrophoneStreamGrpc(MicrophoneStream):
         gpt_port: str = "10001",
         voice_host: str = "127.0.0.1",
         voice_port: str = "10002",
+        motion_server_host: Optional[str] = "127.0.0.1",
+        motion_server_port: Optional[str] = "50055",
     ) -> None:
         """クラスの初期化メソッド。
 
@@ -49,7 +53,8 @@ class MicrophoneStreamGrpc(MicrophoneStream):
             gpt_port (str, optional): GPTサーバーのポート番号。デフォルトは"10001"。
             voice_host (str, optional): VoiceVoxサーバーのホスト名。デフォルトは"127.0.0.1"。
             voice_port (str, optional): VoiceVoxサーバーのポート番号。デフォルトは"10002"。
-
+            motion_server_host (str, optional): モーションサーバーのIPアドレス。デフォルトは"127.0.0.1"。
+            motion_server_port (str, optional): モーションサーバーのポート番号。デフォルトは"50055"。
         """
         super().__init__(
             rate=rate,
@@ -62,6 +67,41 @@ class MicrophoneStreamGrpc(MicrophoneStream):
         self.gpt_stub = gpt_server_pb2_grpc.GptServerServiceStub(gpt_channel)
         voice_channel = grpc.insecure_channel(voice_host + ":" + voice_port)
         self.voice_stub = voice_server_pb2_grpc.VoiceServerServiceStub(voice_channel)
+        self.motion_stub = None
+        if motion_server_host is not None and motion_server_port is not None:
+            motion_channel = grpc.insecure_channel(
+                motion_server_host + ":" + motion_server_port
+            )
+            self.motion_stub = motion_server_pb2_grpc.MotionServerServiceStub(
+                motion_channel
+            )
+
+    def __exit__(
+        self,
+        rate: float,
+        chunk: float,
+        _timeout_thresh: float = 0.5,
+        _start_timeout_thresh: float = 4.0,
+        _db_thresh: float = 55.0,
+    ) -> None:
+        """PyAudioストリームを閉じます。
+
+        Args:
+            rate (float): サンプリングレート。
+            chunk (float): チャンクサイズ。
+            _timeout_thresh (float, optional): 音声が停止したと判断するタイムアウト閾値（秒）。デフォルトは0.5秒。
+            _start_timeout_thresh (float): マイクの入力が開始しないまま終了するまでのタイムアウト閾値（秒）。デフォルトは4.0秒。
+            _db_thresh (float, optional): 音声が開始されたと判断する音量閾値（デシベル）。デフォルトは55.0デシベル。
+
+        """
+        super().__exit__(
+            rate, chunk, _timeout_thresh, _start_timeout_thresh, _db_thresh
+        )
+        try:
+            self.gpt_stub.SendMotion(gpt_server_pb2.SendMotionRequest())
+        except BaseException:
+            print("Send motion error")
+            pass
 
     def _fill_buffer(
         self, in_data: bytes, frame_count: int, time_info: Any, status_flags: Any
@@ -85,22 +125,27 @@ class MicrophoneStreamGrpc(MicrophoneStream):
             if power > self.db_thresh:
                 if not self.is_start:
                     self.is_start = True
+                    if self.motion_stub is not None:
+                        try:
+                            self.motion_stub.SetMotion(
+                                motion_server_pb2.SetMotionRequest(
+                                    name="nod", priority=3, repeat=True
+                                )
+                            )
+                        except BaseException:
+                            pass
                 self.start_time = time.time()
             if self.is_start:
                 self._buff.put(in_data)
                 if time.time() - self.start_time >= self.timeout_thresh:
+                    self.is_start = False
                     self.closed = True
                     try:
-                        self.voice_stub.SetVoicePlayFlg(
-                            voice_server_pb2.SetVoicePlayFlgRequest(flg=True)
+                        self.voice_stub.EnableVoicePlay(
+                            voice_server_pb2.EnableVoicePlayRequest()
                         )
                     except BaseException:
-                        print("SetVoicePlayFlg error")
-                        pass
-                    try:
-                        self.gpt_stub.SendMotion(gpt_server_pb2.SendMotionRequest())
-                    except BaseException:
-                        print("Send motion error")
+                        print("EnableVoicePlay error")
                         pass
                     return None, pyaudio.paComplete
         return None, pyaudio.paContinue
@@ -151,11 +196,9 @@ class GoogleSpeechGrpc(object):
         transcript = ""
         overwrite_chars = ""
         try:
-            self.voice_stub.SetVoicePlayFlg(
-                voice_server_pb2.SetVoicePlayFlgRequest(flg=False)
-            )
+            self.voice_stub.DisableVoicePlay(voice_server_pb2.DisableVoicePlayRequest())
         except BaseException:
-            print("SetVoicePlayFlg error")
+            print("Disable voice play error")
             pass
         try:
             self.voice_stub.InterruptVoice(voice_server_pb2.InterruptVoiceRequest())
