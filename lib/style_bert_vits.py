@@ -118,3 +118,14 @@ class TextToStyleBertVits(TextToVoice):
         req = Request(address, headers=headers, method="GET")
         with urlopen(req) as res:
             return res.read()
+
+    def text_to_voice(self, text: str) -> None:
+        """
+        テキストから音声を合成して再生する。
+        Args:
+            text (str): 音声合成対象のテキスト。
+        """
+        wav = self.post_synthesis(text)
+        if wav is not None:
+            print(f"[Play] {text}")
+            self.play_wav(wav)

@@ -1,4 +1,4 @@
-import abc
+from abc import ABCMeta, abstractmethod
 import io
 import os
 import sys
@@ -155,7 +155,7 @@ class TextToVoice(metaclass=ABCMeta):
         while not self.finished:
             time.sleep(0.01)
 
-    @abc.abstractmethod
+    @abstractmethod
     def set_param(
         self,
         speaker: Optional[int] = None,
@@ -168,40 +168,6 @@ class TextToVoice(metaclass=ABCMeta):
             speaker (Optional[int], optional): VoiceVoxの話者番号。デフォルトはNone。
             speed_scale (Optional[float], optional): 音声の再生速度スケール。デフォルトはNone。
 
-        """
-        ...
-
-    @abc.abstractmethod
-    def post_audio_query(
-        self,
-        text: str,
-    ) -> Any:
-        """VoiceVoxサーバーに音声合成クエリを送信する。
-
-        Args:
-            text (str): 音声合成対象のテキスト。
-            speaker (int, optional): VoiceVoxの話者番号。デフォルトは8(春日部つむぎ)。
-            speed_scale (float, optional): 音声の再生速度スケール。デフォルトは1.0。
-
-        Returns:
-            Any: 音声合成クエリの応答。
-
-        """
-        ...
-
-    @abc.abstractmethod
-    def post_synthesis(
-        self,
-        audio_query_response: dict,
-    ) -> bytes:
-        """
-        VoiceVoxサーバーに音声合成要求を送信し、合成された音声データを取得する。
-
-        Args:
-            audio_query_response (dict): 音声合成クエリの応答。
-
-        Returns:
-            bytes: 合成された音声データ。
         """
         ...
 
@@ -234,7 +200,7 @@ class TextToVoice(metaclass=ABCMeta):
             stream.close()
         p.terminate()
 
-    @abc.abstractmethod
+    @abstractmethod
     def text_to_voice(self, text: str) -> None:
         """
         テキストから音声を合成して再生する。
