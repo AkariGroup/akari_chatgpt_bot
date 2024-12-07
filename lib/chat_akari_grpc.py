@@ -112,13 +112,10 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                 "えーと。",
                 "はい。",
                 "うーん。",
-                "いいえ。",
                 "そうですね。",
-                "こんにちは。",
-                "ありがとうございます。",
                 "なるほど。",
                 "まあ。",
-                "確かに。",
+                "えー。",
             ]
         result = openai.chat.completions.create(
             model=model,
