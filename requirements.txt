@@ -14,3 +14,7 @@ PyJapanglish
 python-dotenv
 six
 SpeechRecognition
+fastapi==0.110.0
+uvicorn==0.27.1
+python-multipart==0.0.9
+opencv-python>=4.5.0

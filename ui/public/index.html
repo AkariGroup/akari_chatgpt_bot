@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Akari Web UI</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="settings">
+            <select id="modelSelect">
+                <option value="gpt-4o">GPT-4 Optimized</option>
+                <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+            </select>
+            <input type="number" id="temperature" value="0.7" min="0" max="1" step="0.1">
+            <button id="motionToggle">モーション: オフ</button>
+        </div>
+        <div class="chat-container" id="chatContainer"></div>
+        <div class="input-container">
+            <textarea id="userInput" placeholder="メッセージを入力..."></textarea>
+            <button id="sendButton">送信</button>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

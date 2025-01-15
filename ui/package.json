@@ -1,0 +1,13 @@
+{
+  "name": "chat-akari-ui",
+  "version": "1.0.0",
+  "description": "Chat Akari Web UI",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "eventsource": "^2.0.2"
+  }
+}
