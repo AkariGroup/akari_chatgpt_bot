@@ -7,7 +7,12 @@ from typing import Generator, List, Union
 
 import anthropic
 import cv2
-import google.generativeai as genai
+from google import genai
+from google.genai import types
+from google.genai.types import (
+    Content,
+    Part,
+)
 import grpc
 import numpy as np
 import openai
@@ -45,7 +50,7 @@ class ChatStreamAkari(object):
                 api_key=ANTHROPIC_APIKEY,
             )
         if GEMINI_APIKEY is not None:
-            genai.configure(api_key=GEMINI_APIKEY)
+            self.gemini_client = genai.Client(api_key=GEMINI_APIKEY)
         self.last_char = ["、", "。", "！", "!", "?", "？", "\n", "}"]
         self.openai_model_name = [
             "gpt-4o",
@@ -96,7 +101,7 @@ class ChatStreamAkari(object):
             "gemini-2.0-flash-exp",
             "gemini-1.5-pro",
             "gemini-1.5-flash",
-            "gemini-1.5-flash-8b"
+            "gemini-1.5-flash-8b",
         ]
 
     def send_motion(self, name: str) -> None:
@@ -349,6 +354,7 @@ class ChatStreamAkari(object):
         )
         full_response = ""
         real_time_response = ""
+        real_time_response = ""
         for chunk in result:
             text = chunk.choices[0].delta.content
             if text is None:
@@ -390,25 +396,39 @@ class ChatStreamAkari(object):
         if GEMINI_APIKEY is None:
             print("Gemini API key is not set.")
             return
+
         system_instruction = ""
-        new_messages = []
-        for message in messages:
+        new_message = ""
+        message = messages[-1]
+        history = []
+        if "content" in message:
+            message["parts"] = message.pop("content")
+        if message["role"] != "user":
+            raise ValueError("The last message must be user message.")
+        else:
+            new_message = message["parts"]
+        for message in messages[:-1]:
             if "content" in message:
                 message["parts"] = message.pop("content")
             if message["role"] == "system":
                 system_instruction = message["parts"]
                 continue
-            elif message["role"] == "assistant":
-                message["role"] = "model"
-            new_messages.append(message)
-        if system_instruction == "":
-            model = genai.GenerativeModel(model_name=model)
-        else:
-            model = genai.GenerativeModel(
-                model_name=model, system_instruction=system_instruction
-            )
-        chat = model.start_chat(history=new_messages[:-1])
-        responses = chat.send_message(new_messages[-1]["parts"], stream=True)
+            else:
+                history = [
+                    Content(
+                        role=message["role"],
+                        parts=[Part.from_text(text=message["parts"])],
+                    )
+                ]
+        chat = self.gemini_client.chats.create(
+            model=model,
+            history=history,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=0.5
+            ),
+        )
+        responses = chat.send_message_stream(new_message)
         full_response = ""
         real_time_response = ""
         for response in responses:
@@ -430,8 +450,8 @@ class ChatStreamAkari(object):
                         break
                     else:
                         pass
-        if real_time_response != "":
-            yield real_time_response
+            if real_time_response != "":
+                yield real_time_response
 
     def chat(
         self,
@@ -609,9 +629,13 @@ class ChatStreamAkari(object):
             else:
                 user_messages.append(message)
         # 最後の1文を動作と文章のJSON形式出力指定に修正
-        user_messages[-1][
-            "content"
-        ] = f"「{user_messages[-1]['content']}」に対する返答を下記のJSON形式で出力してください。{{\"motion\": 次の()内から動作を一つ選択(\"肯定する\",\"否定する\",\"おじぎ\",\"喜ぶ\",\"笑う\",\"落ち込む\",\"うんざりする\",\"眠る\"), \"talk\": 会話の返答}}"
+        motion_json_format = (
+            f"「{user_messages[-1]['content']}」に対する返答を下記のJSON形式で出力してください。"
+            '{"motion": 次の()内から動作を一つ選択("肯定する","否定する","おじぎ",'
+            '"喜ぶ","笑う","落ち込む","うんざりする","眠る"), "talk": 会話の返答'
+            "}"
+        )
+        user_messages[-1]["content"] = motion_json_format
         with self.anthropic_client.messages.stream(
             model=model,
             max_tokens=1000,
@@ -721,7 +745,13 @@ class ChatStreamAkari(object):
                 generation_config={"response_mime_type": "application/json"},
             )
         chat = model.start_chat(history=new_messages[:-1])
-        message = f"「{new_messages[-1]['parts']}」に対する返答を下記のJSON形式で出力してください。{{\"motion\": 次の()内から動作を一つ選択(\"肯定する\",\"否定する\",\"おじぎ\",\"喜ぶ\",\"笑う\",\"落ち込む\",\"うんざりする\",\"眠る\"), \"talk\": 会話の返答}}"
+        motion_json_format = (
+            f"「{new_messages[-1]['parts']}」に対する返答を下記のJSON形式で出力してください。"
+            '{"motion": 次の()内から動作を一つ選択("肯定する","否定する","おじぎ",'
+            '"喜ぶ","笑う","落ち込む","うんざりする","眠る"), "talk": 会話の返答'
+            "}"
+        )
+        message = motion_json_format
         responses = chat.send_message(message, stream=True)
         full_response = ""
         real_time_response = ""

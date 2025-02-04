@@ -3,12 +3,14 @@ akari-proto
 alkana
 anthropic
 google-cloud-speech
+google-genai
 google-generativeai
 -e gpt-stream-json-parser/
 grpcio
 grpcio-tools
 openai
 numpy
+pydantic>=2.0.0
 PyAudio
 PyJapanglish
 python-dotenv
