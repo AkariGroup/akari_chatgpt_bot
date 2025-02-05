@@ -1,9 +1,10 @@
 import base64
+import copy
 import json
 import os
 import sys
 import threading
-from typing import Generator, List, Union
+from typing import Generator, List, Optional, Union
 
 import anthropic
 import cv2
@@ -17,6 +18,7 @@ import grpc
 import numpy as np
 import openai
 from gpt_stream_parser import force_parse_json
+from google.genai.types import Part
 
 from .conf import ANTHROPIC_APIKEY, GEMINI_APIKEY
 
@@ -87,12 +89,12 @@ class ChatStreamAkari(object):
             "claude-3-5-sonnet-20241022",
             "claude-3-5-sonnet-latest",
             "claude-3-5-sonnet-20240620",
-            "claude-3-opus-20240229",
-            "claude-3-opus-latest",
-            "claude-3-sonnet-20240229",
             "claude-3-5-haiku-20241022",
             "claude-3-5-haiku-latest",
             "claude-3-haiku-20240307",
+            "claude-3-opus-20240229",
+            "claude-3-opus-latest",
+            "claude-3-sonnet-20240229",
             "claude-2.1",
             "claude-2.0",
             "claude-instant-1.2",
@@ -145,18 +147,20 @@ class ChatStreamAkari(object):
         message = {"role": role, "content": text}
         return message
 
-    def create_vision_message_gpt(
+    def create_vision_message(
         self,
         text: str,
         image: Union[np.ndarray, List[np.ndarray]],
-        image_width: int = 480,
-        image_height: int = 270,
+        model: str = None,  # type: ignore
+        image_width: Optional[int] = None,
+        image_height: Optional[int] = None,
     ) -> str:
-        """ChatGPT用の画像付きメッセージを作成する
+        """画像付きメッセージを作成する(GPTの形式)
 
         Args:
             text (str): メッセージのテキスト部分
             image (np.ndarray または List[np.ndarray]): 画像データ
+            model (str): 現在は使用しない引数 (デフォルト: None)
             image_width (int): 画像の幅 (デフォルト: 480)
             image_height (int): 画像の高さ (デフォルト: 270)
         Returns:
@@ -178,8 +182,9 @@ class ChatStreamAkari(object):
             ],
         }
         for image in image_list:
-            resized_image = cv2.resize(image, (image_width, image_height))
-            base64_image = self.cv_to_base64(resized_image)
+            if image_width is not None and image_height is not None:
+                image = cv2.resize(image, (image_width, image_height))
+            base64_image = self.cv_to_base64(image)
             url = f"data:image/jpeg;base64,{base64_image}"
             vision_message = {
                 "type": "image_url",
@@ -189,84 +194,6 @@ class ChatStreamAkari(object):
             }
             message["content"].append(vision_message)
         return message
-
-    def create_vision_message_anthropic(
-        self,
-        text: str,
-        image: Union[np.ndarray, List[np.ndarray]],
-        image_width: int = 480,
-        image_height: int = 270,
-    ) -> str:
-        """Claude3用の画像付きメッセージを作成する
-
-        Args:
-            text (str): メッセージのテキスト部分
-            image (np.ndarray または List[np.ndarray]): 画像データ
-            image_width (int): 画像の幅 (デフォルト: 480)
-            image_height (int): 画像の高さ (デフォルト: 270)
-        Returns:
-            str: 作成した画像付きメッセージ
-
-        """
-        image_list = []
-        if isinstance(image, list):
-            image_list = image
-        else:
-            image_list.append(image)
-        message = {
-            "role": "user",
-            "content": [
-                {
-                    "type": "text",
-                    "text": text,
-                },
-            ],
-        }
-        for image in image_list:
-            resized_image = cv2.resize(image, (image_width, image_height))
-            base64_image = self.cv_to_base64(resized_image)
-            url = f"{base64_image}"
-            vision_message = {
-                "type": "image",
-                "source": {
-                    "type": "base64",
-                    "media_type": "image/jpeg",
-                    "data": url,
-                },
-            }
-            message["content"].append(vision_message)
-        return message
-
-    def create_vision_message(
-        self,
-        text: str,
-        image: Union[np.ndarray, List[np.ndarray]],
-        model: str,
-        image_width: int = 480,
-        image_height: int = 270,
-    ) -> str:
-        """画像付きメッセージを作成する
-
-        Args:
-            text (str): メッセージのテキスト部分
-            image (np.ndarray または List[np.ndarray]): 画像データ
-            image_width (int): 画像の幅 (デフォルト: 480)
-            image_height (int): 画像の高さ (デフォルト: 270)
-        Returns:
-            str: 作成した画像付きメッセージ
-
-        """
-        if model in self.openai_vision_model_name:
-            return self.create_vision_message_gpt(
-                text, image, image_width, image_height
-            )
-        elif model in self.anthropic_model_name:
-            return self.create_vision_message_anthropic(
-                text, image, image_width, image_height
-            )
-        else:
-            print(f"Model name {model} can't use for this function")
-            return
 
     def chat_anthropic(
         self,
@@ -287,7 +214,21 @@ class ChatStreamAkari(object):
         # anthropicではsystemメッセージは引数として与えるので、メッセージから抜き出す
         system_message = ""
         user_messages = []
-        for message in messages:
+        copied_messages = copy.deepcopy(messages)
+        for message in copied_messages:
+            if "content" in message and isinstance(message["content"], list):
+                for content in message["content"]:
+                    if content["type"] == "image_url":
+                        content["type"] = "image"
+                        image_data = content["image_url"]["url"]
+                        if image_data.startswith("data:image/jpeg;base64,"):
+                            image_data = image_data[len("data:image/jpeg;base64,") :]
+                        content["source"] = {
+                            "type": "base64",
+                            "media_type": "image/jpeg",
+                            "data": image_data,
+                        }
+                        del content["image_url"]
             if message["role"] == "system":
                 system_message = message["content"]
             elif message["role"] == "model":
@@ -396,39 +337,51 @@ class ChatStreamAkari(object):
         if GEMINI_APIKEY is None:
             print("Gemini API key is not set.")
             return
-
+        copied_messages = copy.deepcopy(messages)
         system_instruction = ""
         new_message = ""
-        message = messages[-1]
         history = []
-        if "content" in message:
-            message["parts"] = message.pop("content")
-        if message["role"] != "user":
-            raise ValueError("The last message must be user message.")
-        else:
-            new_message = message["parts"]
-        for message in messages[:-1]:
+        # 画像メッセージを変換
+        for message in copied_messages:
             if "content" in message:
-                message["parts"] = message.pop("content")
-            if message["role"] == "system":
-                system_instruction = message["parts"]
+                if isinstance(message["content"], str):
+                    message["content"] = Content(
+                        role=message["role"],
+                        parts=[Part.from_text(text=message["content"])],
+                    )
+                elif isinstance(message["content"], list):
+                    new_parts = []
+                    for content in message["content"]:
+                        if content["type"] == "text":
+                            new_parts.append(content["text"])
+                        if content["type"] == "image_url":
+                            image_data = content["image_url"]["url"]
+                            if image_data.startswith("data:image/jpeg;base64,"):
+                                image_data = image_data[
+                                    len("data:image/jpeg;base64,") :
+                                ]
+                            new_parts.append(
+                                Part.from_bytes(image_data, mime_type="image/jpg")
+                            )
+                    message["content"] = Content(role=message["role"], parts=new_parts)
+        cur_message = copied_messages[-1]
+        if cur_message["role"] != "user":
+            raise ValueError("The last message must be user message.")
+        history = []
+        for message in copied_messages[:-1]:
+            if message["content"].role == "system":
+                system_instruction = message["content"].parts
                 continue
             else:
-                history = [
-                    Content(
-                        role=message["role"],
-                        parts=[Part.from_text(text=message["parts"])],
-                    )
-                ]
+                history.append(message["content"])
         chat = self.gemini_client.chats.create(
             model=model,
             history=history,
             config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                temperature=0.5
+                system_instruction=system_instruction, temperature=0.5
             ),
         )
-        responses = chat.send_message_stream(new_message)
+        responses = chat.send_message_stream(cur_message["content"])
         full_response = ""
         real_time_response = ""
         for response in responses:
