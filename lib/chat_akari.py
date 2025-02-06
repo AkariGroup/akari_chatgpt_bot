@@ -97,6 +97,8 @@ class ChatStreamAkari(object):
             "claude-instant-1.2",
         ]
         self.gemini_model_name = [
+            "gemini-2.0-flash-001",
+            "gemini-2.0-flash-lite-preview-02-05",
             "gemini-2.0-flash-exp",
             "gemini-1.5-pro",
             "gemini-1.5-flash",
@@ -267,11 +269,13 @@ class ChatStreamAkari(object):
                     elif content["type"] == "image_url":
                         image_data = content["image_url"]["url"]
                         if image_data.startswith("data:image/jpeg;base64,"):
-                            image_data = image_data[len("data:image/jpeg;base64,"):]
-                        parts.append(Part.from_bytes(
-                            data=base64.b64decode(image_data),
-                            mime_type="image/jpeg"
-                        ))
+                            image_data = image_data[len("data:image/jpeg;base64,") :]
+                        parts.append(
+                            Part.from_bytes(
+                                data=base64.b64decode(image_data),
+                                mime_type="image/jpeg",
+                            )
+                        )
                 if text:
                     parts.insert(0, Part.from_text(text=text))
 
@@ -282,25 +286,28 @@ class ChatStreamAkari(object):
         # 現在のメッセージの変換
         cur_parts = []
         if isinstance(cur_message["content"], str):
-            cur_parts = [cur_message["content"]]
+            cur_parts = [Part.from_text(text=cur_message["content"])]
         elif isinstance(cur_message["content"], list):
             text = ""
-            image_parts = []
             for content in cur_message["content"]:
                 if content["type"] == "text":
                     text = content["text"]
                 elif content["type"] == "image_url":
                     image_data = content["image_url"]["url"]
                     if image_data.startswith("data:image/jpeg;base64,"):
-                        image_data = image_data[len("data:image/jpeg;base64,"):]
-                    image_parts.append(Part.from_bytes(
-                        data=base64.b64decode(image_data),
-                        mime_type="image/jpeg"
-                    ))
+                        image_data = image_data[len("data:image/jpeg;base64,") :]
+                    cur_parts.append(
+                        Part.from_bytes(
+                            data=base64.b64decode(image_data), mime_type="image/jpeg"
+                        )
+                    )
             if text:
                 cur_parts.insert(0, Part.from_text(text=text))
-        role = "model" if message["role"] == "assistant" else message["role"]
+
+        role = "model" if cur_message["role"] == "assistant" else cur_message["role"]
         cur_message["contents"] = Content(role=role, parts=cur_parts)
+        del cur_message["content"]
+        del cur_message["role"]
         return system_instruction, history, cur_message
 
     def chat_gpt(
@@ -411,14 +418,14 @@ class ChatStreamAkari(object):
     def chat_gemini(
         self,
         messages: list,
-        model: str = "gemini-1.5-flash",
+        model: str = "gemini-2.0-flash-001",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
         """Geminiを使用して会話を行う
 
         Args:
             messages (list): 会話のメッセージ
-            model (str): 使用するモデル名 (デフォルト: "gemini-1.5-flash")
+            model (str): 使用するモデル名 (デフォルト: "gemini-2.0-flash-001")
             temperature (float): Geminiのtemperatureパラメータ (デフォルト: 0.7)
         Returns:
             Generator[str, None, None]): 会話の返答を順次生成する
@@ -430,7 +437,6 @@ class ChatStreamAkari(object):
         system_instruction, history, cur_message = (
             self.convert_messages_from_gpt_to_gemini(copy.deepcopy(messages))
         )
-
         chat = self.gemini_client.chats.create(
             model=model,
             history=history,
@@ -574,7 +580,10 @@ class ChatStreamAkari(object):
                         if not found_last_char:
                             data_json["talk"] = data_json["talk"] + "。"
                     except BaseException:
-                        data_json = force_parse_json(full_response)
+                        full_response_json = full_response[
+                            full_response.find("{") : full_response.rfind("}") + 1
+                        ]
+                        data_json = force_parse_json(full_response_json)
                     if data_json is not None:
                         if "talk" in data_json:
                             if not get_motion and "motion" in data_json:
@@ -613,7 +622,7 @@ class ChatStreamAkari(object):
                                     sentence_index += pos + 1
                                     if sentence != "":
                                         yield sentence
-                                    break
+                                    # break
 
     def chat_and_motion_anthropic(
         self,
@@ -672,7 +681,10 @@ class ChatStreamAkari(object):
                         if not found_last_char:
                             data_json["talk"] = data_json["talk"] + "。"
                     except BaseException:
-                        data_json = force_parse_json(full_response)
+                        full_response_json = full_response[
+                            full_response.find("{") : full_response.rfind("}") + 1
+                        ]
+                        data_json = force_parse_json(full_response_json)
                     if data_json is not None:
                         if "talk" in data_json:
                             if not get_motion and "motion" in data_json:
@@ -711,12 +723,12 @@ class ChatStreamAkari(object):
                                     sentence_index += pos + 1
                                     if sentence != "":
                                         yield sentence
-                                    break
+                                    # break
 
     def chat_and_motion_gemini(
         self,
         messages: list,
-        model: str = "gemini-1.5-flash",
+        model: str = "gemini-2.0-flash-001",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
         """ChatGPTを使用して会話を行い、会話の内容に応じた動作も生成する
@@ -732,37 +744,25 @@ class ChatStreamAkari(object):
         if GEMINI_APIKEY is None:
             print("Gemini API key is not set.")
             return
-        system_instruction = ""
-        new_messages = []
-        for message in messages:
-            if "content" in message:
-                message["parts"] = message.pop("content")
-            if message["role"] == "system":
-                system_instruction = message["parts"]
-                continue
-            elif message["role"] == "assistant":
-                message["role"] = "model"
-            new_messages.append(message)
-        if system_instruction == "":
-            model = genai.GenerativeModel(
-                model_name=model,
-                generation_config={"response_mime_type": "application/json"},
-            )
-        else:
-            model = genai.GenerativeModel(
-                model_name=model,
-                system_instruction=system_instruction,
-                generation_config={"response_mime_type": "application/json"},
-            )
-        chat = model.start_chat(history=new_messages[:-1])
-        motion_json_format = (
-            f"「{new_messages[-1]['parts']}」に対する返答を下記のJSON形式で出力してください。"
+        new_messages = copy.deepcopy(messages)
+        new_messages[-1]["content"] = (
+            f"「{new_messages[-1]['content']}」に対する返答を下記のJSON形式で出力してください。"
             '{"motion": 次の()内から動作を一つ選択("肯定する","否定する","おじぎ",'
             '"喜ぶ","笑う","落ち込む","うんざりする","眠る"), "talk": 会話の返答'
             "}"
         )
-        message = motion_json_format
-        responses = chat.send_message(message, stream=True)
+        system_instruction, history, cur_message = (
+            self.convert_messages_from_gpt_to_gemini(new_messages)
+        )
+
+        chat = self.gemini_client.chats.create(
+            model=model,
+            history=history,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction, temperature=0.5
+            ),
+        )
+        responses = chat.send_message_stream(cur_message["contents"])
         full_response = ""
         real_time_response = ""
         sentence_index = 0
@@ -783,7 +783,10 @@ class ChatStreamAkari(object):
                     if not found_last_char:
                         data_json["talk"] = data_json["talk"] + "。"
                 except BaseException:
-                    data_json = force_parse_json(full_response)
+                    full_response_json = full_response[
+                        full_response.find("{") : full_response.rfind("}") + 1
+                    ]
+                    data_json = force_parse_json(full_response_json)
                 if data_json is not None:
                     if "talk" in data_json:
                         if not get_motion and "motion" in data_json:
@@ -822,7 +825,6 @@ class ChatStreamAkari(object):
                                 sentence_index += pos + 1
                                 if sentence != "":
                                     yield sentence
-                                break
 
     def chat_and_motion(
         self,
