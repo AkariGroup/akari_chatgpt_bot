@@ -43,7 +43,9 @@ def main() -> None:
             messages_list[i].append(chat_stream_akri.create_message(text))
             response = ""
             start = time.time()
-            for sentence in chat_stream_akri.chat(messages_list[i], model=model):
+            for sentence in chat_stream_akri.chat(
+                messages_list[i], model=model, stream_per_sentence=False
+            ):
                 response += sentence
                 print(sentence, end="", flush=True)
             # chatGPTの返答をassistantメッセージとして追加

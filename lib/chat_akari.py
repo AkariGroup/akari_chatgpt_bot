@@ -314,6 +314,7 @@ class ChatStreamAkari(object):
         messages: list,
         model: str = "gpt-4o",
         temperature: float = 0.7,
+        stream_per_sentence: bool = True,
     ) -> Generator[str, None, None]:
         """ChatGPTを使用して会話を行う
 
@@ -321,6 +322,7 @@ class ChatStreamAkari(object):
             messages (list): 会話のメッセージ
             model (str): 使用するモデル名 (デフォルト: "gpt-4o")
             temperature (float): ChatGPTのtemperatureパラメータ (デフォルト: 0.7)
+            stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
         Returns:
             Generator[str, None, None]): 会話の返答を順次生成する
 
@@ -339,7 +341,6 @@ class ChatStreamAkari(object):
         )
         full_response = ""
         real_time_response = ""
-        real_time_response = ""
         for chunk in result:
             text = chunk.choices[0].delta.content
             if text is None:
@@ -347,19 +348,21 @@ class ChatStreamAkari(object):
             else:
                 full_response += text
                 real_time_response += text
-
-                for index, char in enumerate(real_time_response):
-                    if char in self.last_char:
-                        pos = index + 1  # 区切り位置
-                        sentence = real_time_response[:pos]  # 1文の区切り
-                        real_time_response = real_time_response[pos:]  # 残りの部分
-                        # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
-                        if sentence != "":
-                            yield sentence
-                        break
-                    else:
-                        pass
-        if real_time_response != "":
+                if stream_per_sentence:
+                    for index, char in enumerate(real_time_response):
+                        if char in self.last_char:
+                            pos = index + 1  # 区切り位置
+                            sentence = real_time_response[:pos]  # 1文の区切り
+                            real_time_response = real_time_response[pos:]  # 残りの部分
+                            # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
+                            if sentence != "":
+                                yield sentence
+                            break
+                        else:
+                            pass
+                else:
+                    yield text
+        if stream_per_sentence and real_time_response != "":
             yield real_time_response
 
     def chat_anthropic(
@@ -367,6 +370,7 @@ class ChatStreamAkari(object):
         messages: list,
         model: str = "claude-3-sonnet-20240229",
         temperature: float = 0.7,
+        stream_per_sentence: bool = True,
     ) -> Generator[str, None, None]:
         """Claude3を使用して会話を行う
 
@@ -374,6 +378,7 @@ class ChatStreamAkari(object):
             messages (list): 会話のメッセージ
             model (str): 使用するモデル名 (デフォルト: "claude-3-sonnet-20240229")
             temperature (float): Claude3のtemperatureパラメータ (デフォルト: 0.7)
+            stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
         Returns:
             Generator[str, None, None]): 会話の返答を順次生成する
 
@@ -399,19 +404,21 @@ class ChatStreamAkari(object):
                 else:
                     full_response += text
                     real_time_response += text
-
-                    for index, char in enumerate(real_time_response):
-                        if char in self.last_char:
-                            pos = index + 1  # 区切り位置
-                            sentence = real_time_response[:pos]  # 1文の区切り
-                            real_time_response = real_time_response[pos:]  # 残りの部分
-                            # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
-                            if sentence != "":
-                                yield sentence
-                            break
-                        else:
-                            pass
-            if real_time_response != "":
+                    if stream_per_sentence:
+                        for index, char in enumerate(real_time_response):
+                            if char in self.last_char:
+                                pos = index + 1  # 区切り位置
+                                sentence = real_time_response[:pos]  # 1文の区切り
+                                real_time_response = real_time_response[pos:]  # 残りの部分
+                                # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
+                                if sentence != "":
+                                    yield sentence
+                                break
+                            else:
+                                pass
+                    else:
+                        yield text
+            if stream_per_sentence and real_time_response != "":
                 yield real_time_response
 
     def chat_gemini(
@@ -419,6 +426,7 @@ class ChatStreamAkari(object):
         messages: list,
         model: str = "gemini-2.0-flash-001",
         temperature: float = 0.7,
+        stream_per_sentence: bool = True,
     ) -> Generator[str, None, None]:
         """Geminiを使用して会話を行う
 
@@ -426,6 +434,7 @@ class ChatStreamAkari(object):
             messages (list): 会話のメッセージ
             model (str): 使用するモデル名 (デフォルト: "gemini-2.0-flash-001")
             temperature (float): Geminiのtemperatureパラメータ (デフォルト: 0.7)
+            stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
         Returns:
             Generator[str, None, None]): 会話の返答を順次生成する
 
@@ -442,7 +451,7 @@ class ChatStreamAkari(object):
             model=model,
             history=history,
             config=types.GenerateContentConfig(
-                system_instruction=system_instruction, temperature=0.5
+                system_instruction=system_instruction, temperature=temperature
             ),
         )
         responses = chat.send_message_stream(cur_message["contents"])
@@ -455,26 +464,29 @@ class ChatStreamAkari(object):
             else:
                 full_response += text
                 real_time_response += text
-
-                for index, char in enumerate(real_time_response):
-                    if char in self.last_char:
-                        pos = index + 1  # 区切り位置
-                        sentence = real_time_response[:pos]  # 1文の区切り
-                        real_time_response = real_time_response[pos:]  # 残りの部分
-                        # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
-                        if sentence != "":
-                            yield sentence
-                        break
-                    else:
-                        pass
-        if real_time_response != "":
-            yield real_time_response
+                if stream_per_sentence:
+                    for index, char in enumerate(real_time_response):
+                        if char in self.last_char:
+                            pos = index + 1  # 区切り位置
+                            sentence = real_time_response[:pos]  # 1文の区切り
+                            real_time_response = real_time_response[pos:]  # 残りの部分
+                            # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
+                            if sentence != "":
+                                yield sentence
+                            break
+                        else:
+                            pass
+                else:
+                    yield text
+            if stream_per_sentence and real_time_response != "":
+                yield real_time_response
 
     def chat(
         self,
         messages: list,
         model: str = "gpt-4o",
         temperature: float = 0.7,
+        stream_per_sentence: bool = True,
     ) -> Generator[str, None, None]:
         """指定したモデルを使用して会話を行う
 
@@ -482,27 +494,37 @@ class ChatStreamAkari(object):
             messages (list): 会話のメッセージリスト
             model (str): 使用するモデル名 (デフォルト: "gpt-4o")
             temperature (float): サンプリングの温度パラメータ (デフォルト: 0.7)
+            stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
         Returns:
             Generator[str, None, None]): 会話の返答を順次生成する
 
         """
         if model in self.openai_model_name or model in self.openai_vision_model_name:
             yield from self.chat_gpt(
-                messages=messages, model=model, temperature=temperature
+                messages=messages,
+                model=model,
+                temperature=temperature,
+                stream_per_sentence=stream_per_sentence,
             )
         elif model in self.anthropic_model_name:
             if self.anthropic_client is None:
                 print("Anthropic API key is not set.")
                 return
             yield from self.chat_anthropic(
-                messages=messages, model=model, temperature=temperature
+                messages=messages,
+                model=model,
+                temperature=temperature,
+                stream_per_sentence=stream_per_sentence,
             )
         elif model in self.gemini_model_name:
             if GEMINI_APIKEY is None:
                 print("Gemini API key is not set.")
                 return
             yield from self.chat_gemini(
-                messages=messages, model=model, temperature=temperature
+                messages=messages,
+                model=model,
+                temperature=temperature,
+                stream_per_sentence=stream_per_sentence,
             )
         else:
             print(f"Model name {model} can't use for this function")
