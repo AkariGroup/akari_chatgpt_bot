@@ -4,8 +4,7 @@ import json
 import os
 import sys
 import threading
-from typing import Generator, List, Optional, Union
-
+from typing import Generator, List, Optional, Tuple, Union
 import anthropic
 import cv2
 from google import genai
@@ -18,8 +17,6 @@ import grpc
 import numpy as np
 import openai
 from gpt_stream_parser import force_parse_json
-from google.genai.types import Part
-
 from .conf import ANTHROPIC_APIKEY, GEMINI_APIKEY
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
@@ -195,27 +192,19 @@ class ChatStreamAkari(object):
             message["content"].append(vision_message)
         return message
 
-    def chat_anthropic(
-        self,
-        messages: list,
-        model: str = "claude-3-sonnet-20240229",
-        temperature: float = 0.7,
-    ) -> Generator[str, None, None]:
-        """Claude3を使用して会話を行う
+    def convert_messages_from_gpt_to_anthropic(
+        self, messages: list
+    ) -> Tuple[str, list]:
+        """GPTのメッセージをAnthropicのメッセージに変換する
 
         Args:
-            messages (list): 会話のメッセージ
-            model (str): 使用するモデル名 (デフォルト: "claude-3-sonnet-20240229")
-            temperature (float): Claude3のtemperatureパラメータ (デフォルト: 0.7)
+            messages (list): GPTのメッセージリスト
         Returns:
-            Generator[str, None, None]): 会話の返答を順次生成する
+            Tuple(str, list): システムメッセージ, ユーザメッセージリスト
 
         """
-        # anthropicではsystemメッセージは引数として与えるので、メッセージから抜き出す
-        system_message = ""
         user_messages = []
-        copied_messages = copy.deepcopy(messages)
-        for message in copied_messages:
+        for message in messages:
             if "content" in message and isinstance(message["content"], list):
                 for content in message["content"]:
                     if content["type"] == "image_url":
@@ -235,35 +224,84 @@ class ChatStreamAkari(object):
                 message["role"] = "assistant"
             else:
                 user_messages.append(message)
-        with self.anthropic_client.messages.stream(
-            model=model,
-            max_tokens=1000,
-            temperature=temperature,
-            messages=user_messages,
-            system=system_message,
-        ) as result:
-            full_response = ""
-            real_time_response = ""
-            for text in result.text_stream:
-                if text is None:
-                    pass
-                else:
-                    full_response += text
-                    real_time_response += text
+        return system_message, user_messages
 
-                    for index, char in enumerate(real_time_response):
-                        if char in self.last_char:
-                            pos = index + 1  # 区切り位置
-                            sentence = real_time_response[:pos]  # 1文の区切り
-                            real_time_response = real_time_response[pos:]  # 残りの部分
-                            # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
-                            if sentence != "":
-                                yield sentence
-                            break
-                        else:
-                            pass
-            if real_time_response != "":
-                yield real_time_response
+    def convert_messages_from_gpt_to_gemini(
+        self, messages: list
+    ) -> Tuple[str, list, dict]:
+        """GPTのメッセージをGeminiのメッセージに変換する
+
+        Args:
+            messages (list): GPTのメッセージリスト
+        Returns:
+            Tuple(str, list, dict): システムメッセージ, メッセージ履歴, ユーザメッセージ
+        """
+        system_instruction = ""
+        history = []
+
+        # システムメッセージの取得と最後のユーザーメッセージを除外
+        messages_for_history = []
+        cur_message = None
+
+        for message in messages:
+            if message["role"] == "system":
+                system_instruction = message["content"]
+            elif message == messages[-1]:
+                cur_message = message
+            else:
+                messages_for_history.append(message)
+
+        if cur_message is None or cur_message["role"] != "user":
+            raise ValueError("The last message must be user message.")
+
+        # 履歴メッセージの変換
+        for message in messages_for_history:
+            parts = []
+            if isinstance(message["content"], str):
+                parts = [Part.from_text(text=message["content"])]
+            elif isinstance(message["content"], list):
+                text = ""
+                for content in message["content"]:
+                    if content["type"] == "text":
+                        text = content["text"]
+                    elif content["type"] == "image_url":
+                        image_data = content["image_url"]["url"]
+                        if image_data.startswith("data:image/jpeg;base64,"):
+                            image_data = image_data[len("data:image/jpeg;base64,"):]
+                        parts.append(Part.from_bytes(
+                            data=base64.b64decode(image_data),
+                            mime_type="image/jpeg"
+                        ))
+                if text:
+                    parts.insert(0, Part.from_text(text=text))
+
+            if parts:
+                role = "model" if message["role"] == "assistant" else message["role"]
+                history.append(Content(role=role, parts=parts))
+
+        # 現在のメッセージの変換
+        cur_parts = []
+        if isinstance(cur_message["content"], str):
+            cur_parts = [cur_message["content"]]
+        elif isinstance(cur_message["content"], list):
+            text = ""
+            image_parts = []
+            for content in cur_message["content"]:
+                if content["type"] == "text":
+                    text = content["text"]
+                elif content["type"] == "image_url":
+                    image_data = content["image_url"]["url"]
+                    if image_data.startswith("data:image/jpeg;base64,"):
+                        image_data = image_data[len("data:image/jpeg;base64,"):]
+                    image_parts.append(Part.from_bytes(
+                        data=base64.b64decode(image_data),
+                        mime_type="image/jpeg"
+                    ))
+            if text:
+                cur_parts.insert(0, Part.from_text(text=text))
+        role = "model" if message["role"] == "assistant" else message["role"]
+        cur_message["contents"] = Content(role=role, parts=cur_parts)
+        return system_instruction, history, cur_message
 
     def chat_gpt(
         self,
@@ -318,6 +356,58 @@ class ChatStreamAkari(object):
         if real_time_response != "":
             yield real_time_response
 
+    def chat_anthropic(
+        self,
+        messages: list,
+        model: str = "claude-3-sonnet-20240229",
+        temperature: float = 0.7,
+    ) -> Generator[str, None, None]:
+        """Claude3を使用して会話を行う
+
+        Args:
+            messages (list): 会話のメッセージ
+            model (str): 使用するモデル名 (デフォルト: "claude-3-sonnet-20240229")
+            temperature (float): Claude3のtemperatureパラメータ (デフォルト: 0.7)
+        Returns:
+            Generator[str, None, None]): 会話の返答を順次生成する
+
+        """
+        # anthropicではsystemメッセージは引数として与えるので、メッセージから抜き出す
+        system_message = ""
+        user_messages = []
+        system_message, user_messages = self.convert_messages_from_gpt_to_anthropic(
+            copy.deepcopy(messages)
+        )
+        with self.anthropic_client.messages.stream(
+            model=model,
+            max_tokens=1000,
+            temperature=temperature,
+            messages=user_messages,
+            system=system_message,
+        ) as result:
+            full_response = ""
+            real_time_response = ""
+            for text in result.text_stream:
+                if text is None:
+                    pass
+                else:
+                    full_response += text
+                    real_time_response += text
+
+                    for index, char in enumerate(real_time_response):
+                        if char in self.last_char:
+                            pos = index + 1  # 区切り位置
+                            sentence = real_time_response[:pos]  # 1文の区切り
+                            real_time_response = real_time_response[pos:]  # 残りの部分
+                            # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
+                            if sentence != "":
+                                yield sentence
+                            break
+                        else:
+                            pass
+            if real_time_response != "":
+                yield real_time_response
+
     def chat_gemini(
         self,
         messages: list,
@@ -337,43 +427,10 @@ class ChatStreamAkari(object):
         if GEMINI_APIKEY is None:
             print("Gemini API key is not set.")
             return
-        copied_messages = copy.deepcopy(messages)
-        system_instruction = ""
-        new_message = ""
-        history = []
-        # 画像メッセージを変換
-        for message in copied_messages:
-            if "content" in message:
-                if isinstance(message["content"], str):
-                    message["content"] = Content(
-                        role=message["role"],
-                        parts=[Part.from_text(text=message["content"])],
-                    )
-                elif isinstance(message["content"], list):
-                    new_parts = []
-                    for content in message["content"]:
-                        if content["type"] == "text":
-                            new_parts.append(content["text"])
-                        if content["type"] == "image_url":
-                            image_data = content["image_url"]["url"]
-                            if image_data.startswith("data:image/jpeg;base64,"):
-                                image_data = image_data[
-                                    len("data:image/jpeg;base64,") :
-                                ]
-                            new_parts.append(
-                                Part.from_bytes(image_data, mime_type="image/jpg")
-                            )
-                    message["content"] = Content(role=message["role"], parts=new_parts)
-        cur_message = copied_messages[-1]
-        if cur_message["role"] != "user":
-            raise ValueError("The last message must be user message.")
-        history = []
-        for message in copied_messages[:-1]:
-            if message["content"].role == "system":
-                system_instruction = message["content"].parts
-                continue
-            else:
-                history.append(message["content"])
+        system_instruction, history, cur_message = (
+            self.convert_messages_from_gpt_to_gemini(copy.deepcopy(messages))
+        )
+
         chat = self.gemini_client.chats.create(
             model=model,
             history=history,
@@ -381,7 +438,7 @@ class ChatStreamAkari(object):
                 system_instruction=system_instruction, temperature=0.5
             ),
         )
-        responses = chat.send_message_stream(cur_message["content"])
+        responses = chat.send_message_stream(cur_message["contents"])
         full_response = ""
         real_time_response = ""
         for response in responses:
@@ -403,8 +460,8 @@ class ChatStreamAkari(object):
                         break
                     else:
                         pass
-            if real_time_response != "":
-                yield real_time_response
+        if real_time_response != "":
+            yield real_time_response
 
     def chat(
         self,
