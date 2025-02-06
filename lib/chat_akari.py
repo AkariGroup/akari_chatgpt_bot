@@ -96,9 +96,12 @@ class ChatStreamAkari(object):
             "claude-instant-1.2",
         ]
         self.gemini_model_name = [
+            "gemini-2.0-pro-exp",
+            "gemini-2.0-pro-exp-02-05",
             "gemini-2.0-flash-001",
             "gemini-2.0-flash-lite-preview-02-05",
             "gemini-2.0-flash-exp",
+            "gemini-2.0-flash-thinking-exp-01-21",
             "gemini-1.5-pro",
             "gemini-1.5-flash",
             "gemini-1.5-flash-8b",
