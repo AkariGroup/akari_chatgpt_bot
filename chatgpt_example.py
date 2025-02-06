@@ -24,7 +24,7 @@ def main() -> None:
     # systemメッセージの作成
     messages_list = []
     content = None
-    if not args.system:
+    if args.system == "":
         SYSTEM_PROMPT_PATH = (
             f"{os.path.dirname(os.path.realpath(__file__))}/config/system_prompt.txt"
         )

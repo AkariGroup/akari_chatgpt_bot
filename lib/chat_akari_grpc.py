@@ -145,7 +145,10 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                         if not found_last_char:
                             data_json["talk"] = data_json["talk"] + "。"
                     except BaseException:
-                        data_json = force_parse_json(full_response)
+                        full_response_json = full_response[
+                            full_response.find("{") : full_response.rfind("}") + 1
+                        ]
+                        data_json = force_parse_json(full_response_json)
                     if data_json is not None:
                         if "talk" in data_json:
                             if not get_motion and "motion" in data_json:
@@ -182,7 +185,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                                     sentence_index += pos + 1
                                     if sentence != "":
                                         yield sentence
-                                    break
+                                    # break
 
     def chat_and_motion_anthropic(
         self,
@@ -246,7 +249,10 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                         if not found_last_char:
                             data_json["talk"] = data_json["talk"] + "。"
                     except BaseException:
-                        data_json = force_parse_json(full_response)
+                        full_response_json = full_response[
+                            full_response.find("{") : full_response.rfind("}") + 1
+                        ]
+                        data_json = force_parse_json(full_response_json)
                     if data_json is not None:
                         if "talk" in data_json:
                             if not get_motion and "motion" in data_json:
@@ -283,12 +289,12 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                                     sentence_index += pos + 1
                                     if sentence != "":
                                         yield sentence
-                                    break
+                                    # break
 
     def chat_and_motion_gemini(
         self,
         messages: list,
-        model: str = "gemini-1.5-pro",
+        model: str = "gemini-2.0-flash-001",
         temperature: float = 0.7,
         short_response: bool = False,
     ) -> Generator[str, None, None]:
@@ -296,7 +302,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
 
         Args:
             messages (list): メッセージリスト
-            model (str): 使用するモデル名 (デフォルト: "gpt-4o")
+            model (str): 使用するモデル名 (デフォルト: "gemini-2.0-flash-001")
             temperature (float): ChatGPTのtemperatureパラメータ (デフォルト: 0.7)
             short_response (bool, optional): 相槌などの短応答のみを返すか、通常の応答を返すか。
         Returns:
@@ -356,7 +362,10 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                     if not found_last_char:
                         data_json["talk"] = data_json["talk"] + "。"
                 except BaseException:
-                    data_json = force_parse_json(full_response)
+                    full_response_json = full_response[
+                        full_response.find("{") : full_response.rfind("}") + 1
+                    ]
+                    data_json = force_parse_json(full_response_json)
                 if data_json is not None:
                     if "talk" in data_json:
                         if not get_motion and "motion" in data_json:
@@ -392,7 +401,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                                 sentence_index += pos + 1
                                 if sentence != "":
                                     yield sentence
-                                break
+                                # break
 
     def chat_and_motion(
         self,

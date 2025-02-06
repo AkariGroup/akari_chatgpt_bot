@@ -1,16 +1,19 @@
 import base64
+import copy
 import json
 import os
 import sys
 import threading
-from typing import Generator, List, Union
+from typing import Generator, List, Optional, Tuple, Union
 
 import anthropic
 import cv2
-import google.generativeai as genai
 import grpc
 import numpy as np
 import openai
+from google import genai
+from google.genai import types
+from google.genai.types import Content, Part
 from gpt_stream_parser import force_parse_json
 
 from .conf import ANTHROPIC_APIKEY, GEMINI_APIKEY
@@ -45,7 +48,7 @@ class ChatStreamAkari(object):
                 api_key=ANTHROPIC_APIKEY,
             )
         if GEMINI_APIKEY is not None:
-            genai.configure(api_key=GEMINI_APIKEY)
+            self.gemini_client = genai.Client(api_key=GEMINI_APIKEY)
         self.last_char = ["、", "。", "！", "!", "?", "？", "\n", "}"]
         self.openai_model_name = [
             "gpt-4o",
@@ -82,21 +85,23 @@ class ChatStreamAkari(object):
             "claude-3-5-sonnet-20241022",
             "claude-3-5-sonnet-latest",
             "claude-3-5-sonnet-20240620",
-            "claude-3-opus-20240229",
-            "claude-3-opus-latest",
-            "claude-3-sonnet-20240229",
             "claude-3-5-haiku-20241022",
             "claude-3-5-haiku-latest",
             "claude-3-haiku-20240307",
+            "claude-3-opus-20240229",
+            "claude-3-opus-latest",
+            "claude-3-sonnet-20240229",
             "claude-2.1",
             "claude-2.0",
             "claude-instant-1.2",
         ]
         self.gemini_model_name = [
+            "gemini-2.0-flash-001",
+            "gemini-2.0-flash-lite-preview-02-05",
             "gemini-2.0-flash-exp",
             "gemini-1.5-pro",
             "gemini-1.5-flash",
-            "gemini-1.5-flash-8b"
+            "gemini-1.5-flash-8b",
         ]
 
     def send_motion(self, name: str) -> None:
@@ -140,18 +145,20 @@ class ChatStreamAkari(object):
         message = {"role": role, "content": text}
         return message
 
-    def create_vision_message_gpt(
+    def create_vision_message(
         self,
         text: str,
         image: Union[np.ndarray, List[np.ndarray]],
-        image_width: int = 480,
-        image_height: int = 270,
+        model: str = None,  # type: ignore
+        image_width: Optional[int] = None,
+        image_height: Optional[int] = None,
     ) -> str:
-        """ChatGPT用の画像付きメッセージを作成する
+        """画像付きメッセージを作成する(GPTの形式)
 
         Args:
             text (str): メッセージのテキスト部分
             image (np.ndarray または List[np.ndarray]): 画像データ
+            model (str): 現在は使用しない引数 (デフォルト: None)
             image_width (int): 画像の幅 (デフォルト: 480)
             image_height (int): 画像の高さ (デフォルト: 270)
         Returns:
@@ -173,8 +180,9 @@ class ChatStreamAkari(object):
             ],
         }
         for image in image_list:
-            resized_image = cv2.resize(image, (image_width, image_height))
-            base64_image = self.cv_to_base64(resized_image)
+            if image_width is not None and image_height is not None:
+                image = cv2.resize(image, (image_width, image_height))
+            base64_image = self.cv_to_base64(image)
             url = f"data:image/jpeg;base64,{base64_image}"
             vision_message = {
                 "type": "image_url",
@@ -185,139 +193,121 @@ class ChatStreamAkari(object):
             message["content"].append(vision_message)
         return message
 
-    def create_vision_message_anthropic(
-        self,
-        text: str,
-        image: Union[np.ndarray, List[np.ndarray]],
-        image_width: int = 480,
-        image_height: int = 270,
-    ) -> str:
-        """Claude3用の画像付きメッセージを作成する
+    def convert_messages_from_gpt_to_anthropic(
+        self, messages: list
+    ) -> Tuple[str, list]:
+        """GPTのメッセージをAnthropicのメッセージに変換する
 
         Args:
-            text (str): メッセージのテキスト部分
-            image (np.ndarray または List[np.ndarray]): 画像データ
-            image_width (int): 画像の幅 (デフォルト: 480)
-            image_height (int): 画像の高さ (デフォルト: 270)
+            messages (list): GPTのメッセージリスト
         Returns:
-            str: 作成した画像付きメッセージ
+            Tuple(str, list): システムメッセージ, ユーザメッセージリスト
 
         """
-        image_list = []
-        if isinstance(image, list):
-            image_list = image
-        else:
-            image_list.append(image)
-        message = {
-            "role": "user",
-            "content": [
-                {
-                    "type": "text",
-                    "text": text,
-                },
-            ],
-        }
-        for image in image_list:
-            resized_image = cv2.resize(image, (image_width, image_height))
-            base64_image = self.cv_to_base64(resized_image)
-            url = f"{base64_image}"
-            vision_message = {
-                "type": "image",
-                "source": {
-                    "type": "base64",
-                    "media_type": "image/jpeg",
-                    "data": url,
-                },
-            }
-            message["content"].append(vision_message)
-        return message
-
-    def create_vision_message(
-        self,
-        text: str,
-        image: Union[np.ndarray, List[np.ndarray]],
-        model: str,
-        image_width: int = 480,
-        image_height: int = 270,
-    ) -> str:
-        """画像付きメッセージを作成する
-
-        Args:
-            text (str): メッセージのテキスト部分
-            image (np.ndarray または List[np.ndarray]): 画像データ
-            image_width (int): 画像の幅 (デフォルト: 480)
-            image_height (int): 画像の高さ (デフォルト: 270)
-        Returns:
-            str: 作成した画像付きメッセージ
-
-        """
-        if model in self.openai_vision_model_name:
-            return self.create_vision_message_gpt(
-                text, image, image_width, image_height
-            )
-        elif model in self.anthropic_model_name:
-            return self.create_vision_message_anthropic(
-                text, image, image_width, image_height
-            )
-        else:
-            print(f"Model name {model} can't use for this function")
-            return
-
-    def chat_anthropic(
-        self,
-        messages: list,
-        model: str = "claude-3-sonnet-20240229",
-        temperature: float = 0.7,
-    ) -> Generator[str, None, None]:
-        """Claude3を使用して会話を行う
-
-        Args:
-            messages (list): 会話のメッセージ
-            model (str): 使用するモデル名 (デフォルト: "claude-3-sonnet-20240229")
-            temperature (float): Claude3のtemperatureパラメータ (デフォルト: 0.7)
-        Returns:
-            Generator[str, None, None]): 会話の返答を順次生成する
-
-        """
-        # anthropicではsystemメッセージは引数として与えるので、メッセージから抜き出す
-        system_message = ""
         user_messages = []
         for message in messages:
+            if "content" in message and isinstance(message["content"], list):
+                for content in message["content"]:
+                    if content["type"] == "image_url":
+                        content["type"] = "image"
+                        image_data = content["image_url"]["url"]
+                        if image_data.startswith("data:image/jpeg;base64,"):
+                            image_data = image_data[len("data:image/jpeg;base64,") :]
+                        content["source"] = {
+                            "type": "base64",
+                            "media_type": "image/jpeg",
+                            "data": image_data,
+                        }
+                        del content["image_url"]
             if message["role"] == "system":
                 system_message = message["content"]
             elif message["role"] == "model":
                 message["role"] = "assistant"
             else:
                 user_messages.append(message)
-        with self.anthropic_client.messages.stream(
-            model=model,
-            max_tokens=1000,
-            temperature=temperature,
-            messages=user_messages,
-            system=system_message,
-        ) as result:
-            full_response = ""
-            real_time_response = ""
-            for text in result.text_stream:
-                if text is None:
-                    pass
-                else:
-                    full_response += text
-                    real_time_response += text
+        return system_message, user_messages
 
-                    for index, char in enumerate(real_time_response):
-                        if char in self.last_char:
-                            pos = index + 1  # 区切り位置
-                            sentence = real_time_response[:pos]  # 1文の区切り
-                            real_time_response = real_time_response[pos:]  # 残りの部分
-                            # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
-                            if sentence != "":
-                                yield sentence
-                            break
-                        else:
-                            pass
-            if real_time_response != "":
-                yield real_time_response
+    def convert_messages_from_gpt_to_gemini(
+        self, messages: list
+    ) -> Tuple[str, list, dict]:
+        """GPTのメッセージをGeminiのメッセージに変換する
+
+        Args:
+            messages (list): GPTのメッセージリスト
+        Returns:
+            Tuple(str, list, dict): システムメッセージ, メッセージ履歴, ユーザメッセージ
+        """
+        system_instruction = ""
+        history = []
+
+        # システムメッセージの取得と最後のユーザーメッセージを除外
+        messages_for_history = []
+        cur_message = None
+
+        for message in messages:
+            if message["role"] == "system":
+                system_instruction = message["content"]
+            elif message == messages[-1]:
+                cur_message = message
+            else:
+                messages_for_history.append(message)
+
+        if cur_message is None or cur_message["role"] != "user":
+            raise ValueError("The last message must be user message.")
+
+        # 履歴メッセージの変換
+        for message in messages_for_history:
+            parts = []
+            if isinstance(message["content"], str):
+                parts = [Part.from_text(text=message["content"])]
+            elif isinstance(message["content"], list):
+                text = ""
+                for content in message["content"]:
+                    if content["type"] == "text":
+                        text = content["text"]
+                    elif content["type"] == "image_url":
+                        image_data = content["image_url"]["url"]
+                        if image_data.startswith("data:image/jpeg;base64,"):
+                            image_data = image_data[len("data:image/jpeg;base64,") :]
+                        parts.append(
+                            Part.from_bytes(
+                                data=base64.b64decode(image_data),
+                                mime_type="image/jpeg",
+                            )
+                        )
+                if text:
+                    parts.insert(0, Part.from_text(text=text))
+
+            if parts:
+                role = "model" if message["role"] == "assistant" else message["role"]
+                history.append(Content(role=role, parts=parts))
+
+        # 現在のメッセージの変換
+        cur_parts = []
+        if isinstance(cur_message["content"], str):
+            cur_parts = [Part.from_text(text=cur_message["content"])]
+        elif isinstance(cur_message["content"], list):
+            text = ""
+            for content in cur_message["content"]:
+                if content["type"] == "text":
+                    text = content["text"]
+                elif content["type"] == "image_url":
+                    image_data = content["image_url"]["url"]
+                    if image_data.startswith("data:image/jpeg;base64,"):
+                        image_data = image_data[len("data:image/jpeg;base64,") :]
+                    cur_parts.append(
+                        Part.from_bytes(
+                            data=base64.b64decode(image_data), mime_type="image/jpeg"
+                        )
+                    )
+            if text:
+                cur_parts.insert(0, Part.from_text(text=text))
+
+        role = "model" if cur_message["role"] == "assistant" else cur_message["role"]
+        cur_message["contents"] = Content(role=role, parts=cur_parts)
+        del cur_message["content"]
+        del cur_message["role"]
+        return system_instruction, history, cur_message
 
     def chat_gpt(
         self,
@@ -349,6 +339,7 @@ class ChatStreamAkari(object):
         )
         full_response = ""
         real_time_response = ""
+        real_time_response = ""
         for chunk in result:
             text = chunk.choices[0].delta.content
             if text is None:
@@ -371,17 +362,69 @@ class ChatStreamAkari(object):
         if real_time_response != "":
             yield real_time_response
 
+    def chat_anthropic(
+        self,
+        messages: list,
+        model: str = "claude-3-sonnet-20240229",
+        temperature: float = 0.7,
+    ) -> Generator[str, None, None]:
+        """Claude3を使用して会話を行う
+
+        Args:
+            messages (list): 会話のメッセージ
+            model (str): 使用するモデル名 (デフォルト: "claude-3-sonnet-20240229")
+            temperature (float): Claude3のtemperatureパラメータ (デフォルト: 0.7)
+        Returns:
+            Generator[str, None, None]): 会話の返答を順次生成する
+
+        """
+        # anthropicではsystemメッセージは引数として与えるので、メッセージから抜き出す
+        system_message = ""
+        user_messages = []
+        system_message, user_messages = self.convert_messages_from_gpt_to_anthropic(
+            copy.deepcopy(messages)
+        )
+        with self.anthropic_client.messages.stream(
+            model=model,
+            max_tokens=1000,
+            temperature=temperature,
+            messages=user_messages,
+            system=system_message,
+        ) as result:
+            full_response = ""
+            real_time_response = ""
+            for text in result.text_stream:
+                if text is None:
+                    pass
+                else:
+                    full_response += text
+                    real_time_response += text
+
+                    for index, char in enumerate(real_time_response):
+                        if char in self.last_char:
+                            pos = index + 1  # 区切り位置
+                            sentence = real_time_response[:pos]  # 1文の区切り
+                            real_time_response = real_time_response[pos:]  # 残りの部分
+                            # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
+                            if sentence != "":
+                                yield sentence
+                            break
+                        else:
+                            pass
+            if real_time_response != "":
+                yield real_time_response
+
     def chat_gemini(
         self,
         messages: list,
-        model: str = "gemini-1.5-flash",
+        model: str = "gemini-2.0-flash-001",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
         """Geminiを使用して会話を行う
 
         Args:
             messages (list): 会話のメッセージ
-            model (str): 使用するモデル名 (デフォルト: "gemini-1.5-flash")
+            model (str): 使用するモデル名 (デフォルト: "gemini-2.0-flash-001")
             temperature (float): Geminiのtemperatureパラメータ (デフォルト: 0.7)
         Returns:
             Generator[str, None, None]): 会話の返答を順次生成する
@@ -390,25 +433,19 @@ class ChatStreamAkari(object):
         if GEMINI_APIKEY is None:
             print("Gemini API key is not set.")
             return
-        system_instruction = ""
-        new_messages = []
-        for message in messages:
-            if "content" in message:
-                message["parts"] = message.pop("content")
-            if message["role"] == "system":
-                system_instruction = message["parts"]
-                continue
-            elif message["role"] == "assistant":
-                message["role"] = "model"
-            new_messages.append(message)
-        if system_instruction == "":
-            model = genai.GenerativeModel(model_name=model)
-        else:
-            model = genai.GenerativeModel(
-                model_name=model, system_instruction=system_instruction
-            )
-        chat = model.start_chat(history=new_messages[:-1])
-        responses = chat.send_message(new_messages[-1]["parts"], stream=True)
+        (
+            system_instruction,
+            history,
+            cur_message,
+        ) = self.convert_messages_from_gpt_to_gemini(copy.deepcopy(messages))
+        chat = self.gemini_client.chats.create(
+            model=model,
+            history=history,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction, temperature=0.5
+            ),
+        )
+        responses = chat.send_message_stream(cur_message["contents"])
         full_response = ""
         real_time_response = ""
         for response in responses:
@@ -544,7 +581,10 @@ class ChatStreamAkari(object):
                         if not found_last_char:
                             data_json["talk"] = data_json["talk"] + "。"
                     except BaseException:
-                        data_json = force_parse_json(full_response)
+                        full_response_json = full_response[
+                            full_response.find("{") : full_response.rfind("}") + 1
+                        ]
+                        data_json = force_parse_json(full_response_json)
                     if data_json is not None:
                         if "talk" in data_json:
                             if not get_motion and "motion" in data_json:
@@ -583,7 +623,7 @@ class ChatStreamAkari(object):
                                     sentence_index += pos + 1
                                     if sentence != "":
                                         yield sentence
-                                    break
+                                    # break
 
     def chat_and_motion_anthropic(
         self,
@@ -609,9 +649,13 @@ class ChatStreamAkari(object):
             else:
                 user_messages.append(message)
         # 最後の1文を動作と文章のJSON形式出力指定に修正
-        user_messages[-1][
-            "content"
-        ] = f"「{user_messages[-1]['content']}」に対する返答を下記のJSON形式で出力してください。{{\"motion\": 次の()内から動作を一つ選択(\"肯定する\",\"否定する\",\"おじぎ\",\"喜ぶ\",\"笑う\",\"落ち込む\",\"うんざりする\",\"眠る\"), \"talk\": 会話の返答}}"
+        motion_json_format = (
+            f"「{user_messages[-1]['content']}」に対する返答を下記のJSON形式で出力してください。"
+            '{"motion": 次の()内から動作を一つ選択("肯定する","否定する","おじぎ",'
+            '"喜ぶ","笑う","落ち込む","うんざりする","眠る"), "talk": 会話の返答'
+            "}"
+        )
+        user_messages[-1]["content"] = motion_json_format
         with self.anthropic_client.messages.stream(
             model=model,
             max_tokens=1000,
@@ -638,7 +682,10 @@ class ChatStreamAkari(object):
                         if not found_last_char:
                             data_json["talk"] = data_json["talk"] + "。"
                     except BaseException:
-                        data_json = force_parse_json(full_response)
+                        full_response_json = full_response[
+                            full_response.find("{") : full_response.rfind("}") + 1
+                        ]
+                        data_json = force_parse_json(full_response_json)
                     if data_json is not None:
                         if "talk" in data_json:
                             if not get_motion and "motion" in data_json:
@@ -677,12 +724,12 @@ class ChatStreamAkari(object):
                                     sentence_index += pos + 1
                                     if sentence != "":
                                         yield sentence
-                                    break
+                                    # break
 
     def chat_and_motion_gemini(
         self,
         messages: list,
-        model: str = "gemini-1.5-flash",
+        model: str = "gemini-2.0-flash-001",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
         """ChatGPTを使用して会話を行い、会話の内容に応じた動作も生成する
@@ -698,31 +745,27 @@ class ChatStreamAkari(object):
         if GEMINI_APIKEY is None:
             print("Gemini API key is not set.")
             return
-        system_instruction = ""
-        new_messages = []
-        for message in messages:
-            if "content" in message:
-                message["parts"] = message.pop("content")
-            if message["role"] == "system":
-                system_instruction = message["parts"]
-                continue
-            elif message["role"] == "assistant":
-                message["role"] = "model"
-            new_messages.append(message)
-        if system_instruction == "":
-            model = genai.GenerativeModel(
-                model_name=model,
-                generation_config={"response_mime_type": "application/json"},
-            )
-        else:
-            model = genai.GenerativeModel(
-                model_name=model,
-                system_instruction=system_instruction,
-                generation_config={"response_mime_type": "application/json"},
-            )
-        chat = model.start_chat(history=new_messages[:-1])
-        message = f"「{new_messages[-1]['parts']}」に対する返答を下記のJSON形式で出力してください。{{\"motion\": 次の()内から動作を一つ選択(\"肯定する\",\"否定する\",\"おじぎ\",\"喜ぶ\",\"笑う\",\"落ち込む\",\"うんざりする\",\"眠る\"), \"talk\": 会話の返答}}"
-        responses = chat.send_message(message, stream=True)
+        new_messages = copy.deepcopy(messages)
+        new_messages[-1]["content"] = (
+            f"「{new_messages[-1]['content']}」に対する返答を下記のJSON形式で出力してください。"
+            '{"motion": 次の()内から動作を一つ選択("肯定する","否定する","おじぎ",'
+            '"喜ぶ","笑う","落ち込む","うんざりする","眠る"), "talk": 会話の返答'
+            "}"
+        )
+        (
+            system_instruction,
+            history,
+            cur_message,
+        ) = self.convert_messages_from_gpt_to_gemini(new_messages)
+
+        chat = self.gemini_client.chats.create(
+            model=model,
+            history=history,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction, temperature=0.5
+            ),
+        )
+        responses = chat.send_message_stream(cur_message["contents"])
         full_response = ""
         real_time_response = ""
         sentence_index = 0
@@ -743,7 +786,10 @@ class ChatStreamAkari(object):
                     if not found_last_char:
                         data_json["talk"] = data_json["talk"] + "。"
                 except BaseException:
-                    data_json = force_parse_json(full_response)
+                    full_response_json = full_response[
+                        full_response.find("{") : full_response.rfind("}") + 1
+                    ]
+                    data_json = force_parse_json(full_response_json)
                 if data_json is not None:
                     if "talk" in data_json:
                         if not get_motion and "motion" in data_json:
@@ -782,7 +828,6 @@ class ChatStreamAkari(object):
                                 sentence_index += pos + 1
                                 if sentence != "":
                                     yield sentence
-                                break
 
     def chat_and_motion(
         self,
