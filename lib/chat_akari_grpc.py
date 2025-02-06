@@ -302,7 +302,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
 
         Args:
             messages (list): メッセージリスト
-            model (str): 使用するモデル名 (デフォルト: "gpt-4o")
+            model (str): 使用するモデル名 (デフォルト: "gemini-2.0-flash-001")
             temperature (float): ChatGPTのtemperatureパラメータ (デフォルト: 0.7)
             short_response (bool, optional): 相槌などの短応答のみを返すか、通常の応答を返すか。
         Returns:
