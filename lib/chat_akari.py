@@ -5,18 +5,17 @@ import os
 import sys
 import threading
 from typing import Generator, List, Optional, Tuple, Union
+
 import anthropic
 import cv2
-from google import genai
-from google.genai import types
-from google.genai.types import (
-    Content,
-    Part,
-)
 import grpc
 import numpy as np
 import openai
+from google import genai
+from google.genai import types
+from google.genai.types import Content, Part
 from gpt_stream_parser import force_parse_json
+
 from .conf import ANTHROPIC_APIKEY, GEMINI_APIKEY
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
@@ -434,9 +433,11 @@ class ChatStreamAkari(object):
         if GEMINI_APIKEY is None:
             print("Gemini API key is not set.")
             return
-        system_instruction, history, cur_message = (
-            self.convert_messages_from_gpt_to_gemini(copy.deepcopy(messages))
-        )
+        (
+            system_instruction,
+            history,
+            cur_message,
+        ) = self.convert_messages_from_gpt_to_gemini(copy.deepcopy(messages))
         chat = self.gemini_client.chats.create(
             model=model,
             history=history,
@@ -751,9 +752,11 @@ class ChatStreamAkari(object):
             '"喜ぶ","笑う","落ち込む","うんざりする","眠る"), "talk": 会話の返答'
             "}"
         )
-        system_instruction, history, cur_message = (
-            self.convert_messages_from_gpt_to_gemini(new_messages)
-        )
+        (
+            system_instruction,
+            history,
+            cur_message,
+        ) = self.convert_messages_from_gpt_to_gemini(new_messages)
 
         chat = self.gemini_client.chats.create(
             model=model,

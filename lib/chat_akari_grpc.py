@@ -362,7 +362,9 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                     if not found_last_char:
                         data_json["talk"] = data_json["talk"] + "。"
                 except BaseException:
-                    full_response_json = full_response[full_response.find("{"):full_response.rfind("}") + 1]
+                    full_response_json = full_response[
+                        full_response.find("{") : full_response.rfind("}") + 1
+                    ]
                     data_json = force_parse_json(full_response_json)
                 if data_json is not None:
                     if "talk" in data_json:
