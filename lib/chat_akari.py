@@ -481,8 +481,8 @@ class ChatStreamAkari(object):
                             pass
                 else:
                     yield text
-            if stream_per_sentence and real_time_response != "":
-                yield real_time_response
+        if stream_per_sentence and real_time_response != "":
+            yield real_time_response
 
     def chat(
         self,
