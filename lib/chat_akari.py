@@ -98,6 +98,7 @@ class ChatStreamAkari(object):
         self.gemini_model_name = [
             "gemini-2.0-pro-exp",
             "gemini-2.0-pro-exp-02-05",
+            "gemini-2.0-flash",
             "gemini-2.0-flash-001",
             "gemini-2.0-flash-lite-preview-02-05",
             "gemini-2.0-flash-exp",
