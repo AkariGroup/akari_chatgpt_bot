@@ -374,7 +374,7 @@ class ChatStreamAkari(object):
     def chat_anthropic(
         self,
         messages: list,
-        model: str = "claude-3-sonnet-20240229",
+        model: str = "claude-3-7-sonnet-latest",
         temperature: float = 0.7,
         stream_per_sentence: bool = True,
     ) -> Generator[str, None, None]:
@@ -382,7 +382,7 @@ class ChatStreamAkari(object):
 
         Args:
             messages (list): 会話のメッセージ
-            model (str): 使用するモデル名 (デフォルト: "claude-3-sonnet-20240229")
+            model (str): 使用するモデル名 (デフォルト: "claude-3-7-sonnet-latest")
             temperature (float): Claude3のtemperatureパラメータ (デフォルト: 0.7)
             stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
         Returns:
@@ -397,7 +397,7 @@ class ChatStreamAkari(object):
         )
         with self.anthropic_client.messages.stream(
             model=model,
-            max_tokens=1000,
+            max_tokens=1024,
             temperature=temperature,
             messages=user_messages,
             system=system_message,
@@ -530,6 +530,100 @@ class ChatStreamAkari(object):
                 messages=messages,
                 model=model,
                 temperature=temperature,
+                stream_per_sentence=stream_per_sentence,
+            )
+        else:
+            print(f"Model name {model} can't use for this function")
+            return
+
+    def chat_anthropic_thinking(
+        self,
+        messages: list,
+        model: str = "claude-3-7-sonnet-latest",
+        max_tokens: int = 64000,
+        budget_tokents: int = 32000,
+        stream_per_sentence: bool = True,
+    ) -> Generator[str, None, None]:
+        """Claudeを使用して拡張思考モードで会話を行う
+
+        Args:
+            messages (list): 会話のメッセージ
+            model (str): 使用するモデル名 (デフォルト: ""claude-3-7-sonnet-latest")
+            max_tokens (int): 1回のリクエストで生成する最大トークン数 (デフォルト: 64000)
+            budget_tokents (int): 1回のリクエストで拡張思考に使用するトークン数 (デフォルト: 32000)
+            stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
+        Returns:
+            Generator[str, None, None]): 会話の返答を順次生成する
+
+        """
+        # anthropicではsystemメッセージは引数として与えるので、メッセージから抜き出す
+        system_message = ""
+        user_messages = []
+        system_message, user_messages = self.convert_messages_from_gpt_to_anthropic(
+            copy.deepcopy(messages)
+        )
+        with self.anthropic_client.messages.stream(
+            model=model,
+            max_tokens=max_tokens,
+            temperature=1.0,  # thinkingではtemperatureは1.0固定
+            thinking={"type": "enabled", "budget_tokens": budget_tokents},
+            messages=user_messages,
+            system=system_message,
+        ) as result:
+            full_response = ""
+            real_time_response = ""
+            for text in result.text_stream:
+                if text is None:
+                    pass
+                else:
+                    full_response += text
+                    real_time_response += text
+                    if stream_per_sentence:
+                        for index, char in enumerate(real_time_response):
+                            if char in self.last_char:
+                                pos = index + 1  # 区切り位置
+                                sentence = real_time_response[:pos]  # 1文の区切り
+                                real_time_response = real_time_response[pos:]  # 残りの部分
+                                # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
+                                if sentence != "":
+                                    yield sentence
+                                break
+                            else:
+                                pass
+                    else:
+                        yield text
+            if stream_per_sentence and real_time_response != "":
+                yield real_time_response
+
+    def chat_thinking(
+        self,
+        messages: list,
+        model: str = "claude-3-7-sonnet-latest",
+        max_tokens: int = 64000,
+        budget_tokents: int = 32000,
+        stream_per_sentence: bool = True,
+    ) -> Generator[str, None, None]:
+        """指定したモデルを使用して、拡張思考を用いた会話を行う
+
+        Args:
+            messages (list): 会話のメッセージリスト
+            model (str): 使用するモデル名 (デフォルト: "claude-3-7-sonnet-latest")
+            max_tokens (int): 1回のリクエストで生成する最大トークン数 (デフォルト: 64000)
+            budget_tokents (int): 1回のリクエストで拡張思考に使用するトークン数 (デフォルト: 32000)
+            stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
+        Returns:
+            Generator[str, None, None]): 会話の返答を順次生成する
+
+        """
+        if model in self.anthropic_model_name:
+            if self.anthropic_client is None:
+                print("Anthropic API key is not set.")
+                return
+            yield from self.chat_anthropic_thinking(
+                messages=messages,
+                model=model,
+                max_tokens=max_tokens,
+                budget_tokents=budget_tokents,
                 stream_per_sentence=stream_per_sentence,
             )
         else:
