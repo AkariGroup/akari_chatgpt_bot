@@ -82,6 +82,8 @@ class ChatStreamAkari(object):
             "gpt-4-1106-vision-preview",
         ]
         self.anthropic_model_name = [
+            "claude-3-7-sonnet-latest",
+            "claude-3-7-sonnet-20250219",
             "claude-3-5-sonnet-20241022",
             "claude-3-5-sonnet-latest",
             "claude-3-5-sonnet-20240620",
