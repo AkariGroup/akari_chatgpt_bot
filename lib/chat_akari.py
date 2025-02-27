@@ -51,6 +51,8 @@ class ChatStreamAkari(object):
             self.gemini_client = genai.Client(api_key=GEMINI_APIKEY)
         self.last_char = ["、", "。", "！", "!", "?", "？", "\n", "}"]
         self.openai_model_name = [
+            "gpt-4.5-preview",
+            "gpt-4.5-preview-2025-02-27",
             "gpt-4o",
             "gpt-4o-2024-11-20",
             "gpt-4o-2024-08-06",
