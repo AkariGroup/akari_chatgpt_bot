@@ -74,6 +74,8 @@ class ChatStreamAkari(object):
             "gpt-3.5-turbo-instruct",
         ]
         self.openai_vision_model_name = [
+            "gpt-4.5-preview",
+            "gpt-4.5-preview-2025-02-27",
             "gpt-4o",
             "gpt-4o-2024-08-06",
             "gpt-4o-2024-05-13",
