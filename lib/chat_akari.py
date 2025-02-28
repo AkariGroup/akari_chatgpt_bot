@@ -10,13 +10,13 @@ import anthropic
 import cv2
 import grpc
 import numpy as np
-import openai
+from openai import OpenAI
 from google import genai
 from google.genai import types
 from google.genai.types import Content, Part
 from gpt_stream_parser import force_parse_json
 
-from .conf import ANTHROPIC_APIKEY, GEMINI_APIKEY
+from .conf import ANTHROPIC_APIKEY, GEMINI_APIKEY, OPENAI_APIKEY
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
 import motion_server_pb2
@@ -47,10 +47,34 @@ class ChatStreamAkari(object):
             self.anthropic_client = anthropic.Anthropic(
                 api_key=ANTHROPIC_APIKEY,
             )
+        self.openai_client = None
+        if OPENAI_APIKEY is not None:
+            self.openai_client = OpenAI(
+                api_key=OPENAI_APIKEY,
+            )
+        self.gemini_client = None
         if GEMINI_APIKEY is not None:
             self.gemini_client = genai.Client(api_key=GEMINI_APIKEY)
         self.last_char = ["、", "。", "！", "!", "?", "？", "\n", "}"]
+        self.openai_flagship_model_name = [
+            "o1",
+            "o1-2024-12-17",
+            "o1-mini",
+            "o1-mini-2024-09-12",
+            "o3-mini",
+            "o3-mini-2025-01-31",
+            "o1-preview",
+            "o1-preview-2024-09-12",
+        ]
         self.openai_model_name = [
+            "o1",
+            "o1-2024-12-17",
+            "o1-mini",
+            "o1-mini-2024-09-12",
+            "o3-mini",
+            "o3-mini-2025-01-31",
+            "o1-preview",
+            "o1-preview-2024-09-12",
             "gpt-4.5-preview",
             "gpt-4.5-preview-2025-02-27",
             "gpt-4o",
@@ -72,18 +96,6 @@ class ChatStreamAkari(object):
             "gpt-3.5-turbo",
             "gpt-3.5-turbo-1106",
             "gpt-3.5-turbo-instruct",
-        ]
-        self.openai_vision_model_name = [
-            "gpt-4.5-preview",
-            "gpt-4.5-preview-2025-02-27",
-            "gpt-4o",
-            "gpt-4o-2024-08-06",
-            "gpt-4o-2024-05-13",
-            "gpt-4o-mini",
-            "gpt-4-turbo",
-            "gpt-4-turbo-2024-04-09",
-            "gpt-4-vision-preview",
-            "gpt-4-1106-vision-preview",
         ]
         self.anthropic_model_name = [
             "claude-3-7-sonnet-latest",
@@ -337,18 +349,37 @@ class ChatStreamAkari(object):
             Generator[str, None, None]): 会話の返答を順次生成する
 
         """
+        if self.openai_client is None:
+            raise ValueError("OpenAI API key is not set.")
         result = None
         for message in messages:
             if message["role"] == "model":
                 message["role"] = "assistant"
-        result = openai.chat.completions.create(
-            model=model,
-            messages=messages,
-            max_tokens=1024,
-            n=1,
-            stream=True,
-            temperature=temperature,
-        )
+        if model in self.openai_flagship_model_name:
+            try:
+                result = self.openai_client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    max_completion_tokens=1024,
+                    n=1,
+                    stream=True,
+                )
+            except BaseException as e:
+                print(f"OpenAIレスポンスエラー: {e}")
+                raise (e)
+        else:
+            try:
+                result = self.openai_client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    max_tokens=1024,
+                    n=1,
+                    stream=True,
+                    temperature=temperature,
+                )
+            except BaseException as e:
+                print(f"OpenAIレスポンスエラー: {e}")
+                raise (e)
         full_response = ""
         real_time_response = ""
         for chunk in result:
@@ -419,7 +450,9 @@ class ChatStreamAkari(object):
                             if char in self.last_char:
                                 pos = index + 1  # 区切り位置
                                 sentence = real_time_response[:pos]  # 1文の区切り
-                                real_time_response = real_time_response[pos:]  # 残りの部分
+                                real_time_response = real_time_response[
+                                    pos:
+                                ]  # 残りの部分
                                 # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
                                 if sentence != "":
                                     yield sentence
@@ -509,7 +542,7 @@ class ChatStreamAkari(object):
             Generator[str, None, None]): 会話の返答を順次生成する
 
         """
-        if model in self.openai_model_name or model in self.openai_vision_model_name:
+        if model in self.openai_model_name:
             yield from self.chat_gpt(
                 messages=messages,
                 model=model,
@@ -587,7 +620,9 @@ class ChatStreamAkari(object):
                             if char in self.last_char:
                                 pos = index + 1  # 区切り位置
                                 sentence = real_time_response[:pos]  # 1文の区切り
-                                real_time_response = real_time_response[pos:]  # 残りの部分
+                                real_time_response = real_time_response[
+                                    pos:
+                                ]  # 残りの部分
                                 # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
                                 if sentence != "":
                                     yield sentence
@@ -650,7 +685,11 @@ class ChatStreamAkari(object):
             Generator[str, None, None]): 会話の返答を順次生成する
 
         """
-        result = openai.chat.completions.create(
+        if self.openai_client is None:
+            raise ValueError("OpenAI API key is not set.")
+        if model in self.openai_flagship_model_name:
+            raise ValueError("Flagship model is not supported.")
+        result = self.openai_client.chat.completions.create(
             model=model,
             messages=messages,
             n=1,
