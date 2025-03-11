@@ -118,6 +118,8 @@ class ChatStreamAkari(object):
             "gemini-2.0-pro-exp-02-05",
             "gemini-2.0-flash",
             "gemini-2.0-flash-001",
+            "gemini-2.0-flash-lite",
+            "gemini-2.0-flash-lite-001",
             "gemini-2.0-flash-lite-preview-02-05",
             "gemini-2.0-flash-exp",
             "gemini-2.0-flash-thinking-exp-01-21",
@@ -467,7 +469,7 @@ class ChatStreamAkari(object):
     def chat_gemini(
         self,
         messages: list,
-        model: str = "gemini-2.0-flash-001",
+        model: str = "gemini-2.0-flash",
         temperature: float = 0.7,
         stream_per_sentence: bool = True,
     ) -> Generator[str, None, None]:
@@ -475,7 +477,7 @@ class ChatStreamAkari(object):
 
         Args:
             messages (list): 会話のメッセージ
-            model (str): 使用するモデル名 (デフォルト: "gemini-2.0-flash-001")
+            model (str): 使用するモデル名 (デフォルト: "gemini-2.0-flash")
             temperature (float): Geminiのtemperatureパラメータ (デフォルト: 0.7)
             stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
         Returns:
@@ -578,7 +580,7 @@ class ChatStreamAkari(object):
         messages: list,
         model: str = "claude-3-7-sonnet-latest",
         max_tokens: int = 64000,
-        budget_tokents: int = 32000,
+        budget_tokens: int = 32000,
         stream_per_sentence: bool = True,
     ) -> Generator[str, None, None]:
         """Claudeを使用して拡張思考モードで会話を行う
@@ -587,7 +589,7 @@ class ChatStreamAkari(object):
             messages (list): 会話のメッセージ
             model (str): 使用するモデル名 (デフォルト: ""claude-3-7-sonnet-latest")
             max_tokens (int): 1回のリクエストで生成する最大トークン数 (デフォルト: 64000)
-            budget_tokents (int): 1回のリクエストで拡張思考に使用するトークン数 (デフォルト: 32000)
+            budget_tokens (int): 1回のリクエストで拡張思考に使用するトークン数 (デフォルト: 32000)
             stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
         Returns:
             Generator[str, None, None]): 会話の返答を順次生成する
@@ -603,7 +605,7 @@ class ChatStreamAkari(object):
             model=model,
             max_tokens=max_tokens,
             temperature=1.0,  # thinkingではtemperatureは1.0固定
-            thinking={"type": "enabled", "budget_tokens": budget_tokents},
+            thinking={"type": "enabled", "budget_tokens": budget_tokens},
             messages=user_messages,
             system=system_message,
         ) as result:
@@ -638,8 +640,7 @@ class ChatStreamAkari(object):
         self,
         messages: list,
         model: str = "claude-3-7-sonnet-latest",
-        max_tokens: int = 64000,
-        budget_tokents: int = 32000,
+        temperature: float = 0.7,
         stream_per_sentence: bool = True,
     ) -> Generator[str, None, None]:
         """指定したモデルを使用して、拡張思考を用いた会話を行う
@@ -648,7 +649,7 @@ class ChatStreamAkari(object):
             messages (list): 会話のメッセージリスト
             model (str): 使用するモデル名 (デフォルト: "claude-3-7-sonnet-latest")
             max_tokens (int): 1回のリクエストで生成する最大トークン数 (デフォルト: 64000)
-            budget_tokents (int): 1回のリクエストで拡張思考に使用するトークン数 (デフォルト: 32000)
+            budget_tokens (int): 1回のリクエストで拡張思考に使用するトークン数 (デフォルト: 32000)
             stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
         Returns:
             Generator[str, None, None]): 会話の返答を順次生成する
@@ -661,8 +662,103 @@ class ChatStreamAkari(object):
             yield from self.chat_anthropic_thinking(
                 messages=messages,
                 model=model,
-                max_tokens=max_tokens,
-                budget_tokents=budget_tokents,
+                temperature=temperature,
+                stream_per_sentence=stream_per_sentence,
+            )
+        else:
+            print(f"Model name {model} can't use for this function")
+            return
+
+    def chat_gemini_web_search(
+        self,
+        messages: list,
+        model: str = "gemini-2.0-flash",
+        temperature: float = 0.7,
+        stream_per_sentence: bool = True,
+    ) -> Generator[str, None, None]:
+        """Geminiを使用して会話を行う
+
+        Args:
+            messages (list): 会話のメッセージ
+            model (str): 使用するモデル名 (デフォルト: "gemini-2.0-flash")
+            temperature (float): Geminiのtemperatureパラメータ (デフォルト: 0.7)
+            stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
+        Returns:
+            Generator[str, None, None]): 会話の返答を順次生成する
+
+        """
+        if GEMINI_APIKEY is None:
+            print("Gemini API key is not set.")
+            return
+        (
+            system_instruction,
+            history,
+            cur_message,
+        ) = self.convert_messages_from_gpt_to_gemini(copy.deepcopy(messages))
+        tools = [types.Tool(google_search=types.GoogleSearch())]
+        chat = self.gemini_client.chats.create(
+            model=model,
+            history=history,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=temperature,
+                tools=tools,
+            ),
+        )
+        responses = chat.send_message_stream(cur_message["contents"])
+        full_response = ""
+        real_time_response = ""
+        for response in responses:
+            text = response.text
+            if text is None:
+                pass
+            else:
+                full_response += text
+                real_time_response += text
+                if stream_per_sentence:
+                    for index, char in enumerate(real_time_response):
+                        if char in self.last_char:
+                            pos = index + 1  # 区切り位置
+                            sentence = real_time_response[:pos]  # 1文の区切り
+                            real_time_response = real_time_response[pos:]  # 残りの部分
+                            # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
+                            if sentence != "":
+                                yield sentence
+                            break
+                        else:
+                            pass
+                else:
+                    yield text
+        if stream_per_sentence and real_time_response != "":
+            yield real_time_response
+
+    def chat_web_search(
+        self,
+        messages: list,
+        model: str = "gemini-2.0-flash",
+        temperature: float = 0.7,
+        stream_per_sentence: bool = True,
+    ) -> Generator[str, None, None]:
+        """指定したモデルを使用して、拡張思考を用いた会話を行う
+
+        Args:
+            messages (list): 会話のメッセージリスト
+            model (str): 使用するモデル名 (デフォルト: "gemini-2.0-flash")
+            max_tokens (int): 1回のリクエストで生成する最大トークン数 (デフォルト: 64000)
+            budget_tokens (int): 1回のリクエストで拡張思考に使用するトークン数 (デフォルト: 32000)
+            stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
+        Returns:
+            Generator[str, None, None]): 会話の返答を順次生成する
+
+        """
+        if model in self.gemini_model_name:
+            if self.gemini_client is None:
+                print("Gemini API key is not set.")
+                return
+            yield from self.chat_gemini_web_search(
+                messages=messages,
+                model=model,
+                temperature=temperature,
                 stream_per_sentence=stream_per_sentence,
             )
         else:
@@ -894,14 +990,14 @@ class ChatStreamAkari(object):
     def chat_and_motion_gemini(
         self,
         messages: list,
-        model: str = "gemini-2.0-flash-001",
+        model: str = "gemini-2.0-flash",
         temperature: float = 0.7,
     ) -> Generator[str, None, None]:
         """ChatGPTを使用して会話を行い、会話の内容に応じた動作も生成する
 
         Args:
             messages (list): メッセージリスト
-            model (str): 使用するモデル名 (デフォルト: "gpt-4o")
+            model (str): 使用するモデル名 (デフォルト: "gemini-2.0-flash")
             temperature (float): ChatGPTのtemperatureパラメータ (デフォルト: 0.7)
         Returns:
             Generator[str, None, None]): 会話の返答を順次生成する
