@@ -24,6 +24,11 @@ def main() -> None:
         action="store_true",
         help="Use thinking mode (anthropic model only)",
     )
+    parser.add_argument(
+        "--web_search",
+        action="store_true",
+        help="Use web search grounding (gemini model only)",
+    )
     args = parser.parse_args()
     chat_stream_akari = ChatStreamAkari()
     # systemメッセージの作成
@@ -48,20 +53,28 @@ def main() -> None:
             messages_list[i].append(chat_stream_akari.create_message(text))
             response = ""
             start = time.time()
-            if not args.thinking:
+            if args.thinking:
+                for sentence in chat_stream_akari.chat_thinking(
+                    messages_list[i],
+                    model=model,
+                    stream_per_sentence=True,
+                ):
+                    response += sentence
+                    print(sentence, end="", flush=True)
+            elif args.web_search:
+                for sentence in chat_stream_akari.chat_web_search(
+                    messages_list[i],
+                    model=model,
+                    stream_per_sentence=True,
+                ):
+                    response += sentence
+                    print(sentence, end="", flush=True)
+            else:
                 for sentence in chat_stream_akari.chat(
                     messages_list[i],
                     model=model,
                     stream_per_sentence=True,
                     temperature=0.7,
-                ):
-                    response += sentence
-                    print(sentence, end="", flush=True)
-            else:
-                for sentence in chat_stream_akari.chat_thinking(
-                    messages_list[i],
-                    model=model,
-                    stream_per_sentence=True,
                 ):
                     response += sentence
                     print(sentence, end="", flush=True)

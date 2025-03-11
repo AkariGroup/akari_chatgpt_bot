@@ -117,7 +117,7 @@ AKARIでVOICEVOXのローカル版を使う場合、AKARI本体内のCPUでVOICE
    - `-m`, `--model`: 使用するモデル名を指定可能。モデル名はOpenaiもしくはAnthropicのものが選択可能。モデル名を羅列することで、全モデルに対して一括で問いかけが可能。  
    例) `python3 chatgpt_example.py -m gpt-3.5-turbo-0125 gpt-4-turbo-preview claude-3-sonnet-20240229 claude-3-opus-20240229`  
    - `--thinking`: Claudeの拡張思考機能を使うかどうか。このオプションを有効化すると、拡張思考機能を有効化する。`claude-3-7-sonnet-latest`およびその他のclaude3.7系モデルで使用すること。
-
+   - `--web_search`: Geminiのgoogle検索を使うかどうか。このオプションを有効化すると、googleによるWeb検索を行った結果を用いて回答する。gemini-2.0-flashで使用すること。
 
 ### 音声合成(VOICEVOX)のサンプル  
 キーボード入力した文章を音声合成で発話  
