@@ -640,7 +640,8 @@ class ChatStreamAkari(object):
         self,
         messages: list,
         model: str = "claude-3-7-sonnet-latest",
-        temperature: float = 0.7,
+        max_tokens: int = 64000,
+        budget_tokens: int = 32000,
         stream_per_sentence: bool = True,
     ) -> Generator[str, None, None]:
         """指定したモデルを使用して、拡張思考を用いた会話を行う
@@ -662,7 +663,8 @@ class ChatStreamAkari(object):
             yield from self.chat_anthropic_thinking(
                 messages=messages,
                 model=model,
-                temperature=temperature,
+                max_tokens=max_tokens,
+                budget_tokens=budget_tokens,
                 stream_per_sentence=stream_per_sentence,
             )
         else:
