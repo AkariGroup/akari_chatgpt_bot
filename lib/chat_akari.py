@@ -692,30 +692,17 @@ class ChatStreamAkari(object):
         for message in messages:
             if message["role"] == "model":
                 message["role"] = "assistant"
-        if model in self.openai_flagship_model_name:
-            try:
-                result = self.openai_client.chat.completions.create(
-                    model=model,
-                    messages=messages,
-                    max_completion_tokens=1024,
-                    n=1,
-                    stream=True,
-                )
-            except BaseException as e:
-                print(f"OpenAIレスポンスエラー: {e}")
-                raise (e)
-        else:
-            try:
-                result = self.openai_client.chat.completions.create(
-                    model=model,
-                    messages=messages,
-                    web_search_options={},
-                    max_tokens=1024,
-                    stream=True,
-                )
-            except BaseException as e:
-                print(f"OpenAIレスポンスエラー: {e}")
-                raise (e)
+        try:
+            result = self.openai_client.chat.completions.create(
+                model=model,
+                messages=messages,
+                web_search_options={},
+                max_tokens=1024,
+                stream=True,
+            )
+        except BaseException as e:
+            print(f"OpenAIレスポンスエラー: {e}")
+            raise (e)
         full_response = ""
         real_time_response = ""
         for chunk in result:
