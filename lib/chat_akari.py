@@ -4,7 +4,7 @@ import json
 import os
 import sys
 import threading
-from typing import Generator, List, Optional, Tuple, Union
+from typing import Any, Generator, List, Optional, Tuple, Union
 
 import anthropic
 import cv2
@@ -335,6 +335,121 @@ class ChatStreamAkari(object):
         del cur_message["role"]
         return system_instruction, history, cur_message
 
+    def parse_output_stream_gpt(
+        self, response: Any, stream_per_sentence: bool = True
+    ) -> Generator[str, None, None]:
+        """GPTのストリーム出力を解析してテキストを返す
+
+        Args:
+            result (Any): ストリーム出力
+            stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
+        Returns:
+            Generator[str, None, None]): 会話の返答を順次生成する
+
+        """
+        full_response = ""
+        real_time_response = ""
+        for chunk in response:
+            text = chunk.choices[0].delta.content
+            if text is None:
+                pass
+            else:
+                full_response += text
+                real_time_response += text
+                if stream_per_sentence:
+                    for index, char in enumerate(real_time_response):
+                        if char in self.last_char:
+                            pos = index + 1  # 区切り位置
+                            sentence = real_time_response[:pos]  # 1文の区切り
+                            real_time_response = real_time_response[pos:]  # 残りの部分
+                            # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
+                            if sentence != "":
+                                yield sentence
+                            break
+                        else:
+                            pass
+                else:
+                    yield text
+        if stream_per_sentence and real_time_response != "":
+            yield real_time_response
+
+    def parse_output_stream_anthropic(
+        self, responses: Any, stream_per_sentence: bool = True
+    ) -> Generator[str, None, None]:
+        """Anthropicのストリーム出力を解析してテキストを返す
+
+        Args:
+            responses (Any): Anthropicのストリーム出力
+            stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
+        Returns:
+            Generator[str, None, None]): 会話の返答を順次生成する
+
+        """
+        full_response = ""
+        real_time_response = ""
+        for text in responses.text_stream:
+            if text is None:
+                pass
+            else:
+                full_response += text
+                real_time_response += text
+                if stream_per_sentence:
+                    for index, char in enumerate(real_time_response):
+                        if char in self.last_char:
+                            pos = index + 1  # 区切り位置
+                            sentence = real_time_response[:pos]  # 1文の区切り
+                            real_time_response = real_time_response[
+                                pos:
+                            ]  # 残りの部分
+                            # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
+                            if sentence != "":
+                                yield sentence
+                            break
+                        else:
+                            pass
+                else:
+                    yield text
+        if stream_per_sentence and real_time_response != "":
+            yield real_time_response
+
+    def parse_output_stream_gemini(
+        self, responses: Any, stream_per_sentence: bool = True
+    ) -> Generator[str, None, None]:
+        """Geminiのストリーム出力を解析してテキストを返す
+
+        Args:
+            responses (Any): Geminiのストリーム出力
+            stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
+        Returns:
+            Generator[str, None, None]): 会話の返答を順次生成する
+
+        """
+        full_response = ""
+        real_time_response = ""
+        for response in responses:
+                text = response.text
+                if text is None:
+                    pass
+                else:
+                    full_response += text
+                    real_time_response += text
+                    if stream_per_sentence:
+                        for index, char in enumerate(real_time_response):
+                            if char in self.last_char:
+                                pos = index + 1  # 区切り位置
+                                sentence = real_time_response[:pos]  # 1文の区切り
+                                real_time_response = real_time_response[pos:]  # 残りの部分
+                                # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
+                                if sentence != "":
+                                    yield sentence
+                                break
+                            else:
+                                pass
+                    else:
+                        yield text
+        if stream_per_sentence and real_time_response != "":
+            yield real_time_response
+
     def chat_gpt(
         self,
         messages: list,
@@ -384,31 +499,7 @@ class ChatStreamAkari(object):
             except BaseException as e:
                 print(f"OpenAIレスポンスエラー: {e}")
                 raise (e)
-        full_response = ""
-        real_time_response = ""
-        for chunk in result:
-            text = chunk.choices[0].delta.content
-            if text is None:
-                pass
-            else:
-                full_response += text
-                real_time_response += text
-                if stream_per_sentence:
-                    for index, char in enumerate(real_time_response):
-                        if char in self.last_char:
-                            pos = index + 1  # 区切り位置
-                            sentence = real_time_response[:pos]  # 1文の区切り
-                            real_time_response = real_time_response[pos:]  # 残りの部分
-                            # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
-                            if sentence != "":
-                                yield sentence
-                            break
-                        else:
-                            pass
-                else:
-                    yield text
-        if stream_per_sentence and real_time_response != "":
-            yield real_time_response
+        yield from self.parse_output_stream_gpt(result, stream_per_sentence)
 
     def chat_anthropic(
         self,
@@ -441,30 +532,7 @@ class ChatStreamAkari(object):
             messages=user_messages,
             system=system_message,
         ) as result:
-            full_response = ""
-            real_time_response = ""
-            for text in result.text_stream:
-                if text is None:
-                    pass
-                else:
-                    full_response += text
-                    real_time_response += text
-                    if stream_per_sentence:
-                        for index, char in enumerate(real_time_response):
-                            if char in self.last_char:
-                                pos = index + 1  # 区切り位置
-                                sentence = real_time_response[:pos]  # 1文の区切り
-                                real_time_response = real_time_response[pos:]  # 残りの部分
-                                # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
-                                if sentence != "":
-                                    yield sentence
-                                break
-                            else:
-                                pass
-                    else:
-                        yield text
-            if stream_per_sentence and real_time_response != "":
-                yield real_time_response
+            yield from self.parse_output_stream_anthropic(result, stream_per_sentence)
 
     def chat_gemini(
         self,
@@ -500,31 +568,7 @@ class ChatStreamAkari(object):
             ),
         )
         responses = chat.send_message_stream(cur_message["contents"])
-        full_response = ""
-        real_time_response = ""
-        for response in responses:
-            text = response.text
-            if text is None:
-                pass
-            else:
-                full_response += text
-                real_time_response += text
-                if stream_per_sentence:
-                    for index, char in enumerate(real_time_response):
-                        if char in self.last_char:
-                            pos = index + 1  # 区切り位置
-                            sentence = real_time_response[:pos]  # 1文の区切り
-                            real_time_response = real_time_response[pos:]  # 残りの部分
-                            # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
-                            if sentence != "":
-                                yield sentence
-                            break
-                        else:
-                            pass
-                else:
-                    yield text
-        if stream_per_sentence and real_time_response != "":
-            yield real_time_response
+        yield from self.parse_output_stream_gemini(responses, stream_per_sentence)
 
     def chat(
         self,
@@ -609,30 +653,7 @@ class ChatStreamAkari(object):
             messages=user_messages,
             system=system_message,
         ) as result:
-            full_response = ""
-            real_time_response = ""
-            for text in result.text_stream:
-                if text is None:
-                    pass
-                else:
-                    full_response += text
-                    real_time_response += text
-                    if stream_per_sentence:
-                        for index, char in enumerate(real_time_response):
-                            if char in self.last_char:
-                                pos = index + 1  # 区切り位置
-                                sentence = real_time_response[:pos]  # 1文の区切り
-                                real_time_response = real_time_response[pos:]  # 残りの部分
-                                # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
-                                if sentence != "":
-                                    yield sentence
-                                break
-                            else:
-                                pass
-                    else:
-                        yield text
-            if stream_per_sentence and real_time_response != "":
-                yield real_time_response
+            yield from self.parse_output_stream_anthropic(result, stream_per_sentence)
 
     def chat_thinking(
         self,
@@ -703,31 +724,7 @@ class ChatStreamAkari(object):
         except BaseException as e:
             print(f"OpenAIレスポンスエラー: {e}")
             raise (e)
-        full_response = ""
-        real_time_response = ""
-        for chunk in result:
-            text = chunk.choices[0].delta.content
-            if text is None:
-                pass
-            else:
-                full_response += text
-                real_time_response += text
-                if stream_per_sentence:
-                    for index, char in enumerate(real_time_response):
-                        if char in self.last_char:
-                            pos = index + 1  # 区切り位置
-                            sentence = real_time_response[:pos]  # 1文の区切り
-                            real_time_response = real_time_response[pos:]  # 残りの部分
-                            # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
-                            if sentence != "":
-                                yield sentence
-                            break
-                        else:
-                            pass
-                else:
-                    yield text
-        if stream_per_sentence and real_time_response != "":
-            yield real_time_response
+        yield from self.parse_output_stream_gpt(result, stream_per_sentence)
 
     def chat_gemini_web_search(
         self,
@@ -766,31 +763,7 @@ class ChatStreamAkari(object):
             ),
         )
         responses = chat.send_message_stream(cur_message["contents"])
-        full_response = ""
-        real_time_response = ""
-        for response in responses:
-            text = response.text
-            if text is None:
-                pass
-            else:
-                full_response += text
-                real_time_response += text
-                if stream_per_sentence:
-                    for index, char in enumerate(real_time_response):
-                        if char in self.last_char:
-                            pos = index + 1  # 区切り位置
-                            sentence = real_time_response[:pos]  # 1文の区切り
-                            real_time_response = real_time_response[pos:]  # 残りの部分
-                            # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
-                            if sentence != "":
-                                yield sentence
-                            break
-                        else:
-                            pass
-                else:
-                    yield text
-        if stream_per_sentence and real_time_response != "":
-            yield real_time_response
+        yield from self.parse_output_stream_gemini(responses, stream_per_sentence)
 
     def chat_web_search(
         self,
