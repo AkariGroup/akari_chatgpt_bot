@@ -3,9 +3,6 @@ import os
 import time
 
 from lib.chat_akari import ChatStreamAkari
-from lib.voicevox import TextToVoiceVox
-
-voicevox = False  # 音声合成を使う場合Trueに変更
 
 
 def main() -> None:
@@ -18,7 +15,6 @@ def main() -> None:
         default=["gpt-4o"],
         help="Model name list",
     )
-    parser.add_argument("-s", "--system", default="", type=str, help="System prompt")
     parser.add_argument(
         "--thinking",
         action="store_true",
@@ -29,6 +25,7 @@ def main() -> None:
         action="store_true",
         help="Use web search grounding (gemini model only)",
     )
+    parser.add_argument("-s", "--system", default="", type=str, help="System prompt")
     args = parser.parse_args()
     chat_stream_akari = ChatStreamAkari()
     # systemメッセージの作成
@@ -53,6 +50,8 @@ def main() -> None:
             messages_list[i].append(chat_stream_akari.create_message(text))
             response = ""
             start = time.time()
+            is_first = True
+            output_delay = 0.0
             if args.thinking:
                 for sentence in chat_stream_akari.chat_thinking(
                     messages_list[i],
@@ -61,6 +60,9 @@ def main() -> None:
                 ):
                     response += sentence
                     print(sentence, end="", flush=True)
+                    if is_first:
+                        output_delay = time.time() - start
+                        is_first = False
             elif args.web_search:
                 for sentence in chat_stream_akari.chat_web_search(
                     messages_list[i],
@@ -69,6 +71,9 @@ def main() -> None:
                 ):
                     response += sentence
                     print(sentence, end="", flush=True)
+                    if is_first:
+                        output_delay = time.time() - start
+                        is_first = False
             else:
                 for sentence in chat_stream_akari.chat(
                     messages_list[i],
@@ -78,6 +83,9 @@ def main() -> None:
                 ):
                     response += sentence
                     print(sentence, end="", flush=True)
+                    if is_first:
+                        output_delay = time.time() - start
+                        is_first = False
             # chatGPTの返答をassistantメッセージとして追加
             messages_list[i].append(
                 chat_stream_akari.create_message(response, role="assistant")
@@ -85,7 +93,7 @@ def main() -> None:
             interval = time.time() - start
             print("")
             print("-------------------------")
-            print(f"time: {interval:.2f} [s]")
+            print(f"delay: {output_delay:.2f} [s]  total_time: {interval:.2f} [s]")
             print("")
 
 

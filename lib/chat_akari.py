@@ -398,9 +398,7 @@ class ChatStreamAkari(object):
                         if char in self.last_char:
                             pos = index + 1  # 区切り位置
                             sentence = real_time_response[:pos]  # 1文の区切り
-                            real_time_response = real_time_response[
-                                pos:
-                            ]  # 残りの部分
+                            real_time_response = real_time_response[pos:]  # 残りの部分
                             # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
                             if sentence != "":
                                 yield sentence
@@ -427,26 +425,26 @@ class ChatStreamAkari(object):
         full_response = ""
         real_time_response = ""
         for response in responses:
-                text = response.text
-                if text is None:
-                    pass
+            text = response.text
+            if text is None:
+                pass
+            else:
+                full_response += text
+                real_time_response += text
+                if stream_per_sentence:
+                    for index, char in enumerate(real_time_response):
+                        if char in self.last_char:
+                            pos = index + 1  # 区切り位置
+                            sentence = real_time_response[:pos]  # 1文の区切り
+                            real_time_response = real_time_response[pos:]  # 残りの部分
+                            # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
+                            if sentence != "":
+                                yield sentence
+                            break
+                        else:
+                            pass
                 else:
-                    full_response += text
-                    real_time_response += text
-                    if stream_per_sentence:
-                        for index, char in enumerate(real_time_response):
-                            if char in self.last_char:
-                                pos = index + 1  # 区切り位置
-                                sentence = real_time_response[:pos]  # 1文の区切り
-                                real_time_response = real_time_response[pos:]  # 残りの部分
-                                # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
-                                if sentence != "":
-                                    yield sentence
-                                break
-                            else:
-                                pass
-                    else:
-                        yield text
+                    yield text
         if stream_per_sentence and real_time_response != "":
             yield real_time_response
 
@@ -567,7 +565,10 @@ class ChatStreamAkari(object):
                 system_instruction=system_instruction, temperature=temperature
             ),
         )
-        responses = chat.send_message_stream(cur_message["contents"])
+        try:
+            responses = chat.send_message_stream(cur_message["contents"])
+        except BaseException as e:
+            print(f"Geminiレスポンスエラー: {e}")
         yield from self.parse_output_stream_gemini(responses, stream_per_sentence)
 
     def chat(
