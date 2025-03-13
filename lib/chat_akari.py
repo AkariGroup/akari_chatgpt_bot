@@ -10,11 +10,11 @@ import anthropic
 import cv2
 import grpc
 import numpy as np
-from openai import OpenAI
 from google import genai
 from google.genai import types
 from google.genai.types import Content, Part
 from gpt_stream_parser import force_parse_json
+from openai import OpenAI
 
 from .conf import ANTHROPIC_APIKEY, GEMINI_APIKEY, OPENAI_APIKEY
 
@@ -81,6 +81,8 @@ class ChatStreamAkari(object):
             "gpt-4o-2024-11-20",
             "gpt-4o-2024-08-06",
             "gpt-4o-2024-05-13",
+            "gpt-4o-search-preview",
+            "gpt-4o-search-preview-2025-03-11",
             "chatgpt-4o-latest",
             "gpt-4o-mini",
             "gpt-4-turbo",
@@ -452,9 +454,7 @@ class ChatStreamAkari(object):
                             if char in self.last_char:
                                 pos = index + 1  # 区切り位置
                                 sentence = real_time_response[:pos]  # 1文の区切り
-                                real_time_response = real_time_response[
-                                    pos:
-                                ]  # 残りの部分
+                                real_time_response = real_time_response[pos:]  # 残りの部分
                                 # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
                                 if sentence != "":
                                     yield sentence
@@ -622,9 +622,7 @@ class ChatStreamAkari(object):
                             if char in self.last_char:
                                 pos = index + 1  # 区切り位置
                                 sentence = real_time_response[:pos]  # 1文の区切り
-                                real_time_response = real_time_response[
-                                    pos:
-                                ]  # 残りの部分
+                                real_time_response = real_time_response[pos:]  # 残りの部分
                                 # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
                                 if sentence != "":
                                     yield sentence
@@ -670,6 +668,79 @@ class ChatStreamAkari(object):
         else:
             print(f"Model name {model} can't use for this function")
             return
+
+    def chat_gpt_web_search(
+        self,
+        messages: list,
+        model: str = "gpt-4o-search-preview",
+        stream_per_sentence: bool = True,
+    ) -> Generator[str, None, None]:
+        """Geminiを使用して会話を行う
+
+        Args:
+            messages (list): 会話のメッセージ
+            model (str): 使用するモデル名 (デフォルト: "gemini-2.0-flash")
+            temperature (float): Geminiのtemperatureパラメータ (デフォルト: 0.7)
+            stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
+        Returns:
+            Generator[str, None, None]): 会話の返答を順次生成する
+
+        """
+        if self.openai_client is None:
+            raise ValueError("OpenAI API key is not set.")
+        result = None
+        for message in messages:
+            if message["role"] == "model":
+                message["role"] = "assistant"
+        if model in self.openai_flagship_model_name:
+            try:
+                result = self.openai_client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    max_completion_tokens=1024,
+                    n=1,
+                    stream=True,
+                )
+            except BaseException as e:
+                print(f"OpenAIレスポンスエラー: {e}")
+                raise (e)
+        else:
+            try:
+                result = self.openai_client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    web_search_options={},
+                    max_tokens=1024,
+                    stream=True,
+                )
+            except BaseException as e:
+                print(f"OpenAIレスポンスエラー: {e}")
+                raise (e)
+        full_response = ""
+        real_time_response = ""
+        for chunk in result:
+            text = chunk.choices[0].delta.content
+            if text is None:
+                pass
+            else:
+                full_response += text
+                real_time_response += text
+                if stream_per_sentence:
+                    for index, char in enumerate(real_time_response):
+                        if char in self.last_char:
+                            pos = index + 1  # 区切り位置
+                            sentence = real_time_response[:pos]  # 1文の区切り
+                            real_time_response = real_time_response[pos:]  # 残りの部分
+                            # 1文完成ごとにテキストを読み上げる(遅延時間短縮のため)
+                            if sentence != "":
+                                yield sentence
+                            break
+                        else:
+                            pass
+                else:
+                    yield text
+        if stream_per_sentence and real_time_response != "":
+            yield real_time_response
 
     def chat_gemini_web_search(
         self,
@@ -753,7 +824,16 @@ class ChatStreamAkari(object):
             Generator[str, None, None]): 会話の返答を順次生成する
 
         """
-        if model in self.gemini_model_name:
+        if model in self.openai_model_name:
+            if self.openai_client is None:
+                print("OpenAI API key is not set.")
+                return
+            yield from self.chat_gpt_web_search(
+                messages=messages,
+                model=model,
+                stream_per_sentence=stream_per_sentence,
+            )
+        elif model in self.gemini_model_name:
             if self.gemini_client is None:
                 print("Gemini API key is not set.")
                 return
