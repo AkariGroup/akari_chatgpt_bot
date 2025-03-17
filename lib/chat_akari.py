@@ -83,6 +83,8 @@ class ChatStreamAkari(object):
             "gpt-4o-2024-05-13",
             "gpt-4o-search-preview",
             "gpt-4o-search-preview-2025-03-11",
+            "gpt-4o-mini-search-preview",
+            "gpt-4o-mini-search-preview-2025-03-11",
             "chatgpt-4o-latest",
             "gpt-4o-mini",
             "gpt-4-turbo",
