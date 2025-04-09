@@ -551,7 +551,7 @@ class ChatStreamAkari(object):
         """
         if GEMINI_APIKEY is None:
             print("Gemini API key is not set.")
-
+            return
         (
             system_instruction,
             history,
