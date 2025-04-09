@@ -566,8 +566,6 @@ class ChatStreamAkari(object):
             responses = chat.send_message_stream(cur_message)
         except BaseException as e:
             print(f"Geminiレスポンスエラー: {e}")
-        for chunk in responses:
-            print(chunk.text, end="")
         yield from self.parse_output_stream_gemini(responses, stream_per_sentence)
 
     def chat(
