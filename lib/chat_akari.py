@@ -118,6 +118,7 @@ class ChatStreamAkari(object):
             "claude-instant-1.2",
         ]
         self.gemini_model_name = [
+            "gemini-2.5-pro-exp-03-25",
             "gemini-2.0-pro-exp",
             "gemini-2.0-pro-exp-02-05",
             "gemini-2.5-flash-preview-04-09",
@@ -331,12 +332,7 @@ class ChatStreamAkari(object):
                     )
             if text:
                 cur_parts.insert(0, Part.from_text(text=text))
-
-        role = "model" if cur_message["role"] == "assistant" else cur_message["role"]
-        cur_message["contents"] = Content(role=role, parts=cur_parts)
-        del cur_message["content"]
-        del cur_message["role"]
-        return system_instruction, history, cur_message
+        return system_instruction, history, cur_parts
 
     def parse_output_stream_gpt(
         self, response: Any, stream_per_sentence: bool = True
@@ -556,11 +552,9 @@ class ChatStreamAkari(object):
         if GEMINI_APIKEY is None:
             print("Gemini API key is not set.")
 
-        print(f"messages: {messages}")
         system_instruction, history, cur_message = (
             self.convert_messages_from_gpt_to_gemini(copy.deepcopy(messages))
         )
-        print(f"history: {history}")
         chat = self.gemini_client.chats.create(
             model=model,
             history=history,
@@ -568,9 +562,8 @@ class ChatStreamAkari(object):
                 system_instruction=system_instruction, temperature=temperature
             ),
         )
-        print(f"send: {cur_message['contents']}")
         try:
-            responses = chat.send_message_stream(cur_message["contents"].parts)
+            responses = chat.send_message_stream(cur_message)
         except BaseException as e:
             print(f"Geminiレスポンスエラー: {e}")
         for chunk in responses:
