@@ -552,9 +552,11 @@ class ChatStreamAkari(object):
         if GEMINI_APIKEY is None:
             print("Gemini API key is not set.")
 
-        system_instruction, history, cur_message = (
-            self.convert_messages_from_gpt_to_gemini(copy.deepcopy(messages))
-        )
+        (
+            system_instruction,
+            history,
+            cur_message,
+        ) = self.convert_messages_from_gpt_to_gemini(copy.deepcopy(messages))
         chat = self.gemini_client.chats.create(
             model=model,
             history=history,
