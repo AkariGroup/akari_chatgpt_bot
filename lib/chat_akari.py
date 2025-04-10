@@ -118,6 +118,7 @@ class ChatStreamAkari(object):
             "claude-instant-1.2",
         ]
         self.gemini_model_name = [
+            "gemini-2.5-pro-preview-03-25",
             "gemini-2.5-pro-exp-03-25",
             "gemini-2.0-pro-exp",
             "gemini-2.0-pro-exp-02-05",
@@ -128,6 +129,7 @@ class ChatStreamAkari(object):
             "gemini-2.0-flash-lite-preview-02-05",
             "gemini-2.0-flash-exp",
             "gemini-2.0-flash-thinking-exp-01-21",
+            "gemini-2.0-flash-thinking-exp",
             "gemini-1.5-pro",
             "gemini-1.5-flash",
             "gemini-1.5-flash-8b",
@@ -331,8 +333,6 @@ class ChatStreamAkari(object):
                     )
             if text:
                 cur_parts.insert(0, Part.from_text(text=text))
-
-        role = "model" if cur_message["role"] == "assistant" else cur_message["role"]
         return system_instruction, history, cur_parts
 
     def parse_output_stream_gpt(
