@@ -4,7 +4,6 @@ import sys
 from typing import Generator
 
 import google.generativeai as genai
-import openai
 from gpt_stream_parser import force_parse_json
 
 from .chat_akari import ChatStreamAkari
@@ -75,8 +74,9 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
             str: チャット応答のジェネレータ。
 
         """
-        functions = [
+        tools = [
             {
+                "type": "function",
                 "name": "reply_with_motion_",
                 "description": "ユーザのメッセージに対する回答と、回答の感情に近い動作を一つ選択します。",
                 "parameters": {
@@ -108,7 +108,7 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
         if short_response:
             # 短応答の候補のenumリストを追加する。
             # functions[0]["description"] = "ユーザのメッセージに対する回答を一つ選択し、その感情に近い動作を一つ選択します。",
-            functions[0]["parameters"]["properties"]["talk"]["enum"] = [
+            tools[0]["parameters"]["properties"]["talk"]["enum"] = [
                 "えーと。",
                 "はい。",
                 "うーん。",
@@ -117,11 +117,11 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
                 "まあ。",
                 "えー。",
             ]
-        result = openai.chat.completions.create(
+        result = self.openai_client.responses.create(
             model=model,
             input=messages,
             temperature=temperature,
-            tools=functions,
+            tools=tools,
             tool_choice={
                 "type": "function",
                 "name": "reply_with_motion_",
