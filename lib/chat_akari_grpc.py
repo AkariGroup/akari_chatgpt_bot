@@ -119,73 +119,73 @@ class ChatStreamAkariGrpc(ChatStreamAkari):
             ]
         result = openai.chat.completions.create(
             model=model,
-            messages=messages,
-            n=1,
+            input=messages,
             temperature=temperature,
-            functions=functions,
-            function_call={"name": "reply_with_motion_"},
+            tools=functions,
+            tool_choice={
+                "type": "function",
+                "name": "reply_with_motion_",
+            },
             stream=True,
-            stop=None,
         )
         full_response = ""
         real_time_response = ""
         sentence_index = 0
         get_motion = False
         for chunk in result:
-            delta = chunk.choices[0].delta
-            if delta.function_call is not None:
-                if delta.function_call.arguments is not None:
-                    full_response += chunk.choices[0].delta.function_call.arguments
-                    try:
-                        data_json = json.loads(full_response)
-                        found_last_char = False
-                        for char in self.last_char:
-                            if real_time_response[-1].find(char) >= 0:
-                                found_last_char = True
-                        if not found_last_char:
-                            data_json["talk"] = data_json["talk"] + "。"
-                    except BaseException:
-                        full_response_json = full_response[
-                            full_response.find("{") : full_response.rfind("}") + 1
-                        ]
-                        data_json = force_parse_json(full_response_json)
-                    if data_json is not None:
-                        if "talk" in data_json:
-                            if not get_motion and "motion" in data_json:
-                                get_motion = True
-                                motion = data_json["motion"]
-                                key = None
-                                if motion == "肯定する":
-                                    key = "agree"
-                                elif motion == "否定する":
-                                    key = "swing"
-                                elif motion == "おじぎ":
-                                    key = "bow"
-                                elif motion == "喜ぶ":
-                                    key = "happy"
-                                elif motion == "笑う":
-                                    key = "lough"
-                                elif motion == "落ち込む":
-                                    key = "depressed"
-                                elif motion == "うんざりする":
-                                    key = "amazed"
-                                elif motion == "眠る":
-                                    key = "sleep"
-                                elif motion == "ぼんやりする":
-                                    key = "lookup"
-                                print("motion: " + motion)
-                                self.cur_motion_name = key
-                            real_time_response = str(data_json["talk"])
-                            for char in self.last_char:
-                                pos = real_time_response[sentence_index:].find(char)
-                                if pos >= 0:
-                                    sentence = real_time_response[
-                                        sentence_index : sentence_index + pos + 1
-                                    ]
-                                    sentence_index += pos + 1
-                                    if sentence != "":
-                                        yield sentence
-                                    # break
+            if chunk.type != "response.function_call_arguments.delta":
+                continue
+            full_response += chunk.delta
+            try:
+                data_json = json.loads(full_response)
+                found_last_char = False
+                for char in self.last_char:
+                    if real_time_response[-1].find(char) >= 0:
+                        found_last_char = True
+                if not found_last_char:
+                    data_json["talk"] = data_json["talk"] + "。"
+            except BaseException:
+                full_response_json = full_response[
+                    full_response.find("{") : full_response.rfind("}") + 1
+                ]
+                data_json = force_parse_json(full_response_json)
+            if data_json is not None:
+                if "talk" in data_json:
+                    if not get_motion and "motion" in data_json:
+                        get_motion = True
+                        motion = data_json["motion"]
+                        key = None
+                        if motion == "肯定する":
+                            key = "agree"
+                        elif motion == "否定する":
+                            key = "swing"
+                        elif motion == "おじぎ":
+                            key = "bow"
+                        elif motion == "喜ぶ":
+                            key = "happy"
+                        elif motion == "笑う":
+                            key = "lough"
+                        elif motion == "落ち込む":
+                            key = "depressed"
+                        elif motion == "うんざりする":
+                            key = "amazed"
+                        elif motion == "眠る":
+                            key = "sleep"
+                        elif motion == "ぼんやりする":
+                            key = "lookup"
+                        print("motion: " + motion)
+                        self.cur_motion_name = key
+                    real_time_response = str(data_json["talk"])
+                    for char in self.last_char:
+                        pos = real_time_response[sentence_index:].find(char)
+                        if pos >= 0:
+                            sentence = real_time_response[
+                                sentence_index : sentence_index + pos + 1
+                            ]
+                            sentence_index += pos + 1
+                            if sentence != "":
+                                yield sentence
+                            # break
 
     def chat_and_motion_anthropic(
         self,

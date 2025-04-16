@@ -881,7 +881,6 @@ class ChatStreamAkari(object):
             if chunk.type != "response.function_call_arguments.delta":
                 continue
             full_response += chunk.delta
-            print(f"full_response: {full_response}")
             try:
                 data_json = json.loads(full_response)
                 found_last_char = False
@@ -894,9 +893,7 @@ class ChatStreamAkari(object):
                 full_response_json = full_response[
                     full_response.find("{") : full_response.rfind("}") + 1
                 ]
-                print(f"full_response_json: {full_response_json}")
                 data_json = force_parse_json(full_response_json)
-                print(f"data_json: {data_json}")
             if data_json is not None:
                 if "talk" in data_json:
                     if not get_motion and "motion" in data_json:
