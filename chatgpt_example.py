@@ -18,12 +18,12 @@ def main() -> None:
     parser.add_argument(
         "--thinking",
         action="store_true",
-        help="Use thinking mode (anthropic model only)",
+        help="Use thinking mode (anthropic and gemini model only)",
     )
     parser.add_argument(
         "--web_search",
         action="store_true",
-        help="Use web search grounding (gemini model only)",
+        help="Use web search grounding (openai and gemini model only)",
     )
     parser.add_argument("-s", "--system", default="", type=str, help="System prompt")
     args = parser.parse_args()
