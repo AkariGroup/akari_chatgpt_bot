@@ -61,20 +61,16 @@ class ChatStreamAkari(object):
             "o1-2024-12-17",
             "o1-mini",
             "o1-mini-2024-09-12",
+            "o3",
+            "o3-2025-04-16",
             "o3-mini",
             "o3-mini-2025-01-31",
+            "o4-mini",
+            "o4-mini-2025-04-16",
             "o1-preview",
             "o1-preview-2024-09-12",
         ]
         self.openai_model_name = [
-            "o1",
-            "o1-2024-12-17",
-            "o1-mini",
-            "o1-mini-2024-09-12",
-            "o3-mini",
-            "o3-mini-2025-01-31",
-            "o1-preview",
-            "o1-preview-2024-09-12",
             "gpt-4.5-preview",
             "gpt-4.5-preview-2025-02-27",
             "gpt-4o",
@@ -121,7 +117,7 @@ class ChatStreamAkari(object):
             "gemini-2.5-pro-exp-03-25",
             "gemini-2.0-pro-exp",
             "gemini-2.0-pro-exp-02-05",
-            "gemini-2.5-flash-preview-04-09",
+            "gemini-2.5-flash-preview-04-17",
             "gemini-2.0-flash",
             "gemini-2.0-flash-001",
             "gemini-2.0-flash-lite",
@@ -477,8 +473,8 @@ class ChatStreamAkari(object):
                     model=model,
                     messages=messages,
                     max_completion_tokens=1024,
-                    n=1,
-                    stream=True,
+                    #n=1,
+                    #stream=True,
                 )
             except BaseException as e:
                 print(f"OpenAIレスポンスエラー: {e}")
@@ -561,7 +557,8 @@ class ChatStreamAkari(object):
             model=model,
             history=history,
             config=types.GenerateContentConfig(
-                system_instruction=system_instruction, temperature=temperature
+                system_instruction=system_instruction, temperature=temperature,
+                thinking_config=types.ThinkingConfig(thinking_budget=0)
             ),
         )
         try:
@@ -588,7 +585,7 @@ class ChatStreamAkari(object):
             Generator[str, None, None]): 会話の返答を順次生成する
 
         """
-        if model in self.openai_model_name:
+        if model in self.openai_model_name or model in self.openai_flagship_model_name:
             yield from self.chat_gpt(
                 messages=messages,
                 model=model,
