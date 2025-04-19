@@ -15,6 +15,7 @@ from google.genai import types
 from google.genai.types import Content, Part
 from gpt_stream_parser import force_parse_json
 from openai import OpenAI
+
 from .conf import ANTHROPIC_APIKEY, GEMINI_APIKEY, OPENAI_APIKEY
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "grpc"))
@@ -566,9 +567,10 @@ class ChatStreamAkari(object):
             model=model,
             history=history,
             config=types.GenerateContentConfig(
-                system_instruction=system_instruction, temperature=temperature,
+                system_instruction=system_instruction,
+                temperature=temperature,
                 max_output_tokens=max_tokens,
-                thinking_config=types.ThinkingConfig(thinking_budget=0)
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
             ),
         )
         try:
