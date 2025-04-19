@@ -113,11 +113,12 @@ AKARIでVOICEVOXのローカル版を使う場合、AKARI本体内のCPUでVOICE
 キーボード入力した文章に対してchatGPTで返答を作成  
 `python3 chatgpt_example.py`  
 
-   引数は下記が使用可能  
-   - `-m`, `--model`: 使用するモデル名を指定可能。モデル名はOpenaiもしくはAnthropicのものが選択可能。モデル名を羅列することで、全モデルに対して一括で問いかけが可能。  
-   例) `python3 chatgpt_example.py -m gpt-3.5-turbo-0125 gpt-4-turbo-preview claude-3-sonnet-20240229 claude-3-opus-20240229`  
-   - `--thinking`: Claudeの拡張思考機能を使うかどうか。このオプションを有効化すると、拡張思考機能を有効化する。`claude-3-7-sonnet-latest`およびその他のclaude3.7系モデルで使用すること。
-   - `--web_search`: web検索を使うかどうか。このオプションを有効化すると、Web検索を行った結果を用いて回答する。`gemini-2.0-flash`か`gpt-4.5-search-preview`系のモデルで使用すること。
+   引数は下記が使用可能
+   - `-m`, `--model`: 使用するモデル名を指定可能。モデル名を羅列することで、全モデルに対して一括で問いかけが可能。
+   例) `python3 chatgpt_example.py -m gpt-4o claude-3-7-sonnet-latest gemini-2.0-flash`
+   - `--thinking`: Claudeの拡張思考機能を使うかどうか。このオプションを有効化すると、拡張思考機能を有効化する。`claude-3-7-sonnet-latest`およびその他のclaude3.7系モデル、もしくはgemini2.0以降で使用すること。
+   - `--web_search`: web検索を使うかどうか。このオプションを有効化すると、Web検索を行った結果を用いて回答する。gemini2.0以降か`gpt-4.1`系のモデルで使用すること。
+   - `-s`, `--system`: システムプロンプトを指定する。指定しない場合、config/system_prompt.txtの内容を使用する。
 
 ### 音声合成(VOICEVOX)のサンプル  
 キーボード入力した文章を音声合成で発話  
