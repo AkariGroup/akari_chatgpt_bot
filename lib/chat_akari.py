@@ -206,7 +206,7 @@ class ChatStreamAkari(object):
             "role": "user",
             "content": [
                 {
-                    "type": "text",
+                    "type": "input_text",
                     "text": text,
                 },
             ],
@@ -217,10 +217,8 @@ class ChatStreamAkari(object):
             base64_image = self.cv_to_base64(image)
             url = f"data:image/jpeg;base64,{base64_image}"
             vision_message = {
-                "type": "image_url",
-                "image_url": {
-                    "url": url,
-                },
+                "type": "input_image",
+                "image_url": url,
             }
             message["content"].append(vision_message)
         return message
@@ -240,9 +238,11 @@ class ChatStreamAkari(object):
         for message in messages:
             if "content" in message and isinstance(message["content"], list):
                 for content in message["content"]:
-                    if content["type"] == "image_url":
+                    if content["type"] == "input_text":
+                        content["type"] = "text"
+                    elif content["type"] == "input_image":
                         content["type"] = "image"
-                        image_data = content["image_url"]["url"]
+                        image_data = content["image_url"]
                         if image_data.startswith("data:image/jpeg;base64,"):
                             image_data = image_data[len("data:image/jpeg;base64,") :]
                         content["source"] = {
@@ -295,10 +295,10 @@ class ChatStreamAkari(object):
             elif isinstance(message["content"], list):
                 text = ""
                 for content in message["content"]:
-                    if content["type"] == "text":
+                    if content["type"] == "input_text":
                         text = content["text"]
-                    elif content["type"] == "image_url":
-                        image_data = content["image_url"]["url"]
+                    elif content["type"] == "input_image":
+                        image_data = content["image_url"]
                         if image_data.startswith("data:image/jpeg;base64,"):
                             image_data = image_data[len("data:image/jpeg;base64,") :]
                         parts.append(
@@ -321,10 +321,10 @@ class ChatStreamAkari(object):
         elif isinstance(cur_message["content"], list):
             text = ""
             for content in cur_message["content"]:
-                if content["type"] == "text":
+                if content["type"] == "input_text":
                     text = content["text"]
-                elif content["type"] == "image_url":
-                    image_data = content["image_url"]["url"]
+                elif content["type"] == "input_image":
+                    image_data = content["image_url"]
                     if image_data.startswith("data:image/jpeg;base64,"):
                         image_data = image_data[len("data:image/jpeg;base64,") :]
                     cur_parts.append(
@@ -481,6 +481,7 @@ class ChatStreamAkari(object):
                 result = self.openai_client.responses.create(
                     model=model,
                     input=messages,
+                    max_output_tokens=max_tokens,
                     stream=True,
                 )
             except BaseException as e:
@@ -638,7 +639,7 @@ class ChatStreamAkari(object):
         messages: list,
         model: str = "claude-3-7-sonnet-latest",
         max_tokens: int = 64000,
-        budget_tokens: int = 32000,
+        budget_tokens: int = 10000,
         stream_per_sentence: bool = True,
     ) -> Generator[str, None, None]:
         """Claudeを使用して拡張思考モードで会話を行う
@@ -764,16 +765,16 @@ class ChatStreamAkari(object):
     def chat_gpt_web_search(
         self,
         messages: list,
-        model: str = "gpt-4o-search-preview",
+        model: str = "gpt-4.1",
         temperature: float = 0.7,
         max_tokens: int = 1024,
         stream_per_sentence: bool = True,
     ) -> Generator[str, None, None]:
-        """Geminiを使用して会話を行う
+        """OpenAIモデルを使用してweb検索ありのレスポンスを取得する。
 
         Args:
             messages (list): 会話のメッセージ
-            model (str): 使用するモデル名 (デフォルト: "gemini-2.0-flash")
+            model (str): 使用するモデル名 (デフォルト: "gpt-4.1")
             temperature (float): Geminiのtemperatureパラメータ (デフォルト: 0.7)
             stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
         Returns:
@@ -848,6 +849,7 @@ class ChatStreamAkari(object):
         messages: list,
         model: str = "gemini-2.0-flash",
         temperature: float = 0.7,
+        max_tokens: int = 1024,
         stream_per_sentence: bool = True,
     ) -> Generator[str, None, None]:
         """指定したモデルを使用して、拡張思考を用いた会話を行う
@@ -855,8 +857,7 @@ class ChatStreamAkari(object):
         Args:
             messages (list): 会話のメッセージリスト
             model (str): 使用するモデル名 (デフォルト: "gemini-2.0-flash")
-            max_tokens (int): 1回のリクエストで生成する最大トークン数 (デフォルト: 64000)
-            budget_tokens (int): 1回のリクエストで拡張思考に使用するトークン数 (デフォルト: 32000)
+            max_tokens (int): 1回のリクエストで生成する最大トークン数 (デフォルト: 1024)
             stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
         Returns:
             Generator[str, None, None]): 会話の返答を順次生成する
