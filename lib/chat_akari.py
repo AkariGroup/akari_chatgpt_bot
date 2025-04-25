@@ -871,7 +871,7 @@ class ChatStreamAkari(object):
                 messages=messages,
                 model=model,
                 temperature=temperature,
-                max_tokens=1024,
+                max_tokens=max_tokens,
                 stream_per_sentence=stream_per_sentence,
             )
         elif model in self.gemini_model_name:
@@ -882,7 +882,7 @@ class ChatStreamAkari(object):
                 messages=messages,
                 model=model,
                 temperature=temperature,
-                max_tokens=1024,
+                max_tokens=max_tokens,
                 stream_per_sentence=stream_per_sentence,
             )
         else:
