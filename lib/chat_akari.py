@@ -55,7 +55,7 @@ class ChatStreamAkari(object):
         self.gemini_client = None
         if GEMINI_APIKEY is not None:
             self.gemini_client = genai.Client(api_key=GEMINI_APIKEY)
-        self.last_char = ["、", "。", "！", "!", "?", "？", "\n", "}"]
+        self.last_char = ["。", "！", "!", "?", "？", "\n", "}"]
         self.openai_flagship_model_name = [
             "o1",
             "o1-2024-12-17",
@@ -351,7 +351,9 @@ class ChatStreamAkari(object):
         full_response = ""
         real_time_response = ""
         for chunk in response:
-            if chunk.type != "response.output_text.delta":
+            if chunk.type == "response.output_text.done":
+                break
+            if chunk.type != "response.output_text.delta" or chunk.output_index != 0:
                 continue
             text = chunk.delta
             if text is None:
