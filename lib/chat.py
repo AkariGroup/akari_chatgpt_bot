@@ -82,6 +82,8 @@ class ChatStream(object):
             "gpt-3.5-turbo-instruct",
         ]
         self.anthropic_model_name = [
+            "claude-opus-4-20250514",
+            "claude-sonnet-4-20250514",
             "claude-3-7-sonnet-latest",
             "claude-3-7-sonnet-20250219",
             "claude-3-5-sonnet-20241022",
