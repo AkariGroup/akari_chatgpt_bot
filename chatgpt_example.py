@@ -25,6 +25,20 @@ def main() -> None:
         action="store_true",
         help="Use web search grounding (openai and gemini model only)",
     )
+    parser.add_argument(
+        "--reasoning_effort",
+        type=str,
+        default="minimal",
+        choices=["minimal", "low", "medium", "high"],
+        help="Reasoning effort level. gpt only.(default: minimal)",
+    )
+    parser.add_argument(
+        "--verbosity",
+        type=str,
+        default="low",
+        choices=["low", "medium", "high"],
+        help="Response verbosity level. gpt-5 only. (default: low)",
+    )
     parser.add_argument("-s", "--system", default="", type=str, help="System prompt")
     args = parser.parse_args()
     chat_stream_akari = ChatStreamAkari()
@@ -57,6 +71,8 @@ def main() -> None:
                     messages_list[i],
                     model=model,
                     stream_per_sentence=True,
+                    reasoning_effort=args.reasoning_effort,
+                    verbosity=args.verbosity,
                 ):
                     response += sentence
                     print(sentence, end="", flush=True)
@@ -80,6 +96,8 @@ def main() -> None:
                     model=model,
                     stream_per_sentence=True,
                     temperature=0.7,
+                    reasoning_effort=args.reasoning_effort,
+                    verbosity=args.verbosity,
                 ):
                     response += sentence
                     print(sentence, end="", flush=True)

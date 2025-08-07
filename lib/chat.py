@@ -48,6 +48,15 @@ class ChatStream(object):
             "o1-preview",
             "o1-preview-2024-09-12",
         ]
+        self.openai_gpt5_model_name = [
+            "gpt-5",
+            "gpt-5-2025-08-07",
+            "gpt-5-mini",
+            "gpt-5-mini-2025-08-07",
+            "gpt-5-nano",
+            "gpt-5-nano-2025-08-07",
+            "gpt-5-chat-latest",
+        ]
         self.openai_model_name = [
             "gpt-4.5-preview",
             "gpt-4.5-preview-2025-02-27",
@@ -489,9 +498,11 @@ class ChatStream(object):
     def chat_gpt(
         self,
         messages: list,
-        model: str = "gpt-4o",
+        model: str = "gpt-4.1",
         temperature: float = 0.7,
         max_tokens: int = 1024,
+        verbosity: str = "low",
+        reasoning_effort: str = "minimal",
         timeout: Optional[float] = None,
         stream_per_sentence: bool = True,
     ) -> Generator[str, None, None]:
@@ -499,9 +510,11 @@ class ChatStream(object):
 
         Args:
             messages (list): 会話のメッセージ
-            model (str): 使用するモデル名 (デフォルト: "gpt-4o")
+            model (str): 使用するモデル名 (デフォルト: "gpt-4.1")
             temperature (float): ChatGPTのtemperatureパラメータ (デフォルト: 0.7)
             max_tokens (int): 1回のリクエストで生成する最大トークン数 (デフォルト: 1024)
+            verbosity (str): レスポンスの冗長性 ("low","medium", "high") (デフォルト: "low")
+            reasoning_effort (str): 推論の努力レベル ("minimal", "low", "medium", "high") (デフォルト: "minimal")
             timeout (float): リクエストのタイムアウト時間 (デフォルト: None)
             stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
         Returns:
@@ -517,6 +530,21 @@ class ChatStream(object):
                 result = self.openai_client.chat.completions.create(
                     model=model,
                     messages=messages,
+                    timeout=timeout,
+                    stream=True,
+                    reasoning_effort=reasoning_effort,
+                )
+            except BaseException as e:
+                print(f"OpenAIレスポンスエラー: {e}")
+                raise (e)
+        elif model in self.openai_gpt5_model_name:
+            try:
+                result = self.openai_client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    n=1,
+                    reasoning_effort=reasoning_effort,
+                    verbosity=verbosity,
                     timeout=timeout,
                     stream=True,
                 )
@@ -630,9 +658,11 @@ class ChatStream(object):
     def chat(
         self,
         messages: list,
-        model: str = "gpt-4o",
+        model: str = "gpt-4.1",
         temperature: float = 0.7,
         max_tokens: int = 1024,
+        reasoning_effort: str = "minimal",
+        verbosity: str = "low",
         timeout: Optional[float] = None,
         stream_per_sentence: bool = True,
     ) -> Generator[str, None, None]:
@@ -640,21 +670,29 @@ class ChatStream(object):
 
         Args:
             messages (list): 会話のメッセージリスト
-            model (str): 使用するモデル名 (デフォルト: "gpt-4o")
+            model (str): 使用するモデル名 (デフォルト: "gpt-4.1")
             temperature (float): サンプリングの温度パラメータ (デフォルト: 0.7)
             max_tokens (int): 1回のリクエストで生成する最大トークン数 (デフォルト: 1024)
+            reasoning_effort (str): 推論の努力レベル。gptでのみ使用可能。 ("minimal", "low", "medium", "high") (デフォルト: "minimal")
+            verbosity (str): レスポンスの冗長性。gpt-5でのみ使用可能。 ("low", "medium", "high") (デフォルト: "low")
             timeout (float): リクエストのタイムアウト時間 (デフォルト: None)
             stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
         Returns:
             Generator[str, None, None]): 会話の返答を順次生成する
 
         """
-        if model in self.openai_model_name or model in self.openai_flagship_model_name:
+        if (
+            model in self.openai_model_name
+            or model in self.openai_gpt5_model_name
+            or model in self.openai_flagship_model_name
+        ):
             yield from self.chat_gpt(
                 messages=messages,
                 model=model,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                reasoning_effort=reasoning_effort,
+                verbosity=verbosity,
                 timeout=timeout,
                 stream_per_sentence=stream_per_sentence,
             )
@@ -672,7 +710,7 @@ class ChatStream(object):
             )
         elif model in self.gemini_model_name:
             if self.gemini_client is None:
-                log.error("Gemini API key is not set.")
+                print("Gemini API key is not set.")
                 return
             try:
                 yield from self.chat_gemini(
@@ -784,6 +822,8 @@ class ChatStream(object):
         temperature: float = 0.7,
         max_tokens: int = 64000,
         budget_tokens: int = 10000,
+        reasoning_effort: str = "minimal",
+        verbosity: str = "low",
         timeout: Optional[float] = None,
         stream_per_sentence: bool = True,
     ) -> Generator[str, None, None]:
@@ -794,7 +834,9 @@ class ChatStream(object):
             model (str): 使用するモデル名 (デフォルト: "claude-3-7-sonnet-latest")
             temperature (float): サンプリングの温度パラメータ (デフォルト: 0.7)
             max_tokens (int): 1回のリクエストで生成する最大トークン数 (デフォルト: 64000)
-            budget_tokens (int): 1回のリクエストで拡張思考に使用するトークン数 (デフォルト: 10000)
+            budget_tokens (int): 1回のリクエストで拡張思考に使用するトークン数。claude,geminiでのみ使用可能。 (デフォルト: 10000)
+            reasoning_effort (str): 推論の努力レベル。gptでのみ使用可能。 ("minimal", "low", "medium", "high") (デフォルト: "minimal")
+            verbosity (str): レスポンスの冗長性。gpt-5でのみ使用可能。 ("low", "medium", "high") (デフォルト: "low
             timeout (float): リクエストのタイムアウト時間 (デフォルト: None)
             stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
         Returns:
@@ -823,6 +865,19 @@ class ChatStream(object):
                 temperature=temperature,
                 max_tokens=max_tokens,
                 budget_tokens=budget_tokens,
+                timeout=timeout,
+                stream_per_sentence=stream_per_sentence,
+            )
+        elif model in self.openai_flagship_model_name or model in self.openai_gpt5_model_name:
+            if self.openai_client is None:
+                raise ValueError("OpenAI API key is not set.")
+            yield from self.chat_gpt(
+                messages=messages,
+                model=model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                reasoning_effort=reasoning_effort,
+                verbosity=verbosity,
                 timeout=timeout,
                 stream_per_sentence=stream_per_sentence,
             )
