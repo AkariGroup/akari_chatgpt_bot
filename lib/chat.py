@@ -862,7 +862,7 @@ class ChatStream(object):
         temperature: float = 0.7,
         max_tokens: int = 1024,
         budget_tokens: int = 0,
-        reasoning_effort: str = "medium",
+        reasoning_effort: str = "minimal",
         verbosity: str = "low",
         timeout: Optional[float] = None,
         stream_per_sentence: bool = True,
@@ -875,7 +875,7 @@ class ChatStream(object):
             temperature (float): サンプリングの温度パラメータ (デフォルト: 0.7)
             max_tokens (int): 1回のリクエストで生成する最大トークン数 (デフォルト: 1024)
             budget_tokens (int): 1回のリクエストで拡張思考に使用するトークン数。claude,geminiでのみ使用可能。 (デフォルト: 0)
-            reasoning_effort (str): 推論の努力レベル。gptでのみ使用可能。 ("minimal", "low", "medium", "high") (デフォルト: "medium")
+            reasoning_effort (str): 推論の努力レベル。gptでのみ使用可能。 ("minimal", "low", "medium", "high") (デフォルト: "minimal")
             verbosity (str): レスポンスの冗長性。gpt-5でのみ使用可能。 ("low", "medium", "high") (デフォルト: "low")
             timeout (float): リクエストのタイムアウト時間 (デフォルト: None)
             stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
