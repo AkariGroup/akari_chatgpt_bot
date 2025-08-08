@@ -657,7 +657,7 @@ class ChatStream(object):
             model (str): 使用するモデル名 (デフォルト: "gemini-2.0-flash")
             temperature (float): Geminiのtemperatureパラメータ (デフォルト: 0.7)
             max_tokens (int): 1回のリクエストで生成する最大トークン数 (デフォルト: 1024)
-            budget_tokens (int): 1回のリクエストで思考に使用するトークン数 (デフォルト: 10000)
+            budget_tokens (int): 1回のリクエストで思考に使用するトークン数 (デフォルト: 0)
             web_search (bool): ウェブ検索を行うかどうか (デフォルト: False)
             timeout (float): リクエストのタイムアウト時間（秒） (デフォルト: None)
             stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
@@ -738,7 +738,7 @@ class ChatStream(object):
                 max_tokens=max_tokens,
                 reasoning_effort=reasoning_effort,
                 verbosity=verbosity,
-                web_search=False,
+                web_search=web_search,
                 timeout=timeout,
                 stream_per_sentence=stream_per_sentence,
             )
@@ -752,7 +752,7 @@ class ChatStream(object):
                 temperature=temperature,
                 max_tokens=max_tokens,
                 budget_tokens=budget_tokens,
-                web_search=False,
+                web_search=web_search,
                 timeout=timeout,
                 stream_per_sentence=stream_per_sentence,
             )
@@ -767,7 +767,7 @@ class ChatStream(object):
                     temperature=temperature,
                     max_tokens=max_tokens,
                     budget_tokens=budget_tokens,
-                    web_search=False,
+                    web_search=web_search,
                     timeout=timeout,
                     stream_per_sentence=stream_per_sentence,
                 )
@@ -872,7 +872,11 @@ class ChatStream(object):
         Args:
             messages (list): 会話のメッセージリスト
             model (str): 使用するモデル名 (デフォルト: "gemini-2.0-flash")
+            temperature (float): サンプリングの温度パラメータ (デフォルト: 0.7)
             max_tokens (int): 1回のリクエストで生成する最大トークン数 (デフォルト: 1024)
+            budget_tokens (int): 1回のリクエストで拡張思考に使用するトークン数。claude,geminiでのみ使用可能。 (デフォルト: 0)
+            reasoning_effort (str): 推論の努力レベル。gptでのみ使用可能。 ("minimal", "low", "medium", "high") (デフォルト: "medium")
+            verbosity (str): レスポンスの冗長性。gpt-5でのみ使用可能。 ("low", "medium", "high") (デフォルト: "low")
             timeout (float): リクエストのタイムアウト時間 (デフォルト: None)
             stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
         Returns:
