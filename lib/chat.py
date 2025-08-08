@@ -738,7 +738,7 @@ class ChatStream(object):
                 max_tokens=max_tokens,
                 reasoning_effort=reasoning_effort,
                 verbosity=verbosity,
-                web_search=False,
+                web_search=web_search,
                 timeout=timeout,
                 stream_per_sentence=stream_per_sentence,
             )
