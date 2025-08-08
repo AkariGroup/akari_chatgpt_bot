@@ -527,81 +527,59 @@ class ChatStream(object):
             raise ValueError("OpenAI API key is not set.")
         result = None
         if web_search:
+            # Web検索モード用の基本パラメータ
             for message in messages:
                 if message["role"] == "model":
                     message["role"] = "assistant"
+            args = {
+                "model": model,
+                "input": messages,
+                "tools": [{"type": "web_search_preview"}],
+                "stream": True,
+                "timeout": timeout,
+            }
+            # モデルに応じて追加パラメータを設定
             if model in self.openai_gpt5_model_name:
-                try:
-                    result = self.openai_client.responses.create(
-                        model=model,
-                        input=messages,
-                        reasoning_effort=reasoning_effort,
-                        verbosity=verbosity,
-                        tools=[{"type": "web_search_preview"}],
-                        stream=True,
-                        timeout=timeout,
-                    )
-                except BaseException as e:
-                    print(f"OpenAIレスポンスエラー: {e}")
-                    raise (e)
-                yield from self.parse_output_stream_gpt(result, stream_per_sentence)
+                args["reasoning"] = {"effort": reasoning_effort}
+                args["text"] = {"format": {"type": "text"}, "verbosity": verbosity}
             else:
-                try:
-                    result = self.openai_client.responses.create(
-                        model=model,
-                        input=messages,
-                        temperature=temperature,
-                        max_output_tokens=max_tokens,
-                        tools=[{"type": "web_search_preview"}],
-                        stream=True,
-                        timeout=timeout,
-                    )
-                except BaseException as e:
-                    print(f"OpenAIレスポンスエラー: {e}")
-                    raise (e)
-                yield from self.parse_output_stream_gpt(result, stream_per_sentence)
+                args["temperature"] = temperature
+                args["max_output_tokens"] = max_tokens
+
+            try:
+                result = self.openai_client.responses.create(**args)
+            except BaseException as e:
+                print(f"OpenAIレスポンスエラー: {e}")
+                raise (e)
+            yield from self.parse_output_stream_gpt(result, stream_per_sentence)
         else:
-            messages = self.convert_messages_from_gpt_to_gpt_legacy(copy.deepcopy(messages))
+            # 通常モード用の基本パラメータ
+            messages = self.convert_messages_from_gpt_to_gpt_legacy(
+                copy.deepcopy(messages)
+            )
+            args = {
+                "model": model,
+                "messages": messages,
+                "timeout": timeout,
+                "stream": True,
+            }
+            # モデルに応じて追加パラメータを設定
             if model in self.openai_flagship_model_name:
-                try:
-                    result = self.openai_client.chat.completions.create(
-                        model=model,
-                        messages=messages,
-                        timeout=timeout,
-                        stream=True,
-                        reasoning_effort=reasoning_effort,
-                    )
-                except BaseException as e:
-                    print(f"OpenAIレスポンスエラー: {e}")
-                    raise (e)
+                args["reasoning_effort"] = reasoning_effort
             elif model in self.openai_gpt5_model_name:
-                try:
-                    result = self.openai_client.chat.completions.create(
-                        model=model,
-                        messages=messages,
-                        n=1,
-                        reasoning_effort=reasoning_effort,
-                        verbosity=verbosity,
-                        timeout=timeout,
-                        stream=True,
-                    )
-                except BaseException as e:
-                    print(f"OpenAIレスポンスエラー: {e}")
-                    raise (e)
+                args["n"] = 1
+                args["reasoning_effort"] = reasoning_effort
+                args["verbosity"] = verbosity
             else:
-                try:
-                    result = self.openai_client.chat.completions.create(
-                        model=model,
-                        messages=messages,
-                        max_tokens=max_tokens,
-                        n=1,
-                        timeout=timeout,
-                        stream=True,
-                        temperature=temperature,
-                    )
-                except BaseException as e:
-                    print(f"OpenAIレスポンスエラー: {e}")
-                    raise (e)
+                args["max_tokens"] = max_tokens
+                args["n"] = 1
+                args["temperature"] = temperature
+
+            try:
+                result = self.openai_client.chat.completions.create(**args)
+            except BaseException as e:
+                print(f"OpenAIレスポンスエラー: {e}")
+                raise (e)
             yield from self.parse_output_stream_gpt_legacy(result, stream_per_sentence)
 
     def chat_anthropic(
@@ -644,14 +622,20 @@ class ChatStream(object):
             "system": system_message,
             "timeout": timeout,
         }
-
+        if web_search:
+            args["tools"] = [
+                {
+                    "type": "web_search_20250305",
+                    "name": "web_search",
+                    "max_uses": 5,
+                }
+            ]
         # budget_tokensが0より大きい場合のみthinking引数を追加
         if budget_tokens > 0:
             args["thinking"] = {"type": "enabled", "budget_tokens": budget_tokens}
             args["temperature"] = 1.0  # thinkingではtemperatureは1.0固定
         else:
             args["temperature"] = temperature
-
         with self.anthropic_client.messages.stream(**args) as result:
             yield from self.parse_output_stream_anthropic(result, stream_per_sentence)
 
@@ -662,6 +646,7 @@ class ChatStream(object):
         temperature: float = 0.7,
         max_tokens: int = 1024,
         budget_tokens: int = 0,
+        web_search: bool = False,
         timeout: Optional[float] = None,
         stream_per_sentence: bool = True,
     ) -> Generator[str, None, None]:
@@ -673,6 +658,7 @@ class ChatStream(object):
             temperature (float): Geminiのtemperatureパラメータ (デフォルト: 0.7)
             max_tokens (int): 1回のリクエストで生成する最大トークン数 (デフォルト: 1024)
             budget_tokens (int): 1回のリクエストで思考に使用するトークン数 (デフォルト: 10000)
+            web_search (bool): ウェブ検索を行うかどうか (デフォルト: False)
             timeout (float): リクエストのタイムアウト時間（秒） (デフォルト: None)
             stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
         Returns:
@@ -688,18 +674,21 @@ class ChatStream(object):
             cur_message,
         ) = self.convert_messages_from_gpt_to_gemini(copy.deepcopy(messages))
         timeout_ms = timeout * 1000 if timeout else None
+        # 基本configパラメータ
+        config_args = {
+            "http_options": types.HttpOptions(timeout=timeout_ms),
+            "system_instruction": system_instruction,
+            "temperature": temperature,
+            "max_output_tokens": max_tokens,
+            "thinking_config": types.ThinkingConfig(thinking_budget=budget_tokens),
+        }
+        # web_search=Trueの場合のみtoolsを追加
+        if web_search:
+            config_args["tools"] = [types.Tool(google_search=types.GoogleSearch())]
         chat = self.gemini_client.chats.create(
             model=model,
             history=history,
-            config=types.GenerateContentConfig(
-                http_options=types.HttpOptions(
-                    timeout=timeout_ms,
-                ),
-                system_instruction=system_instruction,
-                temperature=temperature,
-                max_output_tokens=max_tokens,
-                thinking_config=types.ThinkingConfig(thinking_budget=budget_tokens),
-            ),
+            config=types.GenerateContentConfig(**config_args),
         )
         try:
             responses = chat.send_message_stream(cur_message)
@@ -713,8 +702,10 @@ class ChatStream(object):
         model: str = "gpt-5",
         temperature: float = 0.7,
         max_tokens: int = 1024,
+        budget_tokens: int = 0,
         reasoning_effort: str = "minimal",
         verbosity: str = "low",
+        web_search: bool = False,
         timeout: Optional[float] = None,
         stream_per_sentence: bool = True,
     ) -> Generator[str, None, None]:
@@ -725,8 +716,10 @@ class ChatStream(object):
             model (str): 使用するモデル名 (デフォルト: "gpt-5")
             temperature (float): サンプリングの温度パラメータ (デフォルト: 0.7)
             max_tokens (int): 1回のリクエストで生成する最大トークン数 (デフォルト: 1024)
+            budget_tokens (int): 1回のリクエストで拡張思考に使用するトークン数。claude,geminiでのみ使用可能。 (デフォルト: 0)
             reasoning_effort (str): 推論の努力レベル。gptでのみ使用可能。 ("minimal", "low", "medium", "high") (デフォルト: "minimal")
             verbosity (str): レスポンスの冗長性。gpt-5でのみ使用可能。 ("low", "medium", "high") (デフォルト: "low")
+            web_search (bool): ウェブ検索を行うかどうか (デフォルト: False)
             timeout (float): リクエストのタイムアウト時間 (デフォルト: None)
             stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
         Returns:
@@ -745,6 +738,7 @@ class ChatStream(object):
                 max_tokens=max_tokens,
                 reasoning_effort=reasoning_effort,
                 verbosity=verbosity,
+                web_search=False,
                 timeout=timeout,
                 stream_per_sentence=stream_per_sentence,
             )
@@ -757,6 +751,8 @@ class ChatStream(object):
                 model=model,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                budget_tokens=budget_tokens,
+                web_search=False,
                 timeout=timeout,
                 stream_per_sentence=stream_per_sentence,
             )
@@ -770,6 +766,8 @@ class ChatStream(object):
                     model=model,
                     temperature=temperature,
                     max_tokens=max_tokens,
+                    budget_tokens=budget_tokens,
+                    web_search=False,
                     timeout=timeout,
                     stream_per_sentence=stream_per_sentence,
                 )
@@ -786,8 +784,9 @@ class ChatStream(object):
         temperature: float = 0.7,
         max_tokens: int = 64000,
         budget_tokens: int = 10000,
-        reasoning_effort: str = "minimal",
+        reasoning_effort: str = "medium",
         verbosity: str = "low",
+        web_search: bool = False,
         timeout: Optional[float] = None,
         stream_per_sentence: bool = True,
     ) -> Generator[str, None, None]:
@@ -799,8 +798,9 @@ class ChatStream(object):
             temperature (float): サンプリングの温度パラメータ (デフォルト: 0.7)
             max_tokens (int): 1回のリクエストで生成する最大トークン数 (デフォルト: 64000)
             budget_tokens (int): 1回のリクエストで拡張思考に使用するトークン数。claude,geminiでのみ使用可能。 (デフォルト: 10000)
-            reasoning_effort (str): 推論の努力レベル。gptでのみ使用可能。 ("minimal", "low", "medium", "high") (デフォルト: "minimal")
-            verbosity (str): レスポンスの冗長性。gpt-5でのみ使用可能。 ("low", "medium", "high") (デフォルト: "low
+            reasoning_effort (str): 推論の努力レベル。gptでのみ使用可能。 ("minimal", "low", "medium", "high") (デフォルト: "medium")
+            verbosity (str): レスポンスの冗長性。gpt-5でのみ使用可能。 ("low", "medium", "high") (デフォルト: "low")
+            web_search (bool): ウェブ検索を行うかどうか (デフォルト: False)
             timeout (float): リクエストのタイムアウト時間 (デフォルト: None)
             stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
         Returns:
@@ -816,6 +816,7 @@ class ChatStream(object):
                 model=model,
                 max_tokens=max_tokens,
                 budget_tokens=budget_tokens,
+                web_search=web_search,
                 timeout=timeout,
                 stream_per_sentence=stream_per_sentence,
             )
@@ -829,10 +830,14 @@ class ChatStream(object):
                 temperature=temperature,
                 max_tokens=max_tokens,
                 budget_tokens=budget_tokens,
+                web_search=web_search,
                 timeout=timeout,
                 stream_per_sentence=stream_per_sentence,
             )
-        elif model in self.openai_flagship_model_name or model in self.openai_gpt5_model_name:
+        elif (
+            model in self.openai_flagship_model_name
+            or model in self.openai_gpt5_model_name
+        ):
             if self.openai_client is None:
                 raise ValueError("OpenAI API key is not set.")
             yield from self.chat_gpt(
@@ -842,6 +847,7 @@ class ChatStream(object):
                 max_tokens=max_tokens,
                 reasoning_effort=reasoning_effort,
                 verbosity=verbosity,
+                web_search=web_search,
                 timeout=timeout,
                 stream_per_sentence=stream_per_sentence,
             )
@@ -849,102 +855,15 @@ class ChatStream(object):
             print(f"Model name {model} can't use for this function")
             return
 
-    def chat_anthropic_web_search(
-        self,
-        messages: list,
-        model: str = "claude-3-7-sonnet-latest",
-        temperature: float = 0.7,
-        max_tokens: int = 1024,
-        timeout: Optional[float] = None,
-        stream_per_sentence: bool = True,
-    ) -> Generator[str, None, None]:
-        """Claude3を使用してweb検索ありのレスポンスを取得する
-
-        Args:
-            messages (list): 会話のメッセージ
-            model (str): 使用するモデル名 (デフォルト: "claude-3-7-sonnet-latest")
-            temperature (float): Claude3のtemperatureパラメータ (デフォルト: 0.7)
-            max_tokens (int): 1回のリクエストで生成する最大トークン数 (デフォルト: 1024)
-            timeout (float): リクエストのタイムアウト時間 (デフォルト: None)
-            stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
-        Returns:
-            Generator[str, None, None]): 会話の返答を順次生成する
-
-        """
-        # anthropicではsystemメッセージは引数として与えるので、メッセージから抜き出す
-        system_message = ""
-        user_messages = []
-        system_message, user_messages = self.convert_messages_from_gpt_to_anthropic(
-            copy.deepcopy(messages)
-        )
-        with self.anthropic_client.messages.stream(
-            model=model,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            messages=user_messages,
-            system=system_message,
-            timeout=timeout,
-            tools=[
-                {"type": "web_search_20250305", "name": "web_search", "max_uses": 5}
-            ],
-        ) as result:
-            yield from self.parse_output_stream_anthropic(result, stream_per_sentence)
-
-    def chat_gemini_web_search(
-        self,
-        messages: list,
-        model: str = "gemini-2.0-flash",
-        temperature: float = 0.7,
-        max_tokens: int = 1024,
-        timeout: Optional[float] = None,
-        stream_per_sentence: bool = True,
-    ) -> Generator[str, None, None]:
-        """Geminiを使用してweb検索ありのレスポンスを取得する
-
-        Args:
-            messages (list): 会話のメッセージ
-            model (str): 使用するモデル名 (デフォルト: "gemini-2.0-flash")
-            temperature (float): Geminiのtemperatureパラメータ (デフォルト: 0.7)
-            max_tokens (int): 1回のリクエストで生成する最大トークン数 (デフォルト: 1024)
-            timeout (float): リクエストのタイムアウト時間（秒） (デフォルト: None)
-            stream_per_sentence (bool): 1文ごとにストリーミングするかどうか (デフォルト: True)
-        Returns:
-            Generator[str, None, None]): 会話の返答を順次生成する
-
-        """
-        if GEMINI_APIKEY is None:
-            print("Gemini API key is not set.")
-            return
-        (
-            system_instruction,
-            history,
-            cur_message,
-        ) = self.convert_messages_from_gpt_to_gemini(copy.deepcopy(messages))
-        timeout_ms = timeout * 1000 if timeout else None
-        tools = [types.Tool(google_search=types.GoogleSearch())]
-        chat = self.gemini_client.chats.create(
-            model=model,
-            history=history,
-            config=types.GenerateContentConfig(
-                http_options=types.HttpOptions(
-                    timeout=timeout_ms,
-                ),
-                system_instruction=system_instruction,
-                temperature=temperature,
-                max_output_tokens=max_tokens,
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
-                tools=tools,
-            ),
-        )
-        responses = chat.send_message_stream(cur_message)
-        yield from self.parse_output_stream_gemini(responses, stream_per_sentence)
-
     def chat_web_search(
         self,
         messages: list,
         model: str = "gemini-2.0-flash",
         temperature: float = 0.7,
         max_tokens: int = 1024,
+        budget_tokens: int = 0,
+        reasoning_effort: str = "medium",
+        verbosity: str = "low",
         timeout: Optional[float] = None,
         stream_per_sentence: bool = True,
     ) -> Generator[str, None, None]:
@@ -960,15 +879,18 @@ class ChatStream(object):
             Generator[str, None, None]): 会話の返答を順次生成する
 
         """
-        if model in self.openai_model_name:
+        if model in self.openai_model_name or model in self.openai_gpt5_model_name:
             if self.openai_client is None:
                 print("OpenAI API key is not set.")
                 return
-            yield from self.chat_gpt_web_search(
+            yield from self.chat_gpt(
                 messages=messages,
                 model=model,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                reasoning_effort=reasoning_effort,
+                verbosity=verbosity,
+                web_search=True,
                 timeout=timeout,
                 stream_per_sentence=stream_per_sentence,
             )
@@ -976,11 +898,13 @@ class ChatStream(object):
             if self.anthropic_client is None:
                 print("Anthropic API key is not set.")
                 return
-            yield from self.chat_anthropic_web_search(
+            yield from self.chat_anthropic(
                 messages=messages,
                 model=model,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                budget_tokens=budget_tokens,
+                web_search=True,
                 timeout=timeout,
                 stream_per_sentence=stream_per_sentence,
             )
@@ -988,11 +912,13 @@ class ChatStream(object):
             if self.gemini_client is None:
                 print("Gemini API key is not set.")
                 return
-            yield from self.chat_gemini_web_search(
+            yield from self.chat_gemini(
                 messages=messages,
                 model=model,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                budget_tokens=budget_tokens,
+                web_search=True,
                 timeout=timeout,
                 stream_per_sentence=stream_per_sentence,
             )

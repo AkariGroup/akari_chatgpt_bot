@@ -16,6 +16,12 @@ def main() -> None:
         help="Model name list",
     )
     parser.add_argument(
+        "--temperature",
+        type=float,
+        default=0.7,
+        help="Temperature for the model (default: 0.7)",
+    )
+    parser.add_argument(
         "--thinking",
         action="store_true",
         help="Use thinking mode (anthropic and gemini model only)",
@@ -95,7 +101,7 @@ def main() -> None:
                     messages_list[i],
                     model=model,
                     stream_per_sentence=True,
-                    temperature=0.7,
+                    temperature=args.temperature,
                     reasoning_effort=args.reasoning_effort,
                     verbosity=args.verbosity,
                 ):
