@@ -49,14 +49,6 @@ class VoiceServer(voice_server_pb2_grpc.VoiceServerServiceServicer):
             self.text_to_voice.set_param(speed_scale=request.speed_scale)
         return voice_server_pb2.SetVoicevoxParamReply(success=True)
 
-    def SetAivisParam(
-        self,
-        request: voice_server_pb2.SetAivisParamRequest(),
-        context: grpc.ServicerContext,
-    ) -> voice_server_pb2.SetAivisParamReply:
-        print("SetAivisParam is not supported on voicevox_server.")
-        return voice_server_pb2.SetAivisParamReply(success=False)
-
     def InterruptVoice(
         self,
         request: voice_server_pb2.InterruptVoiceRequest(),
